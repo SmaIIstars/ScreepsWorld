@@ -1,0 +1,7 @@
+node_modules/
+output/
+main.js
+pnpm-lock.yaml
+.env
+.DS_Store
+*.log

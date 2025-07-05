@@ -1,0 +1,23 @@
+{
+  "name": "ScreepsWorld",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "vite build && cp output/main.js main.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.10.0",
+  "devDependencies": {
+    "@types/lodash": "^4.17.20",
+    "@types/node": "^24.0.10",
+    "@types/screeps": "^3.3.8",
+    "screeps-typescript-starter": "^3.0.0",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.2"
+  }
+}
