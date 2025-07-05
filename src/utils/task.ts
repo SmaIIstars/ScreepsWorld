@@ -1,13 +1,15 @@
-const taskList: LoopTask[] = [];
+const taskList = Memory.taskList ?? [];
 
 const register = (task: LoopTask) => {
   taskList.push({ ...task, id: task.fn.name });
+  Memory.taskList = taskList;
   console.log(`[Task] Register: ${task.id}`);
   return JSON.stringify(task);
 };
 
 const unregister = (task: LoopTask) => {
   taskList.splice(taskList.indexOf(task), 1);
+  Memory.taskList = taskList;
 };
 
 const getList = () => taskList;
@@ -29,6 +31,7 @@ const run = () => {
       task.status = "failed";
     }
   }
+  Memory.taskList = taskList;
 };
 
 export const task = {

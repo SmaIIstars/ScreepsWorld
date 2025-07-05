@@ -1,10 +1,9 @@
-import printMain from "./print";
 import { role } from "./utils/lib/role";
 import monitorMain from "./utils/monitor";
 
 const loop = () => {
   monitorMain();
-  printMain();
+  // printMain();
 
   for (let name in Game.creeps) {
     let creep = Game.creeps[name];

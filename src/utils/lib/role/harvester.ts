@@ -1,4 +1,4 @@
-import { BASE_ID_ENUM } from "@/constant";
+import { AvailableSourceType } from "@/utils/monitor/resource";
 import { baseRole } from "../base/role";
 
 type HarvesterOptions = {
@@ -52,12 +52,39 @@ const run: BaseRole<HarvesterOptions>["run"] = (
   // 1. creep能量没满且正在执行采集任务则继续执行
   if (creep.store.getFreeCapacity() > 0 && creep.memory.task === "harvesting") {
     // 获取采集资源列表
-    const sourcesDropped = Game.spawns[BASE_ID_ENUM.MainBase].room.find(
-      FIND_DROPPED_RESOURCES
+    const allAvailableSources: Array<AvailableSourceType> = Object.values(
+      Memory.resources
+    ).map((resource) => resource.source);
+    const availabilitySourcesMap = allAvailableSources.reduce<{
+      Source: Array<Source>;
+      Resource: Array<Resource<ResourceConstant>>;
+      Tombstone: Array<Tombstone>;
+      Ruin: Array<Ruin>;
+    }>(
+      (acc, source) => {
+        if (source instanceof Source && source.energy > 0) {
+          acc["Source"] = [...(acc["Source"] ?? []), source];
+        } else if (source instanceof Resource && source.amount > 0) {
+          acc["Resource"] = [...(acc["Resource"] ?? []), source];
+        } else if (
+          source instanceof Tombstone &&
+          source.store[RESOURCE_ENERGY] > 0
+        ) {
+          acc["Tombstone"] = [...(acc["Tombstone"] ?? []), source];
+        } else if (
+          source instanceof Ruin &&
+          source.store[RESOURCE_ENERGY] > 0
+        ) {
+          acc["Ruin"] = [...(acc["Ruin"] ?? []), source];
+        }
+        return acc;
+      },
+      { Source: [], Resource: [], Tombstone: [], Ruin: [] }
     );
+
     // 先捡地上的资源
-    if (sourcesDropped.length > 0) {
-      const targetSource = sourcesDropped[0];
+    if (availabilitySourcesMap["Resource"].length > 0) {
+      const targetSource = availabilitySourcesMap["Resource"][0];
       const pickupResult = creep.pickup(targetSource);
 
       if (pickupResult === OK) {
@@ -70,15 +97,31 @@ const run: BaseRole<HarvesterOptions>["run"] = (
       return;
     }
 
-    // 捡可采集的资源
-    const { priority = "low" } = opts ?? {};
-    const exploitableSources = Object.values(Memory.resources)
-      .filter((resource) => resource.source.energy > 0)
-      .map((resource) => resource.source);
-    if (exploitableSources.length === 0) {
-      creep.memory.task = "idle";
+    // 非采集role捡建筑中的的资源去做role任务
+    if (
+      creep.memory.role !== "harvester" &&
+      (availabilitySourcesMap["Tombstone"].length > 0 ||
+        availabilitySourcesMap["Ruin"].length > 0)
+    ) {
+      const targetSource =
+        availabilitySourcesMap["Tombstone"][0] ??
+        availabilitySourcesMap["Ruin"][0];
+      const pickupResult = creep.withdraw(targetSource, RESOURCE_ENERGY);
+
+      if (pickupResult === OK) {
+        creep.say("📦 Withdraw");
+      } else if (pickupResult === ERR_NOT_IN_RANGE) {
+        creep.moveTo(targetSource, {
+          visualizePathStyle: { stroke: "#ffaa00" },
+        });
+      }
       return;
     }
+
+    // 捡可采集的资源
+    const { priority = "low" } = opts ?? {};
+    const exploitableSources = availabilitySourcesMap["Source"];
+    if (exploitableSources.length === 0) return;
 
     // 根据角色优先级去不同的资源进行采集
     const targetResource =
@@ -119,7 +162,7 @@ const run: BaseRole<HarvesterOptions>["run"] = (
 const create: BaseRole["create"] = (baseId?: string, spawnCreepParams = {}) => {
   return baseRole.create({
     baseId,
-    body: [WORK, WORK, CARRY, CARRY, MOVE, MOVE],
+    body: [WORK, WORK, CARRY, MOVE],
     role: "harvester",
     opts: { memory: { task: "harvesting" } },
     ...spawnCreepParams,

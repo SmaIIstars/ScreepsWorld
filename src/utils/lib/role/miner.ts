@@ -22,17 +22,17 @@ const run: BaseRole["run"] = (creep: Creep) => {
     const availableResources = Object.values(Memory.resources)
       .filter(
         (resource) =>
+          resource.source instanceof Source &&
+          resource.source.energy > 0 &&
+          resource.source.ticksToRegeneration < 300 &&
           resource.creepsNearSource.length < resource.availablePositions.length
       )
-      .map((resource) => resource.source)
-      .filter(
-        (source) => source.energy > 0 || source.ticksToRegeneration < 300
-      );
+      .map((resource) => resource.source as Source);
     targetResource = availableResources.pop() ?? null;
     creep.memory.targetSourceId = targetResource?.id;
   } else {
-    targetResource =
-      Memory.resources[creep.memory.targetSourceId]?.source ?? null;
+    targetResource = Memory.resources[creep.memory.targetSourceId]
+      ?.source as Source | null;
   }
   if (!targetResource) return;
 

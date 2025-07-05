@@ -1,37 +1,42 @@
+import { BASE_ID_ENUM } from "@/constant";
+import { getStrategy } from "@/strategy";
 import { baseRole } from "../lib/base/role";
-
-const MIN_ROLE_COUNT_PER_TYPE: Record<CustomRoleType, { count: number }> = {
-  harvester: { count: 8 },
-  builder: { count: 2 },
-  upgrader: { count: 6 },
-  miner: { count: 4 },
-};
 
 export const role = () => {
   creeps();
 };
 
 const creeps = () => {
-  const creepCount: Record<CustomRoleType, number> = {
-    harvester: 0,
-    builder: 0,
-    upgrader: 0,
-    miner: 0,
-  };
+  const creepCounter = new Map<CustomRoleType, number>([
+    ["harvester", 0],
+    ["builder", 0],
+    ["upgrader", 0],
+    ["miner", 0],
+  ]);
 
   for (let name in Game.creeps) {
     const creep = Game.creeps[name];
     if (creep.memory.role) {
-      creepCount[creep.memory.role] = (creepCount[creep.memory.role] || 0) + 1;
+      creepCounter.set(
+        creep.memory.role,
+        (creepCounter.get(creep.memory.role) ?? 0) + 1
+      );
       if (Game.time % 10 === 0) {
         baseRole.getVisualStatus(creep);
       }
     }
   }
 
-  for (let role of Object.keys(creepCount) as CustomRoleType[]) {
-    if (creepCount[role] < MIN_ROLE_COUNT_PER_TYPE[role].count) {
-      utils.role[role].create("Main Base");
+  // 根据strategy创建creep, 且按顺序创建
+  const strategy = getStrategy(Memory.room?.level ?? 1);
+  // 根据creepCounterMap创建creep
+  const entries = creepCounter.entries();
+  for (let [role, count] of entries) {
+    if (count < strategy.roleMonitor[role].count) {
+      utils.role[role].create(BASE_ID_ENUM.MainBase, {
+        body: strategy.roleMonitor[role].body,
+      });
+      break;
     }
   }
 };

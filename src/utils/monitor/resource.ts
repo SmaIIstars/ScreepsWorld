@@ -1,16 +1,33 @@
 import { BASE_ID_ENUM } from "../../constant";
 import { querySourceAvailablePositions } from "../query";
 
+export type AvailableSourceType =
+  | Source
+  | Resource<ResourceConstant>
+  | Tombstone
+  | Ruin;
+
 export const resource = () => {
   checkResourceCongestion();
   getBaseStatus();
 };
 
+const availableSourcesTypes = [
+  FIND_DROPPED_RESOURCES,
+  FIND_SOURCES,
+  FIND_TOMBSTONES,
+  FIND_RUINS,
+];
+
 const checkResourceCongestion = () => {
-  const sources = Game.spawns[BASE_ID_ENUM.MainBase].room.find(FIND_SOURCES);
+  const sources: (Source | Resource<ResourceConstant> | Tombstone | Ruin)[] =
+    [];
+
+  for (const type of availableSourcesTypes) {
+    sources.push(...Game.spawns[BASE_ID_ENUM.MainBase].room.find(type));
+  }
 
   const resourceMemory: Record<string, ResourceMemory> = {};
-
   for (const source of sources) {
     const availablePositions = querySourceAvailablePositions(source);
     const creepsNearSource = source.pos.findInRange(FIND_MY_CREEPS, 1);
@@ -25,8 +42,19 @@ const checkResourceCongestion = () => {
     const occupiedCount = creepsNearSource.length;
     const vacancyCount = availableCount - occupiedCount;
 
-    source.room.visual.text(
-      `${source.energy}-${vacancyCount}`,
+    let text = "";
+    if (source instanceof Source) {
+      text = `${source[RESOURCE_ENERGY]}-${vacancyCount}`;
+    } else if (source instanceof Resource) {
+      text = `${source.amount}-${vacancyCount}`;
+    } else if (source instanceof Tombstone) {
+      text = `${source.store[RESOURCE_ENERGY]}-${vacancyCount}`;
+    } else if (source instanceof Ruin) {
+      text = `${source.store[RESOURCE_ENERGY]}-${vacancyCount}`;
+    }
+
+    Game.spawns[BASE_ID_ENUM.MainBase].room.visual.text(
+      text,
       source.pos.x,
       source.pos.y - 1,
       {

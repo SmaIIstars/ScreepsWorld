@@ -42,7 +42,7 @@ const run: BaseRole["run"] = (creep: Creep) => {
 const create: BaseRole["create"] = (baseId?: string, spawnCreepParams = {}) => {
   return baseRole.create({
     baseId,
-    body: [WORK, CARRY, MOVE, MOVE],
+    body: [WORK, CARRY, CARRY, MOVE, MOVE],
     role: "upgrader",
     opts: { memory: { task: "upgrading" } },
     ...spawnCreepParams,
