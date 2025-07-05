@@ -13,7 +13,9 @@ type BaseRole<T = Record<string, any>> = {
 type CustomRoleType = "harvester" | "builder" | "upgrader" | "miner";
 type CustomTaskType =
   | "harvesting"
+  | "mining"
   | "building"
+  | "transferring"
   | "upgrading"
   | "repairing"
   | "idle";

@@ -12,7 +12,7 @@ type BaseRoleCreateParams = {
 export const baseRole = {
   getVisualStatus: (creep: Creep) => {
     const fatigue = creep.fatigue;
-    const text = `${creep.memory.role} ${fatigue}`;
+    const text = `${creep.memory.role} ${fatigue > 0 ? fatigue : ""}`;
 
     return creep.room.visual.text(text, creep.pos.x, creep.pos.y - 1, {
       font: 0.5,

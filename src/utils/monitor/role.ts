@@ -1,10 +1,10 @@
 import { baseRole } from "../lib/base/role";
 
 const MIN_ROLE_COUNT_PER_TYPE: Record<CustomRoleType, { count: number }> = {
-  harvester: { count: 10 },
-  builder: { count: 6 },
-  upgrader: { count: 2 },
-  miner: { count: 2 },
+  harvester: { count: 8 },
+  builder: { count: 2 },
+  upgrader: { count: 6 },
+  miner: { count: 4 },
 };
 
 export const role = () => {

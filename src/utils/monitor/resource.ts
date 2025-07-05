@@ -7,8 +7,7 @@ export const resource = () => {
 };
 
 const checkResourceCongestion = () => {
-  const sources =
-    Game.spawns[BASE_ID_ENUM.MainBase].room.find(FIND_SOURCES_ACTIVE);
+  const sources = Game.spawns[BASE_ID_ENUM.MainBase].room.find(FIND_SOURCES);
 
   const resourceMemory: Record<string, ResourceMemory> = {};
 

@@ -1,10 +1,11 @@
 import { baseRole } from "../base/role";
 import harvester from "./harvester";
 
-const run: BaseRole["run"] = (creep: Creep) => {
+const run: BaseRole["run"] = (creep: Creep, opts = {}) => {
   const constructionSites = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
+
   if (constructionSites.length === 0) {
-    harvester.run(creep);
+    harvester.run(creep, opts);
     creep.memory.task = "idle";
     return;
   }
@@ -23,7 +24,7 @@ const run: BaseRole["run"] = (creep: Creep) => {
   }
 
   if (creep.memory.task === "harvesting") {
-    harvester.run(creep, { priority: "high" });
+    harvester.run(creep, opts);
   }
 
   if (creep.memory.task === "building") {
