@@ -15,7 +15,7 @@ export default defineConfig({
     },
     outDir: "output",
     emptyOutDir: true,
-    target: "es2017",
+    target: "es2019",
   },
   resolve: {
     alias: {

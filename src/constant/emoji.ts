@@ -11,4 +11,6 @@ export default {
   building: "🚧",
   upgrading: "⚡",
   repairing: "🔧",
+  attacking: "💥",
+  healing: "🩷",
 };

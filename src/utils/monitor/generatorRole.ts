@@ -28,7 +28,7 @@ const creeps = () => {
     }
   }
 
-  const strategy = getStrategy(Memory.rooms[ROOM_ID_ENUM.MainRoom].level);
+  const strategy = getStrategy(Game.rooms[ROOM_ID_ENUM.MainRoom].controller?.level ?? 0);
   // 根据creepCounterMap创建creep
   const entries = creepCounter.entries();
   for (let [role, count] of entries) {

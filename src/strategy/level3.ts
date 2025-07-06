@@ -1,54 +1,53 @@
+import { generatorRoleBody } from "@/utils/lib/base/role";
 import { StrategyType } from ".";
 
 const strategy: StrategyType = {
   roleMonitor: {
     harvester: {
-      count: 4,
-      body: [
-        CARRY,
-        CARRY,
-        CARRY,
-        CARRY,
-        CARRY,
-        CARRY,
-        CARRY,
-        MOVE,
-        MOVE,
-        MOVE,
-        MOVE,
-      ],
+      count: 8,
+      body: generatorRoleBody([
+        { body: CARRY, count: 10 },
+        { body: MOVE, count: 6 },
+      ]),
     },
     builder: {
-      count: 4,
-      body: [WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE],
+      count: 2,
+      body: generatorRoleBody([
+        { body: WORK, count: 3 },
+        { body: CARRY, count: 5 },
+        { body: MOVE, count: 5 },
+      ]),
     },
     upgrader: {
       count: 14,
-      body: [WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE],
+      body: generatorRoleBody([
+        { body: WORK, count: 3 },
+        { body: CARRY, count: 5 },
+        { body: MOVE, count: 5 },
+      ]),
     },
     miner: {
-      count: 4,
-      body: [WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE],
+      count: 0,
+      body: generatorRoleBody([
+        { body: WORK, count: 8 },
+        { body: CARRY, count: 1 },
+        { body: MOVE, count: 1 },
+      ]),
     },
     minerStore: {
       count: 0,
-      body: [
-        CARRY,
-        CARRY,
-        CARRY,
-        CARRY,
-        CARRY,
-        CARRY,
-        CARRY,
-        CARRY,
-        CARRY,
-        CARRY,
-        MOVE,
-      ],
+      body: generatorRoleBody([
+        { body: CARRY, count: 15 },
+        { body: MOVE, count: 1 },
+      ]),
     },
     repairer: {
-      count: 1,
-      body: [WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE],
+      count: 4,
+      body: generatorRoleBody([
+        { body: WORK, count: 3 },
+        { body: CARRY, count: 5 },
+        { body: MOVE, count: 5 },
+      ]),
     },
   },
 };

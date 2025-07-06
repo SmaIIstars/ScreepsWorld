@@ -23,7 +23,7 @@ const run: BaseRole["run"] = (creep: Creep, opts = {}) => {
 
   if (constructionSites.length === 0) {
     harvester.run(creep, opts);
-    creep.memory.task = "idle";
+    creep.memory.task = "harvesting";
     return;
   }
 

@@ -34,3 +34,13 @@ export const baseRole = {
     );
   },
 };
+
+export const generatorRoleBody = (
+  bodyWidgetConfig: { body: BodyPartConstant; count: number }[]
+) => {
+  // flatMap 不兼容 es2019
+  // bodyWidgetConfig.flatMap(({ body, count }) => Array(count).fill(body));
+  return bodyWidgetConfig.reduce<BodyPartConstant[]>((acc, { body, count }) => {
+    return acc.concat(Array(count).fill(body));
+  }, []);
+};

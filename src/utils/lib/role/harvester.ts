@@ -9,7 +9,6 @@ type HarvesterOptions = {
 };
 
 const CustomEnergyStructureType: Array<Structure["structureType"]> = [
-  STRUCTURE_TOWER,
   STRUCTURE_EXTENSION,
   STRUCTURE_SPAWN,
   STRUCTURE_CONTAINER,
@@ -186,7 +185,7 @@ const run: BaseRole<HarvesterOptions>["run"] = (
               curCreep.pos.x,
               curCreep.pos.y
             );
-            return availablePositions?.length > 3;
+            return availablePositions?.length > 1;
           }
 
           return false;

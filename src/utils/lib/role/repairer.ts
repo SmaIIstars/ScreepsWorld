@@ -27,27 +27,54 @@ const run: BaseRole["run"] = (creep: Creep) => {
   if (creep.memory.task === "repairing") {
     const targetStructures = creep.room
       .find(FIND_STRUCTURES, {
-        filter: (s) => s.hits < s.hitsMax,
+        filter: (s) =>
+          s.hits < s.hitsMax || s.structureType === STRUCTURE_TOWER,
       })
-      .sort((a, b) => (Math.abs(a.hits - b.hits) > 1000 ? a.hits - b.hits : 0));
+      .sort((a, b) => {
+        // 优先修复炮塔
+        if (
+          a.structureType === STRUCTURE_TOWER &&
+          b.structureType !== STRUCTURE_TOWER
+        )
+          return -1;
+        if (
+          a.structureType !== STRUCTURE_TOWER &&
+          b.structureType === STRUCTURE_TOWER
+        )
+          return 1;
+        // 再修生命值最低的，差值1000以上才排序，不然不变
+        return Math.abs(a.hits - b.hits) > 1000 ? a.hits - b.hits : 0;
+      });
 
     if (!targetStructures.length) return;
-    const repairResult = creep.repair(targetStructures[0]);
-    switch (repairResult) {
-      case ERR_NOT_IN_RANGE: {
-        creep.moveTo(targetStructures[0], {
-          visualizePathStyle: { stroke: "#ffffff" },
-        });
-        break;
+    const targetStructure = targetStructures[0];
+    // 先填炮塔
+    if (
+      targetStructure.structureType === STRUCTURE_TOWER &&
+      targetStructure.store.getFreeCapacity(RESOURCE_ENERGY) > 0
+    ) {
+      const transferResult = creep.transfer(targetStructure, RESOURCE_ENERGY);
+      if (transferResult === OK)
+        intervalTime(5, () => creep.say(EMOJI.transferring));
+    } else {
+      // 再修建筑
+      const repairResult = creep.repair(targetStructure);
+      switch (repairResult) {
+        case ERR_NOT_IN_RANGE: {
+          creep.moveTo(targetStructures[0], {
+            visualizePathStyle: { stroke: "#ffffff" },
+          });
+          break;
+        }
+        case OK: {
+          intervalTime(10, () => creep.say(EMOJI.repairing), {
+            time: creep.ticksToLive,
+          });
+          break;
+        }
+        default:
+          break;
       }
-      case OK: {
-        intervalTime(10, () => creep.say(EMOJI.repairing), {
-          time: creep.ticksToLive,
-        });
-        break;
-      }
-      default:
-        break;
     }
   }
 };

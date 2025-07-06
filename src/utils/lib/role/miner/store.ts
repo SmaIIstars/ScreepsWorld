@@ -8,6 +8,10 @@ const run: BaseRole["run"] = (creep: Creep) => {
     .findInRange(FIND_MY_CREEPS, 1)
     .filter(
       (unit) => unit.store.getFreeCapacity() > 0 && unit.memory.role !== "miner"
+    )
+    // 让非Miner和非MinerStore的单位优先转移
+    .sort((a) =>
+      a.memory.role !== "miner" && a.memory.role !== "minerStore" ? -1 : 0
     );
 
   for (let unit of needyTransferUnits) {
