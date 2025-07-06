@@ -1,16 +1,21 @@
-import { ROOM_ID_ENUM } from "@/constant";
-import { task } from "../task";
-
 export const room = () => {
   if (Game.time % 50 === 0) {
     rooms();
-    task.run();
+    // task.run();
   }
 };
 
 const rooms = () => {
+  const roomMap: Record<string, CustomRoomType> = {};
+  for (let key in Game.rooms) {
+    const room = Game.rooms[key];
+    roomMap[key] = {
+      ...room,
+      level: room.controller?.level ?? 1,
+    };
+  }
+
   Memory.room = {
-    rooms: Game.rooms,
-    level: Game.rooms[ROOM_ID_ENUM.MainRoom].controller?.level ?? 1,
+    rooms: roomMap,
   };
 };

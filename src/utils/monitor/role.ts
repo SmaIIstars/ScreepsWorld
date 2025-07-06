@@ -1,4 +1,4 @@
-import { BASE_ID_ENUM } from "@/constant";
+import { BASE_ID_ENUM, ROOM_ID_ENUM } from "@/constant";
 import { getStrategy } from "@/strategy";
 import { baseRole } from "../lib/base/role";
 
@@ -28,12 +28,12 @@ const creeps = () => {
   }
 
   // 根据strategy创建creep, 且按顺序创建
-  const strategy = getStrategy(Memory.room?.level ?? 1);
+  const strategy = getStrategy(Memory.room.rooms[ROOM_ID_ENUM.MainRoom].level);
   // 根据creepCounterMap创建creep
   const entries = creepCounter.entries();
   for (let [role, count] of entries) {
     if (count < strategy.roleMonitor[role].count) {
-      utils.role[role].create(BASE_ID_ENUM.MainBase, {
+      const result = utils.role[role].create(BASE_ID_ENUM.MainBase, {
         body: strategy.roleMonitor[role].body,
       });
       break;

@@ -14,7 +14,6 @@ interface Memory {
   resources: Record<string, ResourceMemory>;
   taskList: LoopTask[];
   room: {
-    rooms: Record<string, Room>;
-    level: number;
+    rooms: Record<string, CustomRoomType>;
   };
 }

@@ -1,22 +1,6 @@
 import { baseRole } from "../base/role";
 
 const run: BaseRole["run"] = (creep: Creep) => {
-  if (creep.memory.task === "mining") {
-    const units = creep.room
-      .find(FIND_MY_CREEPS)
-      .filter(
-        (c) => c.store.getFreeCapacity() > 0 && c.memory.role !== "miner"
-      );
-
-    if (units.length > 0) {
-      const unit = units[0];
-      const transferResult = creep.transfer(unit, RESOURCE_ENERGY);
-      if (transferResult === OK && Game.time % 10 === 0) {
-        creep.say("🔄 Transfer");
-      }
-    }
-  }
-
   let targetResource: Source | null = null;
   if (!creep.memory.targetSourceId) {
     const availableResources = Object.values(Memory.resources)
@@ -39,13 +23,25 @@ const run: BaseRole["run"] = (creep: Creep) => {
   if (creep.memory.task === "mining") {
     const harvestResult = creep.harvest(targetResource);
     if (harvestResult === OK) {
-      creep.say("⛏️ Mining");
+      if (Game.time % 10 === 0) creep.say("⛏️ Mining");
     } else if (harvestResult === ERR_NOT_ENOUGH_RESOURCES) {
-      creep.say("⏳ Waiting");
+      if (Game.time % 10 === 0) creep.say("⏳ Waiting");
+    }
+
+    const units = creep.pos
+      .findInRange(FIND_MY_CREEPS, 1)
+      .filter((unit) => unit.store.getFreeCapacity() > 0);
+
+    if (units.length > 0) {
+      const unit = units[0];
+      const transferResult = creep.transfer(unit, RESOURCE_ENERGY);
+      if (transferResult === OK && Game.time % 5 === 0) {
+        creep.say("🔄 Transferring");
+      }
     }
   }
 
-  if (creep.store.getFreeCapacity() === 0 && Game.time % 10 === 0) {
+  if (creep.store.getFreeCapacity() === 0 && Game.time % 5 === 0) {
     creep.say("🛑 Energy Full");
     return;
   }
@@ -67,6 +63,7 @@ const create: BaseRole["create"] = (baseId?: string, spawnCreepParams = {}) => {
     baseId,
     body: [WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE],
     role: "miner",
+    opts: { memory: { task: "harvesting" } },
     ...spawnCreepParams,
   });
 };

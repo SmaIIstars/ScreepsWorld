@@ -6,11 +6,11 @@ type HarvesterOptions = {
 };
 
 const CustomEnergyStructureType: Array<Structure["structureType"]> = [
+  STRUCTURE_TOWER,
   STRUCTURE_EXTENSION,
   STRUCTURE_SPAWN,
-  STRUCTURE_TOWER,
-  STRUCTURE_STORAGE,
   STRUCTURE_CONTAINER,
+  STRUCTURE_STORAGE,
 ];
 
 const run: BaseRole<HarvesterOptions>["run"] = (
@@ -24,19 +24,25 @@ const run: BaseRole<HarvesterOptions>["run"] = (
       return;
     }
 
-    const targets = creep.room.find(FIND_STRUCTURES, {
-      filter: (
-        structure
-      ): structure is
-        | StructureExtension
-        | StructureSpawn
-        | StructureTower
-        | StructureStorage
-        | StructureContainer =>
-        CustomEnergyStructureType.includes(structure.structureType) &&
-        "store" in structure &&
-        structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
-    });
+    const targets = creep.room
+      .find(FIND_STRUCTURES, {
+        filter: (
+          structure
+        ): structure is
+          | StructureExtension
+          | StructureSpawn
+          | StructureTower
+          | StructureStorage
+          | StructureContainer =>
+          CustomEnergyStructureType.includes(structure.structureType) &&
+          "store" in structure &&
+          structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+      })
+      .sort((a, b) => {
+        const aIndex = CustomEnergyStructureType.indexOf(a.structureType);
+        const bIndex = CustomEnergyStructureType.indexOf(b.structureType);
+        return aIndex - bIndex;
+      });
 
     if (targets.length > 0) {
       if (creep.transfer(targets[0], RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
@@ -88,7 +94,7 @@ const run: BaseRole<HarvesterOptions>["run"] = (
       const pickupResult = creep.pickup(targetSource);
 
       if (pickupResult === OK) {
-        creep.say("📦 Pickup");
+        creep.say("📦 Picking");
       } else if (pickupResult === ERR_NOT_IN_RANGE) {
         creep.moveTo(targetSource, {
           visualizePathStyle: { stroke: "#ffaa00" },
@@ -109,7 +115,7 @@ const run: BaseRole<HarvesterOptions>["run"] = (
       const pickupResult = creep.withdraw(targetSource, RESOURCE_ENERGY);
 
       if (pickupResult === OK) {
-        creep.say("📦 Withdraw");
+        creep.say("📦 Withdrawing");
       } else if (pickupResult === ERR_NOT_IN_RANGE) {
         creep.moveTo(targetSource, {
           visualizePathStyle: { stroke: "#ffaa00" },
@@ -130,7 +136,10 @@ const run: BaseRole<HarvesterOptions>["run"] = (
         : exploitableSources[exploitableSources.length - 1];
     creep.memory.targetSourceId = targetResource.id;
     // 在资源范围内采集资源
-    if (creep.harvest(targetResource) === ERR_NOT_IN_RANGE) {
+    const harvestResult = creep.harvest(targetResource);
+    if (harvestResult === OK && Game.time % 10 === 0) {
+      creep.say("📦 Harvesting");
+    } else if (harvestResult === ERR_NOT_IN_RANGE) {
       creep.moveTo(targetResource, {
         visualizePathStyle: { stroke: "#ffaa00" },
       });

@@ -4,7 +4,7 @@ import harvester from "./harvester";
 const run: BaseRole["run"] = (creep: Creep) => {
   // 1. 如果creep的store.energy === 0 且正在执行升级任务, 则切换到采集任务
   if (creep.memory.task === "upgrading" && creep.store[RESOURCE_ENERGY] === 0) {
-    creep.say("🔄 harvest");
+    creep.say("📦 Harvesting");
     creep.memory.task = "harvesting";
   }
 
@@ -14,7 +14,7 @@ const run: BaseRole["run"] = (creep: Creep) => {
     creep.store.getFreeCapacity() === 0
   ) {
     creep.memory.task = "upgrading";
-    creep.say("⚡ upgrade");
+    creep.say("⚡ Upgrading");
   }
 
   // 3. 执行采集任务
