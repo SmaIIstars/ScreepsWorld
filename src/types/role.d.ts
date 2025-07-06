@@ -10,12 +10,19 @@ type BaseRole<T = Record<string, any>> = {
   ) => ScreepsReturnCode;
 };
 
-type CustomRoleType = "harvester" | "builder" | "upgrader" | "miner";
+type CustomRoleType =
+  | "harvester"
+  | "builder"
+  | "upgrader"
+  | "miner"
+  | "minerStore";
+
 type CustomTaskType =
   | "harvesting"
   | "mining"
   | "building"
   | "transferring"
+  | "moving"
   | "upgrading"
   | "repairing"
   | "idle";

@@ -1,27 +1,57 @@
-import { BASE_ID_ENUM } from "@/constant";
+import { ROOM_ID_ENUM } from "@/constant";
 
-export const querySourceAvailablePositions = (
-  source: Source | Resource<ResourceConstant> | Tombstone | Ruin
-  // opts?: { findType: FindConstant; range: number }
-) => {
-  // const { findType = TERRAIN_MASK_WALL, range = 1 } = opts ?? {};
-  // const aroundUnits = source.pos.findInRange(findType, range);
-  const availablePositions: { x: number; y: number }[] = [];
+export const queryAvailableGetSourcePositions = (x: number, y: number) => {
+  const allPositions: Record<string, LookAtResultWithPos<LookConstant>[]> = {};
+  const curRoom = Game.rooms[ROOM_ID_ENUM.MainRoom];
+  if (!curRoom) return;
 
-  for (let dx = -1; dx <= 1; dx++) {
-    for (let dy = -1; dy <= 1; dy++) {
-      if (dx === 0 && dy === 0) continue;
-      const x = source.pos.x + dx;
-      const y = source.pos.y + dy;
+  // 通过BFS的方式，查询可用的位置
+  const queue: Array<{ x: number; y: number }> = [{ x, y }];
+  const visited = new Set<string>();
 
-      if (
-        Game.spawns[BASE_ID_ENUM.MainBase].room.getTerrain().get(x, y) !==
-        TERRAIN_MASK_WALL
-      ) {
-        availablePositions.push({ x, y });
+  // BFS遍历，从miner/minerStore位置向外扩展
+  while (queue.length > 0) {
+    const current = queue.pop()!;
+    if (visited.has(`${current.x}-${current.y}`)) continue;
+    visited.add(`${current.x}-${current.y}`);
+
+    // 查询范围内所有可用位置
+    const rangeUnits = curRoom
+      .lookAtArea(
+        current.y - 1,
+        current.x - 1,
+        current.y + 1,
+        current.x + 1,
+        true
+      )
+      .filter((unit) => unit?.terrain !== "wall" && unit.type !== "source");
+
+    // 从rangeUnits中找到miner或minerStore的位置作为起点
+    for (const unit of rangeUnits) {
+      if (unit?.type === "creep" && unit.creep) {
+        const placedCreep = Game.creeps[unit.creep?.name] as Creep;
+        if (["miner", "minerStore"].includes(placedCreep.memory.role ?? "")) {
+          queue.push({ x: unit.x, y: unit.y });
+        }
+      } else {
+        visited.add(`${unit.x}-${unit.y}`);
+        if (!allPositions[`${unit.x}-${unit.y}`]) {
+          allPositions[`${unit.x}-${unit.y}`] = [unit];
+        } else {
+          allPositions[`${unit.x}-${unit.y}`].push(unit);
+        }
       }
     }
   }
+  // 过滤坐标信息, 只保留可到达的坐标
+  const availablePositions: Array<{ x: number; y: number }> = [];
+  Object.entries(allPositions).forEach(([key, units]) => {
+    const unitSet = new Array(...new Set(units));
+    if (unitSet.every((item) => !["creep", "structure"].includes(item.type))) {
+      const [x, y] = key.split("-");
+      availablePositions.push({ x: Number(x), y: Number(y) });
+    }
+  });
 
   return availablePositions;
 };

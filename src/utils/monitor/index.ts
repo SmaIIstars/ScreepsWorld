@@ -1,17 +1,13 @@
+import { intervalTime } from "..";
+import { generatorRole } from "./generatorRole";
 import { memory } from "./memory";
-import { resource } from "./resource";
-import { role } from "./role";
-import { room } from "./room";
+import { task } from "./task";
 
 const monitorMain = () => {
+  task();
   memory();
-  role();
-  resource();
-  room();
-  
+  intervalTime(10, generatorRole);
+  // intervalTime(10, plan);
 };
 
 export default monitorMain;
-export const monitor = {
-  role,
-};

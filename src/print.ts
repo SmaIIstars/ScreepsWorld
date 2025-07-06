@@ -4,7 +4,6 @@ const printMain = () => {
   const constructionSite = Game.spawns[BASE_ID_ENUM.MainBase].room
     .find(FIND_MY_CONSTRUCTION_SITES)
     .filter((c) => c.progress < c.progressTotal);
-  console.log(constructionSite);
 };
 
 export default printMain;

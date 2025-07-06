@@ -1,9 +1,8 @@
 import { loop } from "./index";
-import { role, task } from "./utils";
+import { role } from "./utils";
 
 module.exports = { loop };
 
 global.utils = {
   role,
-  task,
 };

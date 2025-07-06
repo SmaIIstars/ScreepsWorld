@@ -1,4 +1,6 @@
-const strategy = {
+import { StrategyType } from ".";
+
+const strategy: StrategyType = {
   roleMonitor: {
     harvester: { count: 4, body: [WORK, WORK, CARRY, MOVE] },
     builder: { count: 3, body: [WORK, CARRY, CARRY, MOVE, MOVE] },

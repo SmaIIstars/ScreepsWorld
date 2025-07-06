@@ -1,6 +1,7 @@
 import Builder from "./builder";
 import Harvester from "./harvester";
 import Miner from "./miner";
+import MinerStore from "./miner/store";
 import Upgrader from "./upgrader";
 
 export const role: Record<string, BaseRole> = {
@@ -8,4 +9,5 @@ export const role: Record<string, BaseRole> = {
   builder: Builder,
   upgrader: Upgrader,
   miner: Miner,
+  minerStore: MinerStore,
 };

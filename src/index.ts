@@ -11,7 +11,7 @@ const loop = () => {
       const highPriorityHarvesters =
         Object.values(Game.creeps)
           .filter((c) => c.memory.role === "harvester")
-          .findIndex((c, idx) => c.name === creep.name && idx < 3) !== -1;
+          .findIndex((c, idx) => c.name === creep.name && idx < 1) !== -1;
 
       role.harvester.run(creep, {
         priority: highPriorityHarvesters ? "high" : "low",
@@ -21,7 +21,7 @@ const loop = () => {
       const highPriorityBuilders =
         Object.values(Game.creeps)
           .filter((c) => c.memory.role === "builder")
-          .findIndex((c, idx) => c.name === creep.name && idx < 5) !== -1;
+          .findIndex((c, idx) => c.name === creep.name && idx < 3) !== -1;
 
       role.builder.run(creep, {
         priority: highPriorityBuilders ? "high" : "low",
@@ -32,6 +32,9 @@ const loop = () => {
     }
     if (creep.memory.role == "miner") {
       role.miner.run(creep);
+    }
+    if (creep.memory.role == "minerStore") {
+      role.minerStore.run(creep);
     }
   }
 };

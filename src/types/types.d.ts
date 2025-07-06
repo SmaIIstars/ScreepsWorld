@@ -1,6 +1,6 @@
 type ResourceMemory = {
-  availablePositions: { x: number; y: number }[];
-  creepsNearSource: Creep[];
+  // availablePositions: { x: number; y: number }[];
+  // creepsNearSource: Creep[];
   source: Source | Resource<ResourceConstant> | Tombstone | Ruin;
 };
 
@@ -13,7 +13,5 @@ interface CreepMemory {
 interface Memory {
   resources: Record<string, ResourceMemory>;
   taskList: LoopTask[];
-  room: {
-    rooms: Record<string, CustomRoomType>;
-  };
+  rooms: Record<string, CustomRoomType>;
 }

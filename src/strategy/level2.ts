@@ -4,19 +4,47 @@ const strategy: StrategyType = {
   roleMonitor: {
     harvester: {
       count: 4,
-      body: [WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE],
+      body: [
+        CARRY,
+        CARRY,
+        CARRY,
+        CARRY,
+        CARRY,
+        CARRY,
+        CARRY,
+        MOVE,
+        MOVE,
+        MOVE,
+        MOVE,
+      ],
     },
     builder: {
-      count: 8,
-      body: [WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE],
+      count: 2,
+      body: [WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE],
     },
     upgrader: {
-      count: 10,
-      body: [WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE],
+      count: 14,
+      body: [WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE],
     },
     miner: {
       count: 4,
-      body: [WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE],
+      body: [WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE],
+    },
+    minerStore: {
+      count: 0,
+      body: [
+        CARRY,
+        CARRY,
+        CARRY,
+        CARRY,
+        CARRY,
+        CARRY,
+        CARRY,
+        CARRY,
+        CARRY,
+        CARRY,
+        MOVE,
+      ],
     },
   },
 };

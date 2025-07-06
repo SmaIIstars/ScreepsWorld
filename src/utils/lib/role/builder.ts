@@ -1,3 +1,5 @@
+import EMOJI from "@/constant/emoji";
+import { intervalTime } from "@/utils";
 import { baseRole } from "../base/role";
 import harvester from "./harvester";
 
@@ -26,7 +28,7 @@ const run: BaseRole["run"] = (creep: Creep, opts = {}) => {
   }
 
   if (creep.memory.task === "building" && creep.store[RESOURCE_ENERGY] === 0) {
-    if (Game.time % 10 === 0) creep.say("📦 harvesting");
+    intervalTime(10, () => creep.say(EMOJI.harvesting));
     creep.memory.task = "harvesting";
   }
 
@@ -34,7 +36,7 @@ const run: BaseRole["run"] = (creep: Creep, opts = {}) => {
     creep.memory.task === "harvesting" &&
     creep.store.getFreeCapacity() === 0
   ) {
-    if (Game.time % 10 === 0) creep.say("🚧 Building");
+    intervalTime(10, () => creep.say(EMOJI.building));
     creep.memory.task = "building";
   }
 

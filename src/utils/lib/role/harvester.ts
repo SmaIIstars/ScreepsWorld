@@ -1,4 +1,6 @@
-import { AvailableSourceType } from "@/utils/monitor/resource";
+import EMOJI from "@/constant/emoji";
+import { intervalTime } from "@/utils";
+import { AvailableSourceType } from "@/utils/monitor/memory";
 import { baseRole } from "../base/role";
 
 type HarvesterOptions = {
@@ -54,9 +56,51 @@ const run: BaseRole<HarvesterOptions>["run"] = (
     return;
   }
 
+  // 3. 如果creep的能量满了，则切换到各自任务
+  if (creep.store.getFreeCapacity() === 0) {
+    if (creep.memory.role === "harvester") {
+      creep.memory.task = "transferring";
+    }
+    return;
+  }
+
+  // 5. 如果creep的能量空了 且正在执行角色任务，则切换到采集任务
+  if (
+    creep.store[RESOURCE_ENERGY] === 0 &&
+    creep.memory.task !== "harvesting"
+  ) {
+    creep.memory.task = "harvesting";
+    return;
+  }
+
   // 2. 执行采集任务
   // 1. creep能量没满且正在执行采集任务则继续执行
   if (creep.store.getFreeCapacity() > 0 && creep.memory.task === "harvesting") {
+    // 非采集role优先Container中的的资源去做role任务
+    if (creep.memory.role !== "harvester") {
+      const targetSource: StructureContainer[] = creep.room.find(
+        FIND_STRUCTURES,
+        {
+          filter: (structure) =>
+            structure.structureType === STRUCTURE_CONTAINER &&
+            structure.store[RESOURCE_ENERGY] > creep.store.getFreeCapacity(),
+        }
+      );
+
+      if (targetSource.length > 0) {
+        if (creep.pos.isNearTo(targetSource[0])) {
+          const pickupResult = creep.withdraw(targetSource[0], RESOURCE_ENERGY);
+          if (pickupResult === OK) creep.say(EMOJI.receiving);
+          return;
+        } else {
+          creep.moveTo(targetSource[0], {
+            visualizePathStyle: { stroke: "#ffaa00" },
+          });
+          return;
+        }
+      }
+    }
+
     // 获取采集资源列表
     const allAvailableSources: Array<AvailableSourceType> = Object.values(
       Memory.resources
@@ -94,7 +138,7 @@ const run: BaseRole<HarvesterOptions>["run"] = (
       const pickupResult = creep.pickup(targetSource);
 
       if (pickupResult === OK) {
-        creep.say("📦 Picking");
+        creep.say(EMOJI.harvesting);
       } else if (pickupResult === ERR_NOT_IN_RANGE) {
         creep.moveTo(targetSource, {
           visualizePathStyle: { stroke: "#ffaa00" },
@@ -103,7 +147,7 @@ const run: BaseRole<HarvesterOptions>["run"] = (
       return;
     }
 
-    // 非采集role捡建筑中的的资源去做role任务
+    // Tombstone和Ruin的资源让非Harvester角色去采集
     if (
       creep.memory.role !== "harvester" &&
       (availabilitySourcesMap["Tombstone"].length > 0 ||
@@ -115,7 +159,7 @@ const run: BaseRole<HarvesterOptions>["run"] = (
       const pickupResult = creep.withdraw(targetSource, RESOURCE_ENERGY);
 
       if (pickupResult === OK) {
-        creep.say("📦 Withdrawing");
+        creep.say(EMOJI.harvesting);
       } else if (pickupResult === ERR_NOT_IN_RANGE) {
         creep.moveTo(targetSource, {
           visualizePathStyle: { stroke: "#ffaa00" },
@@ -124,11 +168,32 @@ const run: BaseRole<HarvesterOptions>["run"] = (
       return;
     }
 
-    // 捡可采集的资源
+    // 去最近的有能源的Miner或者MinerStore采集
+    const targetMiner = creep.pos.findClosestByPath(FIND_MY_CREEPS, {
+      filter: (curCreep) => {
+        if (
+          (curCreep.memory.role === "miner" ||
+            curCreep.memory.role === "minerStore") &&
+          curCreep.store[RESOURCE_ENERGY] > 0
+        ) {
+          // const rangeCreeps = curCreep.pos.findInRange(FIND_MY_CREEPS, 1);
+          // if (rangeCreeps.length > 0) return true;
+          return true;
+        }
+
+        return false;
+      },
+    });
+
+    if (targetMiner && !creep.pos.isNearTo(targetMiner)) {
+      creep.moveTo(targetMiner);
+      return;
+    }
+
+    // 兜底方案, 自己挖矿
     const { priority = "low" } = opts ?? {};
     const exploitableSources = availabilitySourcesMap["Source"];
     if (exploitableSources.length === 0) return;
-
     // 根据角色优先级去不同的资源进行采集
     const targetResource =
       priority === "high"
@@ -137,33 +202,13 @@ const run: BaseRole<HarvesterOptions>["run"] = (
     creep.memory.targetSourceId = targetResource.id;
     // 在资源范围内采集资源
     const harvestResult = creep.harvest(targetResource);
-    if (harvestResult === OK && Game.time % 10 === 0) {
-      creep.say("📦 Harvesting");
+    if (harvestResult === OK) {
+      intervalTime(10, () => creep.say(EMOJI.harvesting));
     } else if (harvestResult === ERR_NOT_IN_RANGE) {
       creep.moveTo(targetResource, {
         visualizePathStyle: { stroke: "#ffaa00" },
       });
     }
-    return;
-  }
-
-  // 3. 如果creep的能量满了且正在执行采集任务，则切换到各自任务
-  if (
-    creep.store.getFreeCapacity() === 0 &&
-    creep.memory.task === "harvesting"
-  ) {
-    if (creep.memory.role === "harvester") {
-      creep.memory.task = "transferring";
-    }
-    return;
-  }
-
-  // 5. 如果creep的能量空了 且正在执行角色任务，则切换到采集任务
-  if (
-    creep.store[RESOURCE_ENERGY] === 0 &&
-    creep.memory.task !== "harvesting"
-  ) {
-    creep.memory.task = "harvesting";
     return;
   }
 };
