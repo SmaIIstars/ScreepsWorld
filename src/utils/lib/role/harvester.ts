@@ -1,6 +1,7 @@
 import EMOJI from "@/constant/emoji";
 import { intervalTime } from "@/utils";
 import { AvailableSourceType } from "@/utils/monitor/memory";
+import { queryAvailableGetSourcePositions } from "@/utils/query";
 import { baseRole } from "../base/role";
 
 type HarvesterOptions = {
@@ -168,26 +169,34 @@ const run: BaseRole<HarvesterOptions>["run"] = (
       return;
     }
 
-    // 去最近的有能源的Miner或者MinerStore采集
-    const targetMiner = creep.pos.findClosestByPath(FIND_MY_CREEPS, {
-      filter: (curCreep) => {
-        if (
-          (curCreep.memory.role === "miner" ||
-            curCreep.memory.role === "minerStore") &&
-          curCreep.store[RESOURCE_ENERGY] > 0
-        ) {
-          // const rangeCreeps = curCreep.pos.findInRange(FIND_MY_CREEPS, 1);
-          // if (rangeCreeps.length > 0) return true;
-          return true;
-        }
+    // 非Harvester角色 or 高优先级Harvester, 去最近的有能源的Miner或者MinerStore采集
+    if (
+      creep.memory.role !== "harvester" ||
+      (creep.memory.role === "harvester" && opts?.priority === "high")
+    ) {
+      const targetMiner = creep.pos.findClosestByPath(FIND_MY_CREEPS, {
+        filter: (curCreep) => {
+          if (
+            (curCreep.memory.role === "miner" ||
+              curCreep.memory.role === "minerStore") &&
+            curCreep.store[RESOURCE_ENERGY] > 0
+          ) {
+            // 在这里控制拥塞, 如果当前Miner或者MinerStore周围空位达到阈值, 则不去这里采集
+            const availablePositions = queryAvailableGetSourcePositions(
+              curCreep.pos.x,
+              curCreep.pos.y
+            );
+            return availablePositions?.length > 3;
+          }
 
-        return false;
-      },
-    });
+          return false;
+        },
+      });
 
-    if (targetMiner && !creep.pos.isNearTo(targetMiner)) {
-      creep.moveTo(targetMiner);
-      return;
+      if (targetMiner && !creep.pos.isNearTo(targetMiner)) {
+        creep.moveTo(targetMiner);
+        return;
+      }
     }
 
     // 兜底方案, 自己挖矿

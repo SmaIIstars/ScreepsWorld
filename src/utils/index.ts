@@ -1,5 +1,13 @@
 export * from "./lib/role";
 
-export const intervalTime = (ticks: number, fn: (...args: any[]) => any) => {
-  if (Game.time % ticks === 0) fn();
+type IntervalTypeOpts = Partial<{
+  time: number;
+}>;
+export const intervalTime = (
+  ticks: number,
+  fn: (...args: any[]) => any,
+  opts: IntervalTypeOpts = {}
+) => {
+  const { time = Game.time } = opts;
+  if (time % ticks === 0) fn();
 };

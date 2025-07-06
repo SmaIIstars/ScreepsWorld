@@ -14,6 +14,7 @@ const creeps = () => {
     ["minerStore", 0],
     ["builder", 0],
     ["upgrader", 0],
+    ["repairer", 0],
   ]);
 
   for (let name in Game.creeps) {

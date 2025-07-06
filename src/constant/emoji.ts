@@ -10,4 +10,5 @@ export default {
   full: "🛑",
   building: "🚧",
   upgrading: "⚡",
+  repairing: "🔧",
 };

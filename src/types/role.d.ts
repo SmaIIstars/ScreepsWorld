@@ -15,7 +15,8 @@ type CustomRoleType =
   | "builder"
   | "upgrader"
   | "miner"
-  | "minerStore";
+  | "minerStore"
+  | "repairer";
 
 type CustomTaskType =
   | "harvesting"

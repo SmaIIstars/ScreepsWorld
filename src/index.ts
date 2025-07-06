@@ -3,8 +3,6 @@ import monitorMain from "./utils/monitor";
 
 const loop = () => {
   monitorMain();
-  // printMain();
-
   for (let name in Game.creeps) {
     let creep = Game.creeps[name];
     if (creep.memory.role == "harvester") {
@@ -27,14 +25,9 @@ const loop = () => {
         priority: highPriorityBuilders ? "high" : "low",
       });
     }
-    if (creep.memory.role == "upgrader") {
-      role.upgrader.run(creep);
-    }
-    if (creep.memory.role == "miner") {
-      role.miner.run(creep);
-    }
-    if (creep.memory.role == "minerStore") {
-      role.minerStore.run(creep);
+
+    if (creep.memory.role) {
+      role[creep.memory.role]?.run(creep);
     }
   }
 };

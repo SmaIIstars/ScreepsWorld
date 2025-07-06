@@ -1,9 +1,13 @@
 import { ROOM_ID_ENUM } from "@/constant";
 
-export const queryAvailableGetSourcePositions = (x: number, y: number) => {
+export const queryAvailableGetSourcePositions = (
+  x: number,
+  y: number,
+  range: number = 1
+) => {
   const allPositions: Record<string, LookAtResultWithPos<LookConstant>[]> = {};
   const curRoom = Game.rooms[ROOM_ID_ENUM.MainRoom];
-  if (!curRoom) return;
+  if (!curRoom) return [];
 
   // 通过BFS的方式，查询可用的位置
   const queue: Array<{ x: number; y: number }> = [{ x, y }];
@@ -18,10 +22,10 @@ export const queryAvailableGetSourcePositions = (x: number, y: number) => {
     // 查询范围内所有可用位置
     const rangeUnits = curRoom
       .lookAtArea(
-        current.y - 1,
-        current.x - 1,
-        current.y + 1,
-        current.x + 1,
+        current.y - range,
+        current.x - range,
+        current.y + range,
+        current.x + range,
         true
       )
       .filter((unit) => unit?.terrain !== "wall" && unit.type !== "source");
