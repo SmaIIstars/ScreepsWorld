@@ -1,10 +1,6 @@
-import { ROOM_ID_ENUM } from "@/constant";
+import { ROOM_ID_ENUM } from '@/constant';
 
-export const queryAvailableGetSourcePositions = (
-  x: number,
-  y: number,
-  range: number = 1
-) => {
+export const queryAvailableGetSourcePositions = (x: number, y: number, range: number = 1) => {
   const allPositions: Record<string, LookAtResultWithPos<LookConstant>[]> = {};
   const curRoom = Game.rooms[ROOM_ID_ENUM.MainRoom];
   if (!curRoom) return [];
@@ -21,20 +17,14 @@ export const queryAvailableGetSourcePositions = (
 
     // 查询范围内所有可用位置
     const rangeUnits = curRoom
-      .lookAtArea(
-        current.y - range,
-        current.x - range,
-        current.y + range,
-        current.x + range,
-        true
-      )
-      .filter((unit) => unit?.terrain !== "wall" && unit.type !== "source");
+      .lookAtArea(current.y - range, current.x - range, current.y + range, current.x + range, true)
+      .filter((unit) => unit?.terrain !== 'wall' && unit.type !== 'source');
 
     // 从rangeUnits中找到miner或minerStore的位置作为起点
     for (const unit of rangeUnits) {
-      if (unit?.type === "creep" && unit.creep) {
+      if (unit?.type === 'creep' && unit.creep) {
         const placedCreep = Game.creeps[unit.creep?.name] as Creep;
-        if (["miner", "minerStore"].includes(placedCreep.memory.role ?? "")) {
+        if (['miner', 'minerStore'].includes(placedCreep.memory.role ?? '')) {
           queue.push({ x: unit.x, y: unit.y });
         }
       } else {
@@ -51,8 +41,8 @@ export const queryAvailableGetSourcePositions = (
   const availablePositions: Array<{ x: number; y: number }> = [];
   Object.entries(allPositions).forEach(([key, units]) => {
     const unitSet = new Array(...new Set(units));
-    if (unitSet.every((item) => !["creep", "structure"].includes(item.type))) {
-      const [x, y] = key.split("-");
+    if (unitSet.every((item) => !['creep', 'structure'].includes(item.type))) {
+      const [x, y] = key.split('-');
       availablePositions.push({ x: Number(x), y: Number(y) });
     }
   });

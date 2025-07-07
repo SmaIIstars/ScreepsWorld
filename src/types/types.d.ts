@@ -14,4 +14,5 @@ interface Memory {
   resources: Record<string, ResourceMemory>;
   taskList: LoopTask[];
   rooms: Record<string, CustomRoomType>;
+  sources: Record<'Source' | 'Mineral', Array<string>>;
 }

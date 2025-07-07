@@ -1,13 +1,12 @@
-import defaultRoleMonitor from "./default";
-import level1 from "./level1";
-import level2 from "./level2";
+import defaultRoleMonitor from './default';
+import level1 from './level1';
+import level2 from './level2';
+import level3 from './level3';
 
-const strategies: StrategyType[] = [level1, level2];
+const strategies: StrategyType[] = [level1, level2, level3];
 
 export type StrategyType = {
-  roleMonitor: Partial<
-    Record<CustomRoleType, { count: number; body: BodyPartConstant[] }>
-  >;
+  roleMonitor: Partial<Record<CustomRoleType, { count: number; body: BodyPartConstant[] }>>;
 };
 
 export const getStrategy = (level: number) => {

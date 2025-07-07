@@ -1,4 +1,4 @@
-import { StrategyType } from ".";
+import { StrategyType } from '.';
 
 const strategy: StrategyType = {
   roleMonitor: {

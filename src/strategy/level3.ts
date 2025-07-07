@@ -1,5 +1,5 @@
-import { generatorRoleBody } from "@/utils/lib/base/role";
-import { StrategyType } from ".";
+import { generatorRoleBody } from '@/utils/lib/base/role';
+import { StrategyType } from '.';
 
 const strategy: StrategyType = {
   roleMonitor: {

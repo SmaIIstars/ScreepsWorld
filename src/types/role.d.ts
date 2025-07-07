@@ -6,24 +6,18 @@ type BaseRole<T = Record<string, any>> = {
       body: BodyPartConstant[];
       name: string;
       opts?: SpawnOptions;
-    }>
+    }>,
   ) => ScreepsReturnCode;
 };
 
-type CustomRoleType =
-  | "harvester"
-  | "builder"
-  | "upgrader"
-  | "miner"
-  | "minerStore"
-  | "repairer";
+type CustomRoleType = 'harvester' | 'builder' | 'upgrader' | 'miner' | 'minerStore' | 'repairer';
 
 type CustomTaskType =
-  | "harvesting"
-  | "mining"
-  | "building"
-  | "transferring"
-  | "moving"
-  | "upgrading"
-  | "repairing"
-  | "idle";
+  | 'harvesting'
+  | 'mining'
+  | 'building'
+  | 'transferring'
+  | 'moving'
+  | 'upgrading'
+  | 'repairing'
+  | 'idle';

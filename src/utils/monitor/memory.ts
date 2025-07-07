@@ -1,10 +1,6 @@
-import { BASE_ID_ENUM } from "../../constant";
+import { BASE_ID_ENUM, ROOM_ID_ENUM } from '../../constant';
 
-export type AvailableSourceType =
-  | Source
-  | Resource<ResourceConstant>
-  | Tombstone
-  | Ruin;
+export type AvailableSourceType = Source | Resource<ResourceConstant> | Tombstone | Ruin;
 
 export const memory = () => {
   creeps();
@@ -16,27 +12,22 @@ const creeps = () => {
   for (let name in Memory.creeps) {
     if (!Game.creeps[name]) {
       delete Memory.creeps[name];
-      console.log("Clearing non-existing creep memory:", name);
+      console.log('Clearing non-existing creep memory:', name);
     }
   }
 };
 
 // 资源监控
 export const resources = () => {
+  getAllSource();
   checkResourceCongestion();
   getBaseStatus();
 };
 
-const availableSourcesTypes = [
-  FIND_DROPPED_RESOURCES,
-  FIND_SOURCES,
-  FIND_TOMBSTONES,
-  FIND_RUINS,
-];
+const availableSourcesTypes = [FIND_DROPPED_RESOURCES, FIND_SOURCES, FIND_TOMBSTONES, FIND_RUINS];
 
 const checkResourceCongestion = () => {
-  const sources: (Source | Resource<ResourceConstant> | Tombstone | Ruin)[] =
-    [];
+  const sources: (Source | Resource<ResourceConstant> | Tombstone | Ruin)[] = [];
 
   for (const type of availableSourcesTypes) {
     sources.push(...Game.spawns[BASE_ID_ENUM.MainBase].room.find(type));
@@ -63,7 +54,7 @@ const checkResourceCongestion = () => {
     // } else if (source instanceof Ruin) {
     //   text = `${source.store[RESOURCE_ENERGY]}-${vacancyCount}`;
     // }
-    let text = "";
+    let text = '';
     if (source instanceof Source) {
       text = `${source[RESOURCE_ENERGY]}`;
     } else if (source instanceof Resource) {
@@ -74,18 +65,13 @@ const checkResourceCongestion = () => {
       text = `${source.store[RESOURCE_ENERGY]}`;
     }
 
-    Game.spawns[BASE_ID_ENUM.MainBase].room.visual.text(
-      text,
-      source.pos.x,
-      source.pos.y - 1,
-      {
-        font: 0.5,
-        // color: vacancyCount > 0 ? "#00ff00" : "#ff0000",
-        color: "#00ff00",
-        stroke: "#000000",
-        strokeWidth: 0.1,
-      }
-    );
+    Game.spawns[BASE_ID_ENUM.MainBase].room.visual.text(text, source.pos.x, source.pos.y - 1, {
+      font: 0.5,
+      // color: vacancyCount > 0 ? "#00ff00" : "#ff0000",
+      color: '#00ff00',
+      stroke: '#000000',
+      strokeWidth: 0.1,
+    });
   }
 
   Memory.resources = resourceMemory;
@@ -97,9 +83,22 @@ const getBaseStatus = (baseId: string = BASE_ID_ENUM.MainBase) => {
   if (base.spawning) {
     base.room.visual.text(`${base.spawning.name}`, base.pos.x, base.pos.y + 1, {
       font: 0.5,
-      color: "#00ff00",
-      stroke: "#000000",
+      color: '#00ff00',
+      stroke: '#000000',
       strokeWidth: 0.1,
     });
+  }
+};
+
+const getAllSource = () => {
+  // 固定资源是恒定的, 只需要初始化
+  if (!Memory.sources?.Source) {
+    const sources = Game.rooms[ROOM_ID_ENUM.MainRoom].find(FIND_SOURCES);
+    Memory.sources.Source = sources.map((s) => s.id);
+  }
+
+  if (!Memory.sources?.Mineral) {
+    const minerals = Game.rooms[ROOM_ID_ENUM.MainRoom].find(FIND_MINERALS);
+    Memory.sources.Source = minerals.map((mine) => mine.id);
   }
 };

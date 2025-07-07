@@ -32,9 +32,7 @@ export class TowerManager {
     const hostileCreeps = this.tower.room.find(FIND_HOSTILE_CREEPS, {
       filter: (creep) => {
         // 过滤掉没有攻击能力的敌人
-        return creep.body.some(
-          (part) => part.type === ATTACK || part.type === RANGED_ATTACK
-        );
+        return creep.body.some((part) => part.type === ATTACK || part.type === RANGED_ATTACK);
       },
     });
 
@@ -80,8 +78,7 @@ export class TowerManager {
  */
 export const runTowers = (room: Room): void => {
   const towers = room.find(FIND_MY_STRUCTURES, {
-    filter: (structure): structure is StructureTower =>
-      structure.structureType === STRUCTURE_TOWER,
+    filter: (structure): structure is StructureTower => structure.structureType === STRUCTURE_TOWER,
   });
 
   towers.forEach((tower) => {
