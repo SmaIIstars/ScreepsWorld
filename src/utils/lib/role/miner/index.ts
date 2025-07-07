@@ -15,8 +15,8 @@ const run: BaseRole['run'] = (creep: Creep) => {
       a.memory.role === 'miner' && b.memory.role !== 'miner'
         ? 1
         : a.memory.role !== 'miner' && b.memory.role === 'miner'
-          ? -1
-          : 0,
+        ? -1
+        : 0,
     );
 
   if (nearTransferUnits.length > 0) {
@@ -29,18 +29,17 @@ const run: BaseRole['run'] = (creep: Creep) => {
 
   let targetResource: Source | null = null;
   if (!creep.memory.targetSourceId) {
-    const availableResources = Object.values(Memory.resources)
-      .filter(
-        (resource) =>
-          resource.source instanceof Source && resource.source.energy > 0 && resource.source.ticksToRegeneration < 300,
-      )
-      .map((resource) => resource.source as Source);
-    targetResource = availableResources.pop() ?? null;
-    creep.memory.targetSourceId = targetResource?.id;
+    // 从Memory中获取现在可用的能源点
+    const availableSources = Memory.sources.Source.filter((sourceId) => {
+      const source = Game.getObjectById(sourceId) as Source;
+      return source.energy > 0 && source.ticksToRegeneration < 300;
+    }).map((sourceId) => Game.getObjectById<Source>(sourceId));
+    targetResource = availableSources.length ? availableSources.pop()! : null;
   } else {
-    targetResource = Memory.resources[creep.memory.targetSourceId]?.source as Source | null;
+    targetResource = Game.getObjectById<Source>(creep.memory.targetSourceId);
   }
   if (!targetResource) return;
+  creep.memory.targetSourceId = targetResource.id;
 
   if (creep.memory.task === 'mining') {
     const harvestResult = creep.harvest(targetResource);

@@ -26,21 +26,6 @@ const strategy: StrategyType = {
         { body: MOVE, count: 5 },
       ]),
     },
-    miner: {
-      count: 0,
-      body: generatorRoleBody([
-        { body: WORK, count: 8 },
-        { body: CARRY, count: 1 },
-        { body: MOVE, count: 1 },
-      ]),
-    },
-    minerStore: {
-      count: 0,
-      body: generatorRoleBody([
-        { body: CARRY, count: 15 },
-        { body: MOVE, count: 1 },
-      ]),
-    },
     repairer: {
       count: 4,
       body: generatorRoleBody([

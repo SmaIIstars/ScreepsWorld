@@ -1,9 +1,11 @@
 export default {
   mining: '⛏️',
+  harvesting: '⛏️',
+  picking: '⛏️',
+  withdrawing: '📥',
   waiting: '⏳',
   transferring: '🔄',
   receiving: '📥',
-  harvesting: '🌾',
   moving: '🚶',
   following: '👀',
   idle: '💤',

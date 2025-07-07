@@ -88,8 +88,8 @@ const run: BaseRole<HarvesterOptions>['run'] = (creep: Creep, opts?: HarvesterOp
     }
 
     // 获取采集资源列表
-    const allAvailableSources: Array<AvailableSourceType> = Object.values(Memory.resources).map(
-      (resource) => resource.source,
+    const allAvailableSources: Array<AvailableSourceType> = Object.values(Memory.sources.Source).map(
+      (id) => Game.getObjectById(id) as Source,
     );
     const availabilitySourcesMap = allAvailableSources.reduce<{
       Source: Array<Source>;

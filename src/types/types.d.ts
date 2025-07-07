@@ -7,7 +7,12 @@ type ResourceMemory = {
 interface CreepMemory {
   role?: CustomRoleType;
   task?: CustomTaskType;
+  /**
+   * @deprecated 已弃用，请勿再使用，使用targetId替代。
+   */
   targetSourceId?: string;
+  // creep专注目标的id
+  targetId?: string;
 }
 
 interface Memory {

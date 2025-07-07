@@ -16,9 +16,7 @@ export const getStrategy = (level: number) => {
   // 直到找到策略为止
   for (let i = level; i >= 1; i--) {
     const strategy = strategies[i - 1];
-    if (strategy) {
-      return strategy;
-    }
+    if (strategy) return strategy;
   }
 
   return defaultRoleMonitor;

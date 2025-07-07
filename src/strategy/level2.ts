@@ -11,7 +11,7 @@ const strategy: StrategyType = {
       ]),
     },
     builder: {
-      count: 4,
+      count: 2,
       body: generatorRoleBody([
         { body: WORK, count: 2 },
         { body: CARRY, count: 4 },

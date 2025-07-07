@@ -31,6 +31,14 @@ const creeps = () => {
   for (let [role, count] of entries) {
     if (!strategy.roleMonitor[role]) continue;
     if (count < strategy.roleMonitor[role].count) {
+      intervalSleep(10, () => {
+        const bodyArr = strategy.roleMonitor[role]?.body || [];
+        const bodyCount: Record<string, number> = {};
+        for (const part of bodyArr) {
+          bodyCount[part] = (bodyCount[part] || 0) + 1;
+        }
+        console.log(`${role} 数量不足`, JSON.stringify(bodyCount));
+      });
       utils.role[role].create(BASE_ID_ENUM.MainBase, {
         body: strategy.roleMonitor[role].body,
       });

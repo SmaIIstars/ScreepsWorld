@@ -49,3 +49,80 @@ export const queryAvailableGetSourcePositions = (x: number, y: number, range: nu
 
   return availablePositions;
 };
+
+export type EnergyStoreType =
+  | 'deposit'
+  | 'mineral'
+  | 'source'
+  | 'MinerStore'
+  | 'container'
+  | 'storage'
+  | 'ruin'
+  | 'tombstone'
+  | 'resource';
+export type EnergyStoreTargetType =
+  | Creep
+  | StructureStorage
+  | StructureContainer
+  | Mineral
+  | Source
+  | Ruin
+  | Tombstone
+  | Resource
+  | null;
+
+export function findAvailableTargetByRange(
+  creep: Creep,
+  targetType: EnergyStoreType,
+  closest: true,
+): EnergyStoreTargetType;
+export function findAvailableTargetByRange(
+  creep: Creep,
+  targetType: EnergyStoreType,
+  closest: false,
+): EnergyStoreTargetType[];
+export function findAvailableTargetByRange(
+  creep: Creep,
+  targetType: EnergyStoreType,
+  closest?: boolean,
+): EnergyStoreTargetType | EnergyStoreTargetType[] {
+  const findFn = closest ? creep.pos.findClosestByRange : creep.room.find;
+  if (targetType === 'MinerStore') {
+    return findFn(FIND_MY_CREEPS, {
+      filter: (creep) => creep.memory.role === 'minerStore' && creep.store[RESOURCE_ENERGY] > 0,
+    });
+  }
+  if (['container', 'storage'].includes(targetType)) {
+    return findFn(FIND_MY_STRUCTURES, {
+      filter: (structure: StructureStorage | StructureContainer) =>
+        ['storage', 'container'].includes(structure.structureType) &&
+        structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+    }) as StructureStorage | StructureContainer | null;
+  }
+
+  if (['mineral', 'source'].includes(targetType)) {
+    return findFn(FIND_STRUCTURES, {
+      filter: (structure) => structure.structureType === targetType,
+    }) as Mineral | Source | null;
+  }
+
+  if (targetType === 'ruin') {
+    return findFn(FIND_RUINS, {
+      filter: (ruin) => ruin.store[RESOURCE_ENERGY] > 0,
+    });
+  }
+
+  if (targetType === 'tombstone') {
+    return findFn(FIND_TOMBSTONES, {
+      filter: (tombstone) => tombstone.store[RESOURCE_ENERGY] > 0,
+    });
+  }
+
+  if (targetType === 'resource') {
+    return findFn(FIND_DROPPED_RESOURCES, {
+      filter: (resource) => resource.amount > 0,
+    });
+  }
+
+  return null;
+}

@@ -9,6 +9,7 @@ const loop = () => {
       monitorMain();
       for (let name in Game.creeps) {
         let creep = Game.creeps[name];
+
         if (creep.memory.role == 'harvester') {
           const highPriorityHarvesters =
             Object.values(Game.creeps)

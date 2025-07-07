@@ -1,26 +1,28 @@
-// Memory 只能存string, number, boolean, 简单的 object, array，null. 不能缓存 Function
+// Memory 被JSON序列化，不能缓存 Function
 
 import { BASE_ID_ENUM } from '@/constant';
+import { intervalSleep } from '..';
 import { generatorRoleBody } from '../lib/base/role';
 
-const task = () => {
-  minCreepGroup();
-  miner();
-  minerStore();
+const task = (): boolean => {
+  if (!minCreepGroup()) return false;
+  if (miner()) minerStore();
+  return true;
 };
 
-const minCreepGroup = () => {
-  const creepsList: Array<{ name: string; role: CustomRoleType }> = [
-    { name: 'Harvester-1', role: 'harvester' },
-    { name: 'Upgrader-1', role: 'upgrader' },
-    { name: 'Builder-1', role: 'builder' },
+// 最小角色组，用于兜底
+const minCreepGroup = (): boolean => {
+  const minCreepsList: Array<{ name: string; role: CustomRoleType }> = [
+    { name: 'MinHarvester', role: 'harvester' },
+    { name: 'MinHarvester', role: 'harvester' },
+    { name: 'MinUpgrader', role: 'upgrader' },
+    { name: 'MinBuilder', role: 'builder' },
+    { name: 'MinRepairer', role: 'repairer' },
   ];
 
-  for (const creep of creepsList) {
-    const creepCreep = Game.creeps[creep.name];
-    if (!creepCreep) {
-      console.log('minCreepGroup', creep.name);
-
+  for (const creep of minCreepsList) {
+    const minCreep = Game.creeps[creep.name];
+    if (!minCreep) {
       Game.spawns[BASE_ID_ENUM.MainBase].spawnCreep(
         generatorRoleBody([
           { body: WORK, count: 2 },
@@ -30,53 +32,52 @@ const minCreepGroup = () => {
         creep.name,
         { memory: { role: creep.role, task: 'harvesting' } },
       );
+      intervalSleep(10, () => console.log(`MinCreepGroup 中 ${creep.name} 数量不足`));
+
+      return false;
     }
   }
+  return true;
 };
-const miner = () => {
+
+// 矿工
+const miner = (): boolean => {
+  // 固定旷工
+  // TODO: 根据能源点位置，动态确定矿工位置
   const minerList = [
-    // { name: "Miner-1", pos: { x: 8, y: 44 } },
-    {
-      name: 'Miner-2',
-      pos: { x: 9, y: 44 },
-      targetSourceId: '5bbcaffd9099fc012e63b77c',
-    },
-    // { name: "Miner-3", pos: { x: 10, y: 44 } },
-    {
-      name: 'Miner-4',
-      pos: { x: 4, y: 40 },
-      targetSourceId: '5bbcaffd9099fc012e63b77b',
-    },
+    { name: 'FixedMiner1', pos: { x: 9, y: 44 }, targetId: '5bbcaffd9099fc012e63b77c' },
+    { name: 'FixedMiner2', pos: { x: 4, y: 40 }, targetId: '5bbcaffd9099fc012e63b77b' },
   ];
+
+  let hasAllMiner = true;
 
   for (const miner of minerList) {
     const minerCreep = Game.creeps[miner.name];
-    if (minerCreep) {
-      minerCreep.moveTo(miner.pos.x, miner.pos.y);
-    } else {
-      const spawnResult = Game.spawns[BASE_ID_ENUM.MainBase].spawnCreep(
+    if (!minerCreep) {
+      // TODO: 根据策略，动态增加矿工的CARRY能力
+      Game.spawns[BASE_ID_ENUM.MainBase].spawnCreep(
         generatorRoleBody([
           { body: WORK, count: 6 },
-          { body: CARRY, count: 2 },
-          { body: MOVE, count: 2 },
+          { body: CARRY, count: 3 },
+          { body: MOVE, count: 1 },
         ]),
         miner.name,
-        {
-          memory: {
-            role: 'miner',
-            task: 'harvesting',
-            targetSourceId: miner.targetSourceId,
-          },
-        },
+        { memory: { role: 'miner', task: 'harvesting', targetId: miner.targetId } },
       );
-      if (spawnResult === ERR_NOT_ENOUGH_ENERGY) {
-        console.log(`Not enough energy to spawn ${miner.name}`);
-      }
+      hasAllMiner = false;
+      continue;
+    }
+    // 已经有矿工
+    if (minerCreep.memory.task !== 'harvesting') {
+      // 但是没有在采矿，则移动到矿点
+      minerCreep.moveTo(miner.pos.x, miner.pos.y);
     }
   }
+  return hasAllMiner;
 };
 
-const minerStore = () => {
+// 矿工仓库
+const minerStore = (): boolean => {
   const minerStoreList = [
     // { name: "MinerStore-1", pos: { x: 6, y: 40 } },
     { name: 'MinerStore-2', pos: { x: 5, y: 39 } },
@@ -98,6 +99,7 @@ const minerStore = () => {
       );
     }
   }
+  return true;
 };
 
 export { task };

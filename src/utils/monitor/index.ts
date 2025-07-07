@@ -4,8 +4,9 @@ import { memory } from './memory';
 import { task } from './task';
 
 const monitorMain = () => {
-  task();
   memory();
+  if (!task()) return;
+
   intervalSleep(10, generatorRole);
   // intervalSleep(10, plan);
 };

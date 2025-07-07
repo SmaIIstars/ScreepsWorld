@@ -1,17 +1,17 @@
 import { BASE_ID_ENUM } from '@/constant';
 import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
-import { merge } from 'lodash';
+import { EnergyStoreTargetType, EnergyStoreType, findAvailableTargetByRange } from '@/utils/query';
 import { BaseRole, BaseRoleCreateParams } from '../base/BaseRole';
 
-const CustomEnergyStoreStructureType: Array<Structure['structureType']> = [
+const PriorityQueueOfStoreEnergy: Array<Structure['structureType']> = [
   STRUCTURE_EXTENSION,
   STRUCTURE_SPAWN,
   STRUCTURE_CONTAINER,
   STRUCTURE_STORAGE,
 ];
 
-export class Harvester extends BaseRole {
+class Harvester extends BaseRole {
   task: Extract<CustomTaskType, 'harvesting' | 'transferring'> = 'harvesting';
 
   constructor() {
@@ -20,12 +20,6 @@ export class Harvester extends BaseRole {
 
   create = (params: BaseRoleCreateParams) => {
     const { baseId = BASE_ID_ENUM.MainBase, body, name, memoryRoleOpts } = params;
-    const curName = name ?? `${this.role}-${Game.time}`;
-    return Game.spawns?.[baseId]?.spawnCreep(
-      body,
-      curName,
-      merge({ memory: { role: this.role, task: this.task } }, memoryRoleOpts),
-    );
   };
 
   run(creep: Creep): void {
@@ -47,13 +41,13 @@ export class Harvester extends BaseRole {
     const targetUnits = creep.room
       .find(FIND_MY_STRUCTURES, {
         filter: (structure) =>
-          CustomEnergyStoreStructureType.includes(structure.structureType) &&
+          PriorityQueueOfStoreEnergy.includes(structure.structureType) &&
           'store' in structure &&
           structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
       })
       .sort((a, b) => {
-        const aIndex = CustomEnergyStoreStructureType.indexOf(a.structureType);
-        const bIndex = CustomEnergyStoreStructureType.indexOf(b.structureType);
+        const aIndex = PriorityQueueOfStoreEnergy.indexOf(a.structureType);
+        const bIndex = PriorityQueueOfStoreEnergy.indexOf(b.structureType);
         return aIndex - bIndex;
       });
 
@@ -71,8 +65,100 @@ export class Harvester extends BaseRole {
     }
   }
 
-  // 从Source获取能量
-  getEnergyFromSource(): void {
-    // 从Memory中获取source
+  // Harvester 专属采集任务，只专注于采集能源点，矿车和矿车仓库
+  harvestTask(creep: Creep): void {
+    // 从最近且有能量的矿车仓库(MinerStore是一个Creep)获取能量
+    const targetMinerStore = creep.pos.findClosestByRange(FIND_MY_CREEPS, {
+      filter: (creep) => creep.memory.role === 'minerStore' && creep.store[RESOURCE_ENERGY] > 0,
+    });
+
+    if (targetMinerStore) {
+      const transferResult = creep.transfer(targetMinerStore, RESOURCE_ENERGY);
+      if (transferResult === OK) {
+        intervalSleep(10, () => creep.say(EMOJI.transferring), { time: creep.ticksToLive });
+      }
+    }
+
+    // 从矿车获取能量
+    this.getEnergyFromStore(creep, ['MinerStore']);
+
+    // 从能源点获取能量
+    this.getEnergyFromStore(creep, ['deposit', 'mineral', 'source']);
+  }
+
+  /**
+   * 从有能量的存储单位获取能量
+   * @param creep
+   * @param targetStoreType 有能量的存储单位类型
+   */
+  getEnergyFromStore(creep: Creep, targetStoreTypes: EnergyStoreType[]): void {
+    let targetStore: EnergyStoreTargetType = null;
+
+    // 1. 单类型
+    if (targetStoreTypes.length === 1) {
+      const [targetStoreType] = targetStoreTypes;
+      if (targetStoreType) {
+        targetStore = findAvailableTargetByRange(creep, targetStoreType, true);
+      }
+    } else {
+      // 2. 多类型
+      const allTargets: NonNullable<EnergyStoreTargetType>[] = [];
+      for (const targetStoreType of targetStoreTypes) {
+        const targets = findAvailableTargetByRange(creep, targetStoreType, false).filter((target) => target !== null);
+        allTargets.push(...targets);
+      }
+
+      let minDist = Infinity;
+      for (const target of allTargets) {
+        const dist = creep.pos.getRangeTo(target);
+        if (dist < minDist) {
+          minDist = dist;
+          targetStore = target;
+        }
+      }
+    }
+
+    // 如果找到最近的
+    if (targetStore) {
+      // 不在附近则移动过去
+      if (!targetStore.pos.isNearTo(creep.pos)) {
+        creep.moveTo(targetStore, { visualizePathStyle: { stroke: '#ffffff' } });
+        return;
+      }
+
+      // 在旁边的根据目标类型进行不同的操作
+      //   harvest: ['deposit', 'mineral', 'source'],
+      //   transfer: ['MinerStore'],
+      //   withdraw: ['ruin', 'tombstone', 'container', 'storage'],
+      //   pick: ['resource'],
+      if (targetStore instanceof Creep) {
+        // 非主动, 等待对方transfer,
+        return;
+      }
+      if (targetStore instanceof Source || targetStore instanceof Mineral) {
+        creep.harvest(targetStore);
+        intervalSleep(10, () => creep.say(EMOJI.harvesting), { time: creep.ticksToLive });
+        return;
+      }
+      if (targetStore instanceof Ruin || targetStore instanceof Tombstone) {
+        creep.withdraw(targetStore, RESOURCE_ENERGY);
+        intervalSleep(10, () => creep.say(EMOJI.withdrawing), { time: creep.ticksToLive });
+        return;
+      }
+
+      if (targetStore instanceof StructureStorage || targetStore instanceof StructureContainer) {
+        creep.withdraw(targetStore, RESOURCE_ENERGY);
+        intervalSleep(10, () => creep.say(EMOJI.withdrawing), { time: creep.ticksToLive });
+        return;
+      }
+
+      if (targetStore instanceof Resource) {
+        creep.pickup(targetStore);
+        intervalSleep(10, () => creep.say(EMOJI.picking), { time: creep.ticksToLive });
+        return;
+      }
+    }
   }
 }
+
+export default Harvester;
