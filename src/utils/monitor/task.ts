@@ -14,7 +14,7 @@ const task = (): boolean => {
 const minCreepGroup = (): boolean => {
   const minCreepsList: Array<{ name: string; role: CustomRoleType }> = [
     { name: 'MinHarvester', role: 'harvester' },
-    { name: 'MinHarvester', role: 'harvester' },
+    { name: 'MinHarvester2', role: 'harvester' },
     { name: 'MinUpgrader', role: 'upgrader' },
     { name: 'MinBuilder', role: 'builder' },
     { name: 'MinRepairer', role: 'repairer' },
@@ -32,8 +32,7 @@ const minCreepGroup = (): boolean => {
         creep.name,
         { memory: { role: creep.role, task: 'harvesting' } },
       );
-      intervalSleep(10, () => console.log(`MinCreepGroup 中 ${creep.name} 数量不足`));
-
+      intervalSleep(10, () => console.log(`MinCreepGroup中缺少: ${creep.name}, 等待孵化...`));
       return false;
     }
   }
