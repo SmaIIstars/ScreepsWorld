@@ -55,7 +55,7 @@ const miner = (): boolean => {
 
     if (minerCreep && !minerCreep.pos.isEqualTo(minerCreep.pos.x, minerCreep.pos.y)) {
       minerCreep.moveTo(miner.pos.x, miner.pos.y);
-    } else {
+    } else if (!minerCreep) {
       // TODO: 根据策略，动态增加矿工的CARRY能力
       Game.spawns[BASE_ID_ENUM.MainBase].spawnCreep(
         generatorRoleBody([
@@ -85,7 +85,7 @@ const minerStore = (): boolean => {
     const minerStoreCreep = Game.creeps[minerStore.name];
     if (minerStoreCreep && !minerStoreCreep.pos.isEqualTo(minerStore.pos.x, minerStore.pos.y)) {
       minerStoreCreep.moveTo(minerStore.pos.x, minerStore.pos.y);
-    } else {
+    } else if (!minerStoreCreep) {
       Game.spawns[BASE_ID_ENUM.MainBase].spawnCreep(
         generatorRoleBody([
           { body: CARRY, count: 15 },
