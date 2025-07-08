@@ -19,7 +19,7 @@ const strategy: StrategyType = {
       ]),
     },
     upgrader: {
-      count: 14,
+      count: 10,
       body: generatorRoleBody([
         { body: WORK, count: 3 },
         { body: CARRY, count: 5 },
@@ -27,7 +27,7 @@ const strategy: StrategyType = {
       ]),
     },
     repairer: {
-      count: 4,
+      count: 5,
       body: generatorRoleBody([
         { body: WORK, count: 3 },
         { body: CARRY, count: 5 },

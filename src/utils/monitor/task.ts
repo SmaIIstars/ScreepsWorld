@@ -3,11 +3,13 @@
 import { BASE_ID_ENUM } from '@/constant';
 import { intervalSleep } from '..';
 import { generatorRoleBody } from '../lib/base/role';
+import { generatorRole } from './generatorRole';
 
-const task = (): boolean => {
-  if (!minCreepGroup()) return false;
-  if (miner()) minerStore();
-  return true;
+const task = () => {
+  if (!minCreepGroup()) return;
+  if (!miner()) return;
+  if (!minerStore()) return;
+  generatorRole();
 };
 
 // 最小角色组，用于兜底
@@ -30,7 +32,7 @@ const minCreepGroup = (): boolean => {
           { body: MOVE, count: 1 },
         ]),
         creep.name,
-        { memory: { role: creep.role, task: 'harvesting' } },
+        { memory: { role: creep.role, task: 'harvesting' } }
       );
       intervalSleep(10, () => console.log(`MinCreepGroup中缺少: ${creep.name}, 等待孵化...`));
       return false;
@@ -48,11 +50,12 @@ const miner = (): boolean => {
     { name: 'FixedMiner2', pos: { x: 4, y: 40 }, targetId: '5bbcaffd9099fc012e63b77b' },
   ];
 
-  let hasAllMiner = true;
-
   for (const miner of minerList) {
     const minerCreep = Game.creeps[miner.name];
-    if (!minerCreep) {
+
+    if (minerCreep && !minerCreep.pos.isEqualTo(minerCreep.pos.x, minerCreep.pos.y)) {
+      minerCreep.moveTo(miner.pos.x, miner.pos.y);
+    } else {
       // TODO: 根据策略，动态增加矿工的CARRY能力
       Game.spawns[BASE_ID_ENUM.MainBase].spawnCreep(
         generatorRoleBody([
@@ -61,18 +64,13 @@ const miner = (): boolean => {
           { body: MOVE, count: 1 },
         ]),
         miner.name,
-        { memory: { role: 'miner', task: 'harvesting', targetId: miner.targetId } },
+        { memory: { role: 'miner', task: 'harvesting', targetId: miner.targetId } }
       );
-      hasAllMiner = false;
-      continue;
-    }
-    // 已经有矿工
-    if (minerCreep.memory.task !== 'harvesting') {
-      // 但是没有在采矿，则移动到矿点
-      minerCreep.moveTo(miner.pos.x, miner.pos.y);
+      intervalSleep(10, () => console.log(`Miner中缺少: ${miner.name}, 等待孵化...`));
+      return false;
     }
   }
-  return hasAllMiner;
+  return true;
 };
 
 // 矿工仓库
@@ -85,7 +83,7 @@ const minerStore = (): boolean => {
 
   for (const minerStore of minerStoreList) {
     const minerStoreCreep = Game.creeps[minerStore.name];
-    if (minerStoreCreep) {
+    if (minerStoreCreep && !minerStoreCreep.pos.isEqualTo(minerStore.pos.x, minerStore.pos.y)) {
       minerStoreCreep.moveTo(minerStore.pos.x, minerStore.pos.y);
     } else {
       Game.spawns[BASE_ID_ENUM.MainBase].spawnCreep(
@@ -94,8 +92,10 @@ const minerStore = (): boolean => {
           { body: MOVE, count: 1 },
         ]),
         minerStore.name,
-        { memory: { role: 'minerStore' } },
+        { memory: { role: 'minerStore' } }
       );
+      intervalSleep(10, () => console.log(`MinerStore中缺少: ${minerStore.name}, 等待孵化...`));
+      return false;
     }
   }
   return true;

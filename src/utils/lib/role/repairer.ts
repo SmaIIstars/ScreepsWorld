@@ -40,6 +40,12 @@ const run: BaseRole['run'] = (creep: Creep) => {
 
     if (!targetStructures.length) return;
     const targetStructure = targetStructures[0];
+    if (!targetStructure.pos.isNearTo(creep)) {
+      creep.moveTo(targetStructure, {
+        visualizePathStyle: { stroke: '#ffffff' },
+      });
+      return;
+    }
     // 先填炮塔
     if (
       targetStructure.structureType === STRUCTURE_TOWER &&

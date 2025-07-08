@@ -12,15 +12,16 @@ const PriorityQueueOfStoreEnergy: Array<Structure['structureType']> = [
 ];
 
 class Harvester extends BaseRole {
+  static readonly role: Extract<CustomRoleType, 'harvester'> = 'harvester';
   task: Extract<CustomRoleTaskType, 'harvesting' | 'transferring'> = 'harvesting';
 
   constructor() {
-    super('harvester');
+    super(Harvester.role);
   }
 
   create = (params: BaseRoleCreateParams) => {
     const { baseId = BASE_ID_ENUM.MainBase, body, name, memoryRoleOpts } = params;
-    const curName = `${name}-${Game.time}`;
+    const curName = name ?? `${this.role}-${Game.time}`;
     return Game.spawns[baseId].spawnCreep(body, curName, { memory: memoryRoleOpts });
   };
 
@@ -91,10 +92,7 @@ class Harvester extends BaseRole {
     }
 
     // 从矿车获取能量
-    this.getEnergyFromStore(creep, ['MinerStore', 'deposit', 'mineral', 'source']);
-
-    // 从能源点获取能量
-    // this.getEnergyFromStore(creep, ['deposit', 'mineral', 'source']);
+    this.getEnergyFromStore(creep, ['minerStore', 'source', 'mineral', 'deposit']);
   }
 
   /**
@@ -115,12 +113,11 @@ class Harvester extends BaseRole {
       // 2. 多类型
       const allTargets: NonNullable<EnergyStoreTargetType>[] = [];
       for (const targetStoreType of targetStoreTypes) {
-        const targets = findAvailableTargetByRange(creep, targetStoreType, false)?.filter((target) => target !== null);
+        const targets =
+          findAvailableTargetByRange(creep, targetStoreType, false)?.filter((target) => target !== null) ?? [];
         // es版本的兼容问题
-        if (targets) {
-          for (const target of targets) {
-            if (target) allTargets.push(target);
-          }
+        for (const target of targets) {
+          if (target) allTargets.push(target);
         }
       }
 

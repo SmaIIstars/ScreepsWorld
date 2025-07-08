@@ -54,7 +54,7 @@ export type EnergyStoreType =
   | 'deposit'
   | 'mineral'
   | 'source'
-  | 'MinerStore'
+  | 'minerStore'
   | 'container'
   | 'storage'
   | 'ruin'
@@ -86,7 +86,7 @@ export function findAvailableTargetByRange(
   targetType: EnergyStoreType,
   closest?: boolean
 ): EnergyStoreTargetType | EnergyStoreTargetType[] {
-  if (targetType === 'MinerStore') {
+  if (targetType === 'minerStore') {
     return closest
       ? creep.pos.findClosestByRange(FIND_MY_CREEPS, {
           filter: (creep) => creep.memory.role === 'minerStore' && creep.store[RESOURCE_ENERGY] > 0,
@@ -110,13 +110,27 @@ export function findAvailableTargetByRange(
   }
 
   if (['mineral', 'source'].includes(targetType)) {
-    return closest
-      ? (creep.pos.findClosestByRange(FIND_STRUCTURES, {
-          filter: (structure) => structure.structureType === targetType,
-        }) as Mineral | Source | null)
-      : (creep.room.find(FIND_STRUCTURES, {
-          filter: (structure) => structure.structureType === targetType,
-        }) as unknown as Mineral | Source | null);
+    const sources: (Source | null)[] = closest
+      ? [
+          creep.pos.findClosestByRange(FIND_SOURCES, {
+            filter: (structure) => structure.energy > 0,
+          }),
+        ]
+      : creep.room.find(FIND_SOURCES, {
+          filter: (structure) => structure.energy > 0,
+        });
+
+    const minerals: (Mineral | null)[] = closest
+      ? [
+          creep.pos.findClosestByRange(FIND_MINERALS, {
+            filter: (mineral) => mineral.mineralAmount > 0,
+          }),
+        ]
+      : creep.room.find(FIND_MINERALS, {
+          filter: (mineral) => mineral.mineralAmount > 0,
+        });
+
+    return [...sources, ...minerals];
   }
 
   if (targetType === 'ruin') {
