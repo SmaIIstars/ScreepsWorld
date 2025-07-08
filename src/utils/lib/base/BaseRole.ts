@@ -1,6 +1,6 @@
 export type BaseRoleType = {
   role: CustomRoleType;
-  task: CustomTaskType;
+  task: CustomRoleTaskType;
 };
 
 export type BaseRoleCreateParams = {
@@ -12,7 +12,7 @@ export type BaseRoleCreateParams = {
 
 export abstract class BaseRole {
   protected role: CustomRoleType;
-  abstract task: CustomTaskType;
+  abstract task: CustomRoleTaskType;
 
   constructor(role: CustomRoleType) {
     this.role = role;

@@ -2,6 +2,7 @@ import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
 import { AvailableSourceType } from '@/utils/monitor/memory';
 import { queryAvailableGetSourcePositions } from '@/utils/query';
+import { BaseRole } from '.';
 import { baseRole } from '../base/role';
 
 type HarvesterOptions = {
@@ -26,7 +27,7 @@ const run: BaseRole<HarvesterOptions>['run'] = (creep: Creep, opts?: HarvesterOp
     const targets = creep.room
       .find(FIND_STRUCTURES, {
         filter: (
-          structure,
+          structure
         ): structure is StructureExtension | StructureSpawn | StructureTower | StructureStorage | StructureContainer =>
           CustomEnergyStructureType.includes(structure.structureType) &&
           'store' in structure &&
@@ -89,7 +90,7 @@ const run: BaseRole<HarvesterOptions>['run'] = (creep: Creep, opts?: HarvesterOp
 
     // 获取采集资源列表
     const allAvailableSources: Array<AvailableSourceType> = Object.values(Memory.sources.Source).map(
-      (id) => Game.getObjectById(id) as Source,
+      (id) => Game.getObjectById(id) as Source
     );
     const availabilitySourcesMap = allAvailableSources.reduce<{
       Source: Array<Source>;
@@ -109,7 +110,7 @@ const run: BaseRole<HarvesterOptions>['run'] = (creep: Creep, opts?: HarvesterOp
         }
         return acc;
       },
-      { Source: [], Resource: [], Tombstone: [], Ruin: [] },
+      { Source: [], Resource: [], Tombstone: [], Ruin: [] }
     );
 
     // 先捡地上的资源

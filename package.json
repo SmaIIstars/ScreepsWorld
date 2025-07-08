@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "vite build && cp output/main.js main.js"
+    "type-check": "tsc --noEmit",
+    "build": "pnpm type-check && vite build && cp output/main.js main.js"
   },
   "keywords": [],
   "author": "",

@@ -1,7 +1,7 @@
 import { BaseRoleCreateParams } from '../base/BaseRole';
 import Harvester from './harvester';
 
-type BaseRole2<T = Record<string, any>> = {
+export type BaseRole2<T = Record<string, any>> = {
   run: (creep: Creep, opts?: T) => void;
   create: (params: BaseRoleCreateParams) => ScreepsReturnCode;
 };

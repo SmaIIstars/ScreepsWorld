@@ -1,5 +1,6 @@
 import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
+import { BaseRole } from '..';
 import { baseRole } from '../../base/role';
 
 const run: BaseRole['run'] = (creep: Creep) => {
@@ -16,7 +17,7 @@ const run: BaseRole['run'] = (creep: Creep) => {
         ? 1
         : a.memory.role !== 'miner' && b.memory.role === 'miner'
         ? -1
-        : 0,
+        : 0
     );
 
   if (nearTransferUnits.length > 0) {

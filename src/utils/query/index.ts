@@ -74,54 +74,79 @@ export type EnergyStoreTargetType =
 export function findAvailableTargetByRange(
   creep: Creep,
   targetType: EnergyStoreType,
-  closest: true,
+  closest: true
 ): EnergyStoreTargetType;
 export function findAvailableTargetByRange(
   creep: Creep,
   targetType: EnergyStoreType,
-  closest: false,
+  closest: false
 ): EnergyStoreTargetType[];
 export function findAvailableTargetByRange(
   creep: Creep,
   targetType: EnergyStoreType,
-  closest?: boolean,
+  closest?: boolean
 ): EnergyStoreTargetType | EnergyStoreTargetType[] {
-  const findFn = closest ? creep.pos.findClosestByRange : creep.room.find;
   if (targetType === 'MinerStore') {
-    return findFn(FIND_MY_CREEPS, {
-      filter: (creep) => creep.memory.role === 'minerStore' && creep.store[RESOURCE_ENERGY] > 0,
-    });
+    return closest
+      ? creep.pos.findClosestByRange(FIND_MY_CREEPS, {
+          filter: (creep) => creep.memory.role === 'minerStore' && creep.store[RESOURCE_ENERGY] > 0,
+        })
+      : creep.room.find(FIND_MY_CREEPS, {
+          filter: (creep) => creep.memory.role === 'minerStore' && creep.store[RESOURCE_ENERGY] > 0,
+        });
   }
   if (['container', 'storage'].includes(targetType)) {
-    return findFn(FIND_MY_STRUCTURES, {
-      filter: (structure: StructureStorage | StructureContainer) =>
-        ['storage', 'container'].includes(structure.structureType) &&
-        structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
-    }) as StructureStorage | StructureContainer | null;
+    return closest
+      ? (creep.pos.findClosestByRange(FIND_MY_STRUCTURES, {
+          filter: (structure: StructureStorage | StructureContainer) =>
+            ['storage', 'container'].includes(structure.structureType) &&
+            structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+        }) as StructureStorage | StructureContainer | null)
+      : (creep.room.find(FIND_MY_STRUCTURES, {
+          filter: (structure: StructureStorage | StructureContainer) =>
+            ['storage', 'container'].includes(structure.structureType) &&
+            structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+        }) as unknown as StructureStorage | StructureContainer | null);
   }
 
   if (['mineral', 'source'].includes(targetType)) {
-    return findFn(FIND_STRUCTURES, {
-      filter: (structure) => structure.structureType === targetType,
-    }) as Mineral | Source | null;
+    return closest
+      ? (creep.pos.findClosestByRange(FIND_STRUCTURES, {
+          filter: (structure) => structure.structureType === targetType,
+        }) as Mineral | Source | null)
+      : (creep.room.find(FIND_STRUCTURES, {
+          filter: (structure) => structure.structureType === targetType,
+        }) as unknown as Mineral | Source | null);
   }
 
   if (targetType === 'ruin') {
-    return findFn(FIND_RUINS, {
-      filter: (ruin) => ruin.store[RESOURCE_ENERGY] > 0,
-    });
+    return closest
+      ? (creep.pos.findClosestByRange(FIND_RUINS, {
+          filter: (ruin) => ruin.store[RESOURCE_ENERGY] > 0,
+        }) as Ruin | null)
+      : (creep.room.find(FIND_RUINS, {
+          filter: (ruin) => ruin.store[RESOURCE_ENERGY] > 0,
+        }) as unknown as Ruin | null);
   }
 
   if (targetType === 'tombstone') {
-    return findFn(FIND_TOMBSTONES, {
-      filter: (tombstone) => tombstone.store[RESOURCE_ENERGY] > 0,
-    });
+    return closest
+      ? (creep.pos.findClosestByRange(FIND_TOMBSTONES, {
+          filter: (tombstone) => tombstone.store[RESOURCE_ENERGY] > 0,
+        }) as Tombstone | null)
+      : (creep.room.find(FIND_TOMBSTONES, {
+          filter: (tombstone) => tombstone.store[RESOURCE_ENERGY] > 0,
+        }) as unknown as Tombstone | null);
   }
 
   if (targetType === 'resource') {
-    return findFn(FIND_DROPPED_RESOURCES, {
-      filter: (resource) => resource.amount > 0,
-    });
+    return closest
+      ? (creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, {
+          filter: (resource) => resource.amount > 0,
+        }) as Resource | null)
+      : (creep.room.find(FIND_DROPPED_RESOURCES, {
+          filter: (resource) => resource.amount > 0,
+        }) as unknown as Resource | null);
   }
 
   return null;

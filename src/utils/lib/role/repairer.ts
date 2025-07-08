@@ -1,5 +1,6 @@
 import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
+import { BaseRole } from '.';
 import { baseRole } from '../base/role';
 import harvester from './harvester';
 

@@ -1,6 +1,7 @@
 // 作为Miner专用的存储的creep, 跟随Miner移动, 并存储能量，当周围有其他单位时, 将能量转移给其他单位
 import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
+import { BaseRole } from '..';
 import { baseRole } from '../../base/role';
 
 const run: BaseRole['run'] = (creep: Creep) => {
