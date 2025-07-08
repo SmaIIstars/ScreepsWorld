@@ -2,6 +2,7 @@ import { BASE_ID_ENUM, ROOM_ID_ENUM } from '@/constant';
 import { getStrategy } from '@/strategy';
 import { intervalSleep } from '..';
 import { baseRole } from '../lib/base/role';
+import { role2 } from '../lib/role2';
 
 export const generatorRole = () => {
   creeps();
@@ -39,9 +40,16 @@ const creeps = () => {
         }
         console.log(`${role} 数量不足`, JSON.stringify(bodyCount));
       });
-      utils.role[role].create(BASE_ID_ENUM.MainBase, {
-        body: strategy.roleMonitor[role].body,
-      });
+      if (role === 'harvester') {
+        role2.harvester?.create({
+          body: strategy.roleMonitor[role].body,
+          memoryRoleOpts: { role, task: 'harvesting' },
+        });
+      } else {
+        utils.role[role].create(BASE_ID_ENUM.MainBase, {
+          body: strategy.roleMonitor[role].body,
+        });
+      }
       break;
     }
   }

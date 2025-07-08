@@ -18,7 +18,7 @@ export abstract class BaseRole {
     this.role = role;
   }
 
-  abstract create(params: BaseRoleCreateParams): void;
+  abstract create(params: BaseRoleCreateParams): ScreepsReturnCode;
   abstract run(creep: Creep): void;
   abstract roleTask(creep: Creep): void;
 }

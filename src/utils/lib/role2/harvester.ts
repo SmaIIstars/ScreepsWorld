@@ -20,6 +20,8 @@ class Harvester extends BaseRole {
 
   create = (params: BaseRoleCreateParams) => {
     const { baseId = BASE_ID_ENUM.MainBase, body, name, memoryRoleOpts } = params;
+    const curName = `${name}-${Game.time}`;
+    return Game.spawns[baseId].spawnCreep(body, curName, { memory: memoryRoleOpts });
   };
 
   run(creep: Creep): void {
@@ -31,8 +33,17 @@ class Harvester extends BaseRole {
     // 2. 如果身上能量满了，且正在执行采集任务，则切换到存储任务
     if (creep.store.getFreeCapacity() === 0 && creep.memory.task === 'harvesting') {
       creep.memory.task = 'transferring';
-      this.roleTask(creep);
     }
+
+    if (creep.memory.task === 'harvesting') {
+      this.harvestTask(creep);
+      return;
+    }
+
+    // if (creep.memory.task === 'transferring') {
+    //   this.roleTask(creep);
+    //   return;
+    // }
   }
 
   // 存储任务
@@ -79,11 +90,11 @@ class Harvester extends BaseRole {
       }
     }
 
-    // 从矿车获取能量
+    // // 从矿车获取能量
     this.getEnergyFromStore(creep, ['MinerStore']);
 
-    // 从能源点获取能量
-    this.getEnergyFromStore(creep, ['deposit', 'mineral', 'source']);
+    // // 从能源点获取能量
+    // this.getEnergyFromStore(creep, ['deposit', 'mineral', 'source']);
   }
 
   /**
@@ -161,4 +172,4 @@ class Harvester extends BaseRole {
   }
 }
 
-export default Harvester;
+export default new Harvester();
