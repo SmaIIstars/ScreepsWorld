@@ -12,14 +12,18 @@ const PriorityQueueOfStoreEnergy: Array<Structure['structureType']> = [
 
 class Harvester extends BaseRole {
   static readonly role: Extract<CustomRoleType, 'harvester'> = 'harvester';
-  task: Extract<CustomRoleTaskType, 'harvesting' | 'transferring'> = 'harvesting';
 
   constructor() {
     super(Harvester.role);
   }
 
   create = (params: BaseRoleCreateParams) => {
-    const { baseId = BASE_ID_ENUM.MainBase, body, name, memoryRoleOpts } = params;
+    const {
+      baseId = BASE_ID_ENUM.MainBase,
+      body,
+      name,
+      memoryRoleOpts = { role: 'harvester', task: 'harvesting' },
+    } = params;
     const curName = name ?? `${this.role}-${Game.time}`;
     return Game.spawns[baseId].spawnCreep(body, curName, { memory: memoryRoleOpts });
   };
@@ -40,10 +44,7 @@ class Harvester extends BaseRole {
       return;
     }
 
-    if (creep.memory.task === 'transferring') {
-      this.roleTask(creep);
-      return;
-    }
+    this.roleTask(creep);
   }
 
   // 存储任务

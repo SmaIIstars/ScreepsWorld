@@ -53,7 +53,7 @@ const miner = (): boolean => {
   for (const miner of minerList) {
     const minerCreep = Game.creeps[miner.name];
 
-    if (minerCreep && !minerCreep.pos.isEqualTo(minerCreep.pos.x, minerCreep.pos.y)) {
+    if (minerCreep && !minerCreep.pos.isEqualTo(miner.pos.x, miner.pos.y)) {
       minerCreep.moveTo(miner.pos.x, miner.pos.y);
     } else if (!minerCreep) {
       // TODO: 根据策略，动态增加矿工的CARRY能力

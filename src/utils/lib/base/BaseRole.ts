@@ -16,7 +16,6 @@ export type BaseRoleCreateParams = {
 
 export abstract class BaseRole {
   protected role: CustomRoleType;
-  abstract task: CustomRoleTaskType;
 
   constructor(role: CustomRoleType) {
     this.role = role;
@@ -30,6 +29,7 @@ export abstract class BaseRole {
    * 从有能量的存储单位获取能量
    * @param creep
    * @param targetStoreType 有能量的存储单位类型
+   * @description targetStoreType 是一个优先队列
    */
   getEnergyFromStore(creep: Creep, targetStoreTypes: EnergyStoreType[]): void {
     let targetStore: EnergyStoreTargetType = null;
@@ -51,8 +51,6 @@ export abstract class BaseRole {
           if (target) allTargets.push(target);
         }
       }
-
-      console.log('allTargets', allTargets);
 
       let minDist = Infinity;
       for (const target of allTargets) {
