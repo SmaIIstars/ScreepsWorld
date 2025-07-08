@@ -11,7 +11,7 @@ const run: BaseRole['run'] = (creep: Creep) => {
   // 如果周围有其他role, 则将能量转移给其他role
   const nearTransferUnits = creep.pos
     .findInRange(FIND_MY_CREEPS, 1)
-    .filter((unit) => unit.store.getFreeCapacity() > 0)
+    .filter((unit) => unit.store.getFreeCapacity() > 0 && unit.memory.role !== 'miner')
     .sort((a, b) =>
       a.memory.role === 'miner' && b.memory.role !== 'miner'
         ? 1
@@ -20,12 +20,21 @@ const run: BaseRole['run'] = (creep: Creep) => {
         : 0
     );
 
-  if (nearTransferUnits.length > 0) {
-    const unit = nearTransferUnits[0];
+  for (let unit of nearTransferUnits) {
     const transferResult = creep.transfer(unit, RESOURCE_ENERGY);
     if (transferResult === OK) {
-      intervalSleep(5, () => creep.say(EMOJI.transferring));
+      intervalSleep(10, () => creep.say(EMOJI.transferring));
     }
+  }
+
+  // 如果四周有掉落的能量，则优先回收
+  const dropEnergy = creep.pos
+    .findInRange(FIND_DROPPED_RESOURCES, 1)
+    .filter((resource) => resource.resourceType === RESOURCE_ENERGY);
+  if (dropEnergy.length > 0) {
+    const transferResult = creep.pickup(dropEnergy[0]);
+    if (transferResult === OK) intervalSleep(10, () => creep.say(EMOJI.picking));
+    return;
   }
 
   let targetResource: Source | null = null;

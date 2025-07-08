@@ -36,13 +36,13 @@ class Builder extends BaseRole {
       creep.memory.task = 'harvesting';
     }
 
-    // 2. 如果身上能量满了，且正在执行采集任务，则切换到修建任务(维修任务兜底)
+    // 2. 如果身上能量满了，且正在执行采集任务，则切换到修建任务
     if (creep.store.getFreeCapacity() === 0 && creep.memory.task === 'harvesting') {
       creep.memory.task = 'building';
     }
 
     if (creep.memory.task === 'harvesting') {
-      this.getEnergyFromStore(creep, ['resource', 'ruin', 'tombstone', 'storage', 'container', 'minerStore', 'source']);
+      this.getEnergyFromStore(creep, ['resource', 'ruin', 'tombstone', 'storage', 'container', 'miner', 'source']);
       return;
     }
 
@@ -86,4 +86,4 @@ class Builder extends BaseRole {
   }
 }
 
-export default Builder;
+export default new Builder();

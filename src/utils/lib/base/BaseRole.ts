@@ -21,9 +21,16 @@ export abstract class BaseRole {
     this.role = role;
   }
 
-  abstract create(params: BaseRoleCreateParams): ScreepsReturnCode;
+  // abstract create(params: BaseRoleCreateParams): ScreepsReturnCode;
   abstract run(creep: Creep): void;
   abstract roleTask(creep: Creep): void;
+
+  abstract create(params: BaseRoleCreateParams): ScreepsReturnCode;
+  // {
+  //   const { baseId = BASE_ID_ENUM.MainBase, body, name, memoryRoleOpts } = params;
+  //   const curName = name ?? `${this.role}-${Game.time}`;
+  //   return Game.spawns[baseId].spawnCreep(body, curName, { memory: memoryRoleOpts });
+  // }
 
   /**
    * 从有能量的存储单位获取能量
@@ -52,14 +59,84 @@ export abstract class BaseRole {
         }
       }
 
-      let minDist = Infinity;
-      for (const target of allTargets) {
-        const dist = creep.pos.getRangeTo(target);
-        if (dist < minDist) {
-          minDist = dist;
-          targetStore = target;
+      // 优先级定义: resource/ruin/tombstone > container/storage > miner > source > mineral/deposit
+      // 其中miner满的优先于最近的
+      let priorityTargets: NonNullable<EnergyStoreTargetType>[] = [];
+
+      // // 1. resource, ruin, tombstone
+      // 优先级依次查找，避免嵌套
+      // 1. resource, ruin, tombstone
+      priorityTargets = allTargets.filter(
+        (t) =>
+          (t instanceof Resource && t.resourceType === RESOURCE_ENERGY) || t instanceof Ruin || t instanceof Tombstone
+      );
+
+      if (priorityTargets.length > 0) {
+        targetStore = creep.pos.findClosestByRange(priorityTargets);
+      }
+
+      // 2. container, storage
+      if (!targetStore) {
+        priorityTargets = allTargets.filter(
+          (t) =>
+            (t instanceof StructureContainer && t.store[RESOURCE_ENERGY] > 0) ||
+            (t instanceof StructureStorage && t.store[RESOURCE_ENERGY] > 0)
+        );
+        if (priorityTargets.length > 0) {
+          targetStore = creep.pos.findClosestByRange(priorityTargets);
         }
       }
+
+      // 3. miner (Creep, role === 'miner')
+      if (!targetStore) {
+        const miners = allTargets.filter(
+          (t) => t instanceof Creep && t.memory && t.memory.role === 'miner' && t.store[RESOURCE_ENERGY] > 0
+        ) as Creep[];
+        // 满的优先
+        const fullMiners = miners.filter((c) => c.store.getFreeCapacity(RESOURCE_ENERGY) === 0);
+        if (fullMiners.length > 0) {
+          targetStore = creep.pos.findClosestByRange(fullMiners);
+        } else if (miners.length > 0) {
+          targetStore = creep.pos.findClosestByRange(miners);
+        }
+      }
+
+      // 4. source
+      if (!targetStore) {
+        priorityTargets = allTargets.filter((t) => t instanceof Source);
+        if (priorityTargets.length > 0) {
+          targetStore = creep.pos.findClosestByRange(priorityTargets);
+        }
+      }
+
+      // 5. mineral, deposit
+      if (!targetStore) {
+        priorityTargets = allTargets.filter((t) => t instanceof Mineral || t instanceof Deposit);
+        if (priorityTargets.length > 0) {
+          targetStore = creep.pos.findClosestByRange(priorityTargets);
+        }
+      }
+
+      // let minDist = Infinity;
+      // for (const target of allTargets) {
+      //   const dist = creep.pos.getRangeTo(target);
+      //   // 如果在Source之前找到其他targetStore，则跳过Source
+      //   // 如果是miner，则优先选择满的
+      //   if (
+      //     targetStore instanceof Creep &&
+      //     target instanceof Creep &&
+      //     target.store.getFreeCapacity(RESOURCE_ENERGY) === 0
+      //   ) {
+      //     targetStore = target;
+      //     continue;
+      //   }
+      //   if (target instanceof Source && targetStore) {
+      //     continue;
+      //   } else if (dist < minDist) {
+      //     minDist = dist;
+      //     targetStore = target;
+      //   }
+      // }
     }
 
     // 如果找到最近的
@@ -72,10 +149,10 @@ export abstract class BaseRole {
 
       // 在旁边的根据目标类型进行不同的操作
       //   harvest: ['deposit', 'mineral', 'source'],
-      //   transfer: ['MinerStore'],
+      //   transfer: ['miner'],
       //   withdraw: ['ruin', 'tombstone', 'container', 'storage'],
       //   pick: ['resource'],
-      if (targetStore instanceof Creep) {
+      if (targetStore instanceof Creep && targetStore.memory.role === 'miner') {
         // 非主动, 等待对方transfer,
         return;
       }

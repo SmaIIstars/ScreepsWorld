@@ -6,6 +6,7 @@ export type AvailableSourceType = Source | Resource<ResourceConstant> | Tombston
 export const memory = () => {
   clearCreepMemory();
   resources();
+  creepsCount();
 };
 
 // 清理Memory中不存在的creep
@@ -18,77 +19,28 @@ const clearCreepMemory = () => {
   }
 };
 
+// Creeps 类型计数
+const creepsCount = () => {
+  const creepTypeCount: Record<CustomRoleType, number> = {
+    harvester: 0,
+    builder: 0,
+    upgrader: 0,
+    miner: 0,
+    minerStore: 0,
+    repairer: 0,
+  };
+  for (const creep of Object.values(Game.creeps)) {
+    if (creep.memory.role) {
+      creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
+    }
+  }
+  Memory.creepsCount = creepTypeCount;
+};
+
 // 资源监控
 export const resources = () => {
   getEnergySource();
-  // checkResourceCongestion();
 };
-
-const availableSourcesTypes = [FIND_DROPPED_RESOURCES, FIND_SOURCES, FIND_TOMBSTONES, FIND_RUINS];
-
-// const checkResourceCongestion = () => {
-//   const sources: (Source | Resource<ResourceConstant> | Tombstone | Ruin)[] = [];
-
-//   for (const type of availableSourcesTypes) {
-//     sources.push(...Game.spawns[BASE_ID_ENUM.MainBase].room.find(type));
-//   }
-
-//   const resourceMemory: Record<string, ResourceMemory> = {};
-//   for (const source of sources) {
-//     // const availablePositions = querySourceAvailablePositions(source);
-//     // const creepsNearSource = source.pos.findInRange(FIND_MY_CREEPS, 1);
-
-//     resourceMemory[source.id] = { source };
-
-//     // const availableCount = availablePositions.length;
-//     // const occupiedCount = creepsNearSource.length;
-//     // const vacancyCount = availableCount - occupiedCount;
-
-//     // let text = "";
-//     // if (source instanceof Source) {
-//     //   text = `${source[RESOURCE_ENERGY]}-${vacancyCount}`;
-//     // } else if (source instanceof Resource) {
-//     //   text = `${source.amount}-${vacancyCount}`;
-//     // } else if (source instanceof Tombstone) {
-//     //   text = `${source.store[RESOURCE_ENERGY]}-${vacancyCount}`;
-//     // } else if (source instanceof Ruin) {
-//     //   text = `${source.store[RESOURCE_ENERGY]}-${vacancyCount}`;
-//     // }
-//     let text = '';
-//     if (source instanceof Source) {
-//       text = `${source[RESOURCE_ENERGY]}`;
-//     } else if (source instanceof Resource) {
-//       text = `${source.amount}`;
-//     } else if (source instanceof Tombstone) {
-//       text = `${source.store[RESOURCE_ENERGY]}`;
-//     } else if (source instanceof Ruin) {
-//       text = `${source.store[RESOURCE_ENERGY]}`;
-//     }
-
-//     Game.spawns[BASE_ID_ENUM.MainBase].room.visual.text(text, source.pos.x, source.pos.y - 1, {
-//       font: 0.5,
-//       // color: vacancyCount > 0 ? "#00ff00" : "#ff0000",
-//       color: '#00ff00',
-//       stroke: '#000000',
-//       strokeWidth: 0.1,
-//     });
-//   }
-
-//   Memory.resources = resourceMemory;
-// };
-
-// const getBaseStatus = (baseId: string = BASE_ID_ENUM.MainBase) => {
-//   const base = Game.spawns[baseId];
-
-//   if (base.spawning) {
-//     base.room.visual.text(`${base.spawning.name}`, base.pos.x, base.pos.y + 1, {
-//       font: 0.5,
-//       color: '#00ff00',
-//       stroke: '#000000',
-//       strokeWidth: 0.1,
-//     });
-//   }
-// };
 
 // 地图固定资源, 获取能量源(能源点和矿)
 const getEnergySource = () => {
@@ -100,7 +52,7 @@ const getEnergySource = () => {
     set(
       Memory,
       'sources.Source',
-      sources.map((s) => s.id),
+      sources.map((s) => s.id)
     );
   }
   if (!Memory.sources?.Mineral) {
@@ -108,7 +60,7 @@ const getEnergySource = () => {
     set(
       Memory,
       'sources.Mineral',
-      minerals.map((mine) => mine.id),
+      minerals.map((mine) => mine.id)
     );
   }
 
@@ -117,7 +69,7 @@ const getEnergySource = () => {
   set(
     Memory,
     'sources.Resource',
-    resources.map((resource) => resource.id),
+    resources.map((resource) => resource.id)
   );
 
   // 遗迹
@@ -125,7 +77,7 @@ const getEnergySource = () => {
   set(
     Memory,
     'sources.Ruin',
-    ruins.map((ruin) => ruin.id),
+    ruins.map((ruin) => ruin.id)
   );
 
   // 墓碑
@@ -133,6 +85,6 @@ const getEnergySource = () => {
   set(
     Memory,
     'sources.Tombstone',
-    tombstones.map((tombstone) => tombstone.id),
+    tombstones.map((tombstone) => tombstone.id)
   );
 };

@@ -1,7 +1,7 @@
 import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
 import { AvailableSourceType } from '@/utils/monitor/memory';
-import { queryAvailableGetSourcePositions } from '@/utils/query';
+import { findAvailableNearbyPositionsWithMinerExpand } from '@/utils/query';
 import { BaseRole } from '.';
 import { baseRole } from '../base/role';
 
@@ -155,7 +155,7 @@ const run: BaseRole<HarvesterOptions>['run'] = (creep: Creep, opts?: HarvesterOp
             curCreep.store[RESOURCE_ENERGY] > 0
           ) {
             // 在这里控制拥塞, 如果当前Miner或者MinerStore周围空位达到阈值, 则不去这里采集
-            const availablePositions = queryAvailableGetSourcePositions(curCreep.pos.x, curCreep.pos.y);
+            const availablePositions = findAvailableNearbyPositionsWithMinerExpand(curCreep.pos.x, curCreep.pos.y);
             return availablePositions?.length > 1;
           }
 

@@ -17,7 +17,7 @@
 
 | 建筑类型   | 结构常量                | 是否可通行 | 说明                     |
 | ---------- | ----------------------- | ---------- | ------------------------ |
-| 扩展       | `STRUCTURE_EXTENSION`   | ✅ 是      | Creep 可以穿过和站在上面 |
+| 扩展       | `STRUCTURE_EXTENSION`   | ❌ 否      | Creep 可以穿过和站在上面 |
 | 道路       | `STRUCTURE_ROAD`        | ✅ 是      | 移动速度提升             |
 | 容器       | `STRUCTURE_CONTAINER`   | ✅ 是      | 可以穿过和站在上面       |
 | 城墙       | `STRUCTURE_RAMPART`     | ✅ 是\*    | 需要控制权才能通行       |

@@ -79,19 +79,7 @@ class Harvester extends BaseRole {
 
   // Harvester 专属采集任务，只专注于采集能源点，矿车和矿车仓库
   harvestTask(creep: Creep): void {
-    // 从最近且有能量的矿车仓库(MinerStore是一个Creep)获取能量
-    const targetMinerStore = creep.pos.findClosestByRange(FIND_MY_CREEPS, {
-      filter: (creep) => creep.memory.role === 'minerStore' && creep.store[RESOURCE_ENERGY] > 0,
-    });
-
-    if (targetMinerStore) {
-      const transferResult = creep.transfer(targetMinerStore, RESOURCE_ENERGY);
-      if (transferResult === OK) {
-        intervalSleep(10, () => creep.say(EMOJI.transferring), { time: creep.ticksToLive });
-      }
-    }
-
-    this.getEnergyFromStore(creep, ['minerStore', 'source']);
+    this.getEnergyFromStore(creep, ['resource', 'ruin', 'tombstone', 'miner']);
   }
 }
 

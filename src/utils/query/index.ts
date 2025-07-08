@@ -1,60 +1,83 @@
-import { ROOM_ID_ENUM } from '@/constant';
+import { BASE_ID_ENUM } from '@/constant';
 
-export const queryAvailableGetSourcePositions = (x: number, y: number, range: number = 1) => {
-  const allPositions: Record<string, LookAtResultWithPos<LookConstant>[]> = {};
-  const curRoom = Game.rooms[ROOM_ID_ENUM.MainRoom];
-  if (!curRoom) return [];
+/**
+ * 检测指定坐标周围的空位（非墙、非source、无creep/structure），用于拥塞控制。
+ * 如果周围的单位为miner或者minerStore，则继续向外扩展，直到找到所有可用空位。
+ * @param room 房间对象
+ * @param x 起点x坐标
+ * @param y 起点y坐标
+ * @param range 检查范围（默认为1）
+ * @returns 可用空位的坐标数组 [{x, y}]
+ */
+export function findAvailableNearbyPositionsWithMinerExpand(
+  x: number,
+  y: number,
+  range: number = 1
+): Array<{ x: number; y: number }> {
+  const room = Game.rooms[BASE_ID_ENUM.MainBase];
+  if (!room) return [];
 
-  // 通过BFS的方式，查询可用的位置
-  const queue: Array<{ x: number; y: number }> = [{ x, y }];
   const visited = new Set<string>();
+  const availablePositions: Array<{ x: number; y: number }> = [];
+  const queue: Array<{ x: number; y: number }> = [{ x, y }];
 
-  // BFS遍历，从miner/minerStore位置向外扩展
   while (queue.length > 0) {
-    const current = queue.pop()!;
-    if (visited.has(`${current.x}-${current.y}`)) continue;
-    visited.add(`${current.x}-${current.y}`);
+    const current = queue.shift()!;
+    const key = `${current.x}-${current.y}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
 
-    // 查询范围内所有可用位置
-    const rangeUnits = curRoom
-      .lookAtArea(current.y - range, current.x - range, current.y + range, current.x + range, true)
-      .filter((unit) => unit?.terrain !== 'wall' && unit.type !== 'source');
+    // 检查当前点周围的区域
+    const lookArea = room.lookAtArea(current.y - range, current.x - range, current.y + range, current.x + range, true);
 
-    // 从rangeUnits中找到miner或minerStore的位置作为起点
-    for (const unit of rangeUnits) {
-      if (unit?.type === 'creep' && unit.creep) {
-        const placedCreep = Game.creeps[unit.creep?.name] as Creep;
-        if (['miner', 'minerStore'].includes(placedCreep.memory.role ?? '')) {
-          queue.push({ x: unit.x, y: unit.y });
-        }
-      } else {
-        visited.add(`${unit.x}-${unit.y}`);
-        if (!allPositions[`${unit.x}-${unit.y}`]) {
-          allPositions[`${unit.x}-${unit.y}`] = [unit];
+    // 以坐标为key聚合所有look结果
+    const posMap: Record<string, LookAtResultWithPos<LookConstant>[]> = {};
+    for (const unit of lookArea) {
+      const posKey = `${unit.x}-${unit.y}`;
+      if (!posMap[posKey]) posMap[posKey] = [];
+      posMap[posKey].push(unit);
+    }
+
+    for (const [posKey, units] of Object.entries(posMap)) {
+      // 检查是否有墙或source
+      if (units.some((u) => u.terrain === 'wall' || u.type === 'source')) continue;
+
+      // 检查是否有creep
+      const creepUnit = units.find((u) => u.type === 'creep');
+      if (creepUnit && creepUnit.creep) {
+        const creepObj = Game.creeps[creepUnit.creep.name];
+        if (creepObj && ['miner', 'minerStore'].includes(creepObj.memory.role ?? '')) {
+          // 如果是miner或minerStore，继续向外扩展
+          const [px, py] = posKey.split('-').map(Number);
+          if (!visited.has(posKey)) {
+            queue.push({ x: px, y: py });
+          }
+          continue; // 不计入可用空位
         } else {
-          allPositions[`${unit.x}-${unit.y}`].push(unit);
+          continue; // 其他creep占用，跳过
         }
+      }
+
+      // 检查是否有structure
+      if (units.some((u) => u.type === 'structure')) continue;
+
+      // 该位置为空位
+      const [px, py] = posKey.split('-').map(Number);
+      // 避免重复添加
+      if (!availablePositions.some((pos) => pos.x === px && pos.y === py)) {
+        availablePositions.push({ x: px, y: py });
       }
     }
   }
-  // 过滤坐标信息, 只保留可到达的坐标
-  const availablePositions: Array<{ x: number; y: number }> = [];
-  Object.entries(allPositions).forEach(([key, units]) => {
-    const unitSet = new Array(...new Set(units));
-    if (unitSet.every((item) => !['creep', 'structure'].includes(item.type))) {
-      const [x, y] = key.split('-');
-      availablePositions.push({ x: Number(x), y: Number(y) });
-    }
-  });
 
   return availablePositions;
-};
+}
 
 export type EnergyStoreType =
   | 'deposit'
   | 'mineral'
   | 'source'
-  | 'minerStore'
+  | 'miner'
   | 'container'
   | 'storage'
   | 'ruin'
@@ -86,13 +109,13 @@ export function findAvailableTargetByRange(
   targetType: EnergyStoreType,
   closest?: boolean
 ): EnergyStoreTargetType | EnergyStoreTargetType[] {
-  if (targetType === 'minerStore') {
+  if (targetType === 'miner') {
     return closest
       ? creep.pos.findClosestByRange(FIND_MY_CREEPS, {
-          filter: (creep) => creep.memory.role === 'minerStore' && creep.store[RESOURCE_ENERGY] > 0,
+          filter: (creep) => creep.memory.role === 'miner' && creep.store[RESOURCE_ENERGY] > 0,
         })
       : creep.room.find(FIND_MY_CREEPS, {
-          filter: (creep) => creep.memory.role === 'minerStore' && creep.store[RESOURCE_ENERGY] > 0,
+          filter: (creep) => creep.memory.role === 'miner' && creep.store[RESOURCE_ENERGY] > 0,
         });
   }
   if (['container', 'storage'].includes(targetType)) {
@@ -111,23 +134,23 @@ export function findAvailableTargetByRange(
 
   if (targetType === 'source') {
     return closest
-      ? [
-          creep.pos.findClosestByRange(FIND_SOURCES, {
-            filter: (structure) => structure.energy > 0,
-          }),
-        ]
+      ? creep.pos.findClosestByRange(FIND_SOURCES, {
+          filter: (structure) =>
+            structure.energy > 0 &&
+            findAvailableNearbyPositionsWithMinerExpand(structure.pos.x, structure.pos.y).length > 1,
+        })
       : creep.room.find(FIND_SOURCES, {
-          filter: (structure) => structure.energy > 0,
+          filter: (structure) =>
+            structure.energy > 0 &&
+            findAvailableNearbyPositionsWithMinerExpand(structure.pos.x, structure.pos.y).length > 1,
         });
   }
 
   if (targetType === 'mineral') {
     return closest
-      ? [
-          creep.pos.findClosestByRange(FIND_MINERALS, {
-            filter: (mineral) => mineral.mineralAmount > 0,
-          }),
-        ]
+      ? creep.pos.findClosestByRange(FIND_MINERALS, {
+          filter: (mineral) => mineral.mineralAmount > 0,
+        })
       : creep.room.find(FIND_MINERALS, {
           filter: (mineral) => mineral.mineralAmount > 0,
         });
@@ -164,4 +187,16 @@ export function findAvailableTargetByRange(
   }
 
   return null;
+}
+
+export function getAvailableMiningPosition(source: Source): { x: number; y: number }[] {
+  const room = source.room;
+  const lookArea = room.lookAtArea(source.pos.y - 1, source.pos.x - 1, source.pos.y + 1, source.pos.x + 1, true);
+  const availablePositions = lookArea.filter(
+    (pos) =>
+      !lookArea.some(
+        (other) => other.x === pos.x && other.y === pos.y && (other.type === 'structure' || other.type === 'creep')
+      )
+  );
+  return availablePositions.map((pos) => ({ x: pos.x, y: pos.y }));
 }

@@ -40,8 +40,8 @@ const creeps = () => {
         }
         console.log(`${role} 数量不足`, JSON.stringify(bodyCount));
       });
-      if (role === 'harvester') {
-        role2.harvester?.create({
+      if (['harvester', 'builder'].includes(role)) {
+        role2[role]?.create({
           body: strategy.roleMonitor[role].body,
           memoryRoleOpts: { role, task: 'harvesting' },
         });

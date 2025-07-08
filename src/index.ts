@@ -15,14 +15,10 @@ const loop = () => {
           role2.harvester?.run(creep);
         }
         if (creep.memory.role == 'builder') {
-          const highPriorityBuilders =
-            Object.values(Game.creeps)
-              .filter((c) => c.memory.role === 'builder')
-              .findIndex((c, idx) => c.name === creep.name && idx < 3) !== -1;
-
-          role.builder?.run(creep, {
-            priority: highPriorityBuilders ? 'high' : 'low',
-          });
+          role2.builder?.run(creep);
+        }
+        if (creep.memory.role == 'miner') {
+          role2.miner?.run(creep);
         }
 
         if (creep.memory.role) {

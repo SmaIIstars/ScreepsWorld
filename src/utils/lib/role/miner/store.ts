@@ -16,7 +16,14 @@ const run: BaseRole['run'] = (creep: Creep) => {
     if (transferResult === OK) intervalSleep(5, () => creep.say(EMOJI.transferring));
   }
 
-  return;
+  // 如果四周有掉落的能量，则回收
+  const dropEnergy = creep.pos
+    .findInRange(FIND_DROPPED_RESOURCES, 1)
+    .filter((resource) => resource.resourceType === RESOURCE_ENERGY);
+  if (dropEnergy.length > 0) {
+    const transferResult = creep.pickup(dropEnergy[0]);
+    if (transferResult === OK) intervalSleep(10, () => creep.say(EMOJI.picking));
+  }
 };
 // Game.spawns['Spawn1'].spawnCreep([CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE], 'MinerStore-1', {memory:{role:'minerStore'}});
 // TODO: 先手动控制

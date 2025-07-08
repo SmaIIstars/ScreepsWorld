@@ -1,6 +1,3 @@
-import Builder from './builder';
-import Miner from './miner';
-import MinerStore from './miner/store';
 import Repairer from './repairer';
 import Upgrader from './upgrader';
 
@@ -12,14 +9,14 @@ export type BaseRole<T = Record<string, any>> = {
       body: BodyPartConstant[];
       name: string;
       opts?: SpawnOptions;
-    }>,
+    }>
   ) => ScreepsReturnCode;
 };
 
 export const role: Partial<Record<CustomRoleType, BaseRole>> = {
-  builder: Builder,
+  // builder: Builder,
   upgrader: Upgrader,
-  miner: Miner,
-  minerStore: MinerStore,
+  // miner: Miner,
+  // minerStore: MinerStore,
   repairer: Repairer,
 };

@@ -4,14 +4,14 @@ import { StrategyType } from '.';
 const strategy: StrategyType = {
   roleMonitor: {
     harvester: {
-      count: 4,
+      count: 5,
       body: generatorRoleBody([
         { body: CARRY, count: 11 },
         { body: MOVE, count: 5 },
       ]),
     },
     builder: {
-      count: 3,
+      count: 4,
       body: generatorRoleBody([
         { body: WORK, count: 3 },
         { body: CARRY, count: 5 },
@@ -19,7 +19,7 @@ const strategy: StrategyType = {
       ]),
     },
     upgrader: {
-      count: 6,
+      count: 4,
       body: generatorRoleBody([
         { body: WORK, count: 3 },
         { body: CARRY, count: 5 },
@@ -27,7 +27,7 @@ const strategy: StrategyType = {
       ]),
     },
     repairer: {
-      count: 5,
+      count: 2,
       body: generatorRoleBody([
         { body: WORK, count: 3 },
         { body: CARRY, count: 5 },

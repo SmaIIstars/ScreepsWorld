@@ -11,4 +11,5 @@ interface CreepMemory {
 
 interface Memory {
   sources: Record<'Source' | 'Mineral', Array<string>>;
+  creepsCount: Record<CustomRoleType, number>;
 }
