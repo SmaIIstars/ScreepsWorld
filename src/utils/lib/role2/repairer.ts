@@ -52,7 +52,12 @@ class Repairer extends BaseRole {
     const targetStructures = creep.room
       .find(FIND_STRUCTURES, {
         filter: (s) => {
-          if (s.hits < s.hitsMax) return true;
+          if (
+            RepairerPriorityQueueOfNeedRepair.includes(s.structureType as BuildableStructureConstant) &&
+            s.hits < s.hitsMax
+          ) {
+            return true;
+          }
           if (s instanceof StructureTower && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0) return true;
           return false;
         },
@@ -67,9 +72,6 @@ class Repairer extends BaseRole {
         // 同类型按血量升序
         return a.hits - b.hits;
       });
-
-    console.log('builder roleTask2');
-    console.log(targetStructures);
 
     if (!targetStructures.length) return;
     const targetStructure = targetStructures[0];

@@ -1,4 +1,3 @@
-import { role } from './utils/lib/role';
 import { role2 } from './utils/lib/role2';
 import { runTowers } from './utils/lib/tower';
 import monitorMain from './utils/monitor';
@@ -11,22 +10,8 @@ const loop = () => {
       for (let name in Game.creeps) {
         let creep = Game.creeps[name];
 
-        if (creep.memory.role == 'harvester') {
-          role2.harvester?.run(creep);
-        }
-        if (creep.memory.role == 'builder') {
-          role2.builder?.run(creep);
-        }
-        if (creep.memory.role == 'miner') {
-          role2.miner?.run(creep);
-        }
-        if (creep.memory.role == 'upgrader') {
-          role2.upgrader?.run(creep);
-        }
-
-        // repairer
         if (creep.memory.role) {
-          role[creep.memory.role]?.run(creep);
+          role2[creep.memory.role]?.run(creep);
         }
       }
 

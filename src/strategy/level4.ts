@@ -22,8 +22,7 @@ const strategy: StrategyType = {
       count: 2,
       body: generatorRoleBody([
         { body: WORK, count: 6 },
-        { body: CARRY, count: 6 },
-        { body: MOVE, count: 8 },
+        { body: MOVE, count: 2 },
       ]),
     },
     upgrader: {
