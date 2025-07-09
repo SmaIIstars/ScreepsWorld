@@ -3,6 +3,8 @@ import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
 import { BaseRole, BaseRoleCreateParams } from '../base/BaseRole';
 
+import Repairer from './repairer';
+
 const PriorityQueueOfBuilding: BuildableStructureConstant[] = [
   STRUCTURE_EXTENSION,
   STRUCTURE_TOWER,
@@ -81,7 +83,7 @@ class Builder extends BaseRole {
 
   // 维修任务
   roleTask2(creep: Creep): void {
-    // TODO: 维修逻辑
+    Repairer.run(creep);
   }
 }
 

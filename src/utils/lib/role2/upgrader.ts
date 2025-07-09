@@ -23,7 +23,7 @@ class Upgrader extends BaseRole {
 
   run(creep: Creep): void {
     // 1. 如果身上没有能量，且正在执行升级任务，则切换到采集任务
-    if (creep.store[RESOURCE_ENERGY] === 0 && creep.memory.task === 'transferring') {
+    if (creep.store[RESOURCE_ENERGY] === 0 && creep.memory.task !== 'harvesting') {
       creep.memory.task = 'harvesting';
     }
 
