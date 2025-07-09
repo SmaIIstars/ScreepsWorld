@@ -1,13 +1,13 @@
-import defaultRoleMonitor from "./default";
-import level1 from "./level1";
-import level2 from "./level2";
+import defaultRoleMonitor from './default';
+import level1 from './level1';
+import level2 from './level2';
+import level3 from './level3';
+import level4 from './level4';
 
-const strategies: StrategyType[] = [level1, level2];
+const strategies: StrategyType[] = [level1, level2, level3, level4];
 
 export type StrategyType = {
-  roleMonitor: Partial<
-    Record<CustomRoleType, { count: number; body: BodyPartConstant[] }>
-  >;
+  roleMonitor: Partial<Record<CustomRoleType, { count: number; body: BodyPartConstant[] }>>;
 };
 
 export const getStrategy = (level: number) => {
@@ -17,9 +17,7 @@ export const getStrategy = (level: number) => {
   // 直到找到策略为止
   for (let i = level; i >= 1; i--) {
     const strategy = strategies[i - 1];
-    if (strategy) {
-      return strategy;
-    }
+    if (strategy) return strategy;
   }
 
   return defaultRoleMonitor;

@@ -32,9 +32,7 @@ export class TowerManager {
     const hostileCreeps = this.tower.room.find(FIND_HOSTILE_CREEPS, {
       filter: (creep) => {
         // 过滤掉没有攻击能力的敌人
-        return creep.body.some(
-          (part) => part.type === ATTACK || part.type === RANGED_ATTACK
-        );
+        return creep.body.some((part) => part.type === ATTACK || part.type === RANGED_ATTACK);
       },
     });
 
@@ -65,8 +63,22 @@ export class TowerManager {
    */
   private repairStructures(): void {
     const structures = this.tower.room.find(FIND_STRUCTURES, {
-      filter: (structure) => structure.hits < structure.hitsMax,
+      filter: (structure) => {
+        // 全部的Road都修复
+        if (structure instanceof StructureRoad) return true;
+        // 全部的Container都修复
+        if (structure instanceof StructureContainer) return true;
+        // 附近6格的Wall都修复
+        if (structure instanceof StructureWall && this.tower.pos.getRangeTo(structure) <= 6) return true;
+        // 其他建筑，修复到100000
+        return structure.hits < structure.hitsMax && structure.hits < 100000;
+      },
     });
+
+    // const structures = this.tower.pos.findInRange(FIND_STRUCTURES, 6, {
+    //   filter: (structure) =>
+    //     structure instanceof StructureRoad || (structure.hits < structure.hitsMax && structure.hits < 100000),
+    // });
 
     if (structures.length > 0) {
       const targetStructure = structures.sort((a, b) => a.hits - b.hits)[0];
@@ -80,8 +92,7 @@ export class TowerManager {
  */
 export const runTowers = (room: Room): void => {
   const towers = room.find(FIND_MY_STRUCTURES, {
-    filter: (structure): structure is StructureTower =>
-      structure.structureType === STRUCTURE_TOWER,
+    filter: (structure): structure is StructureTower => structure.structureType === STRUCTURE_TOWER,
   });
 
   towers.forEach((tower) => {

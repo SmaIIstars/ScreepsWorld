@@ -1,25 +1,25 @@
-import { resolve } from "path";
-import { defineConfig } from "vite";
+import { resolve } from 'path';
+import { defineConfig } from 'vite';
 export default defineConfig({
   build: {
     rollupOptions: {
-      input: { main: resolve(__dirname, "src/main.ts") },
-      external: ["lodash"],
+      input: { main: resolve(__dirname, 'src/main.ts') },
+      external: ['lodash'],
       output: {
-        entryFileNames: "[name].js",
-        chunkFileNames: "[name].js",
-        assetFileNames: "[name][extname]",
-        dir: "output",
-        format: "cjs",
+        entryFileNames: '[name].js',
+        chunkFileNames: '[name].js',
+        assetFileNames: '[name][extname]',
+        dir: 'output',
+        format: 'cjs',
       },
     },
-    outDir: "output",
+    outDir: 'output',
     emptyOutDir: true,
-    target: "es2019",
+    target: 'es2019',
   },
   resolve: {
     alias: {
-      "@": resolve(__dirname, "src"),
+      '@': resolve(__dirname, 'src'),
     },
   },
 });

@@ -1,4 +1,4 @@
-import { BASE_ID_ENUM } from "./constant";
+import { BASE_ID_ENUM } from './constant';
 
 const printMain = () => {
   const constructionSite = Game.spawns[BASE_ID_ENUM.MainBase].room
