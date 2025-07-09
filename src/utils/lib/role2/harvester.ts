@@ -6,8 +6,8 @@ import { BaseRole, BaseRoleCreateParams } from '../base/BaseRole';
 const PriorityQueueOfStoreEnergy: Array<Structure['structureType']> = [
   STRUCTURE_EXTENSION,
   STRUCTURE_SPAWN,
-  STRUCTURE_CONTAINER,
   STRUCTURE_STORAGE,
+  STRUCTURE_CONTAINER,
 ];
 
 class Harvester extends BaseRole {
@@ -58,6 +58,10 @@ class Harvester extends BaseRole {
           structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
       })
       .sort((a, b) => {
+        // 同类型的近的优先
+        if (a.structureType === b.structureType) {
+          return a.pos.getRangeTo(creep.pos) - b.pos.getRangeTo(creep.pos);
+        }
         const aIndex = PriorityQueueOfStoreEnergy.indexOf(a.structureType);
         const bIndex = PriorityQueueOfStoreEnergy.indexOf(b.structureType);
         return aIndex - bIndex;
@@ -79,7 +83,7 @@ class Harvester extends BaseRole {
 
   // Harvester 专属采集任务，只专注于采集能源点，矿车和矿车仓库
   harvestTask(creep: Creep): void {
-    this.getEnergyFromStore(creep, ['resource', 'ruin', 'tombstone', 'miner']);
+    this.getEnergyFromStore(creep, ['resource', 'ruin', 'tombstone', 'container', 'miner', 'source']);
   }
 }
 

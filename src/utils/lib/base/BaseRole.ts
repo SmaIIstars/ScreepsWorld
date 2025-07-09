@@ -63,8 +63,6 @@ export abstract class BaseRole {
       // 其中miner满的优先于最近的
       let priorityTargets: NonNullable<EnergyStoreTargetType>[] = [];
 
-      // // 1. resource, ruin, tombstone
-      // 优先级依次查找，避免嵌套
       // 1. resource, ruin, tombstone
       priorityTargets = allTargets.filter(
         (t) =>
@@ -75,13 +73,17 @@ export abstract class BaseRole {
         targetStore = creep.pos.findClosestByRange(priorityTargets);
       }
 
-      // 2. container, storage
+      // 2. container
       if (!targetStore) {
-        priorityTargets = allTargets.filter(
-          (t) =>
-            (t instanceof StructureContainer && t.store[RESOURCE_ENERGY] > 0) ||
-            (t instanceof StructureStorage && t.store[RESOURCE_ENERGY] > 0)
-        );
+        priorityTargets = allTargets.filter((t) => t instanceof StructureContainer && t.store[RESOURCE_ENERGY] > 0);
+        if (priorityTargets.length > 0) {
+          targetStore = creep.pos.findClosestByRange(priorityTargets);
+        }
+      }
+
+      // 2. storage
+      if (!targetStore) {
+        priorityTargets = allTargets.filter((t) => t instanceof StructureStorage && t.store[RESOURCE_ENERGY] > 0);
         if (priorityTargets.length > 0) {
           targetStore = creep.pos.findClosestByRange(priorityTargets);
         }
@@ -116,27 +118,6 @@ export abstract class BaseRole {
           targetStore = creep.pos.findClosestByRange(priorityTargets);
         }
       }
-
-      // let minDist = Infinity;
-      // for (const target of allTargets) {
-      //   const dist = creep.pos.getRangeTo(target);
-      //   // 如果在Source之前找到其他targetStore，则跳过Source
-      //   // 如果是miner，则优先选择满的
-      //   if (
-      //     targetStore instanceof Creep &&
-      //     target instanceof Creep &&
-      //     target.store.getFreeCapacity(RESOURCE_ENERGY) === 0
-      //   ) {
-      //     targetStore = target;
-      //     continue;
-      //   }
-      //   if (target instanceof Source && targetStore) {
-      //     continue;
-      //   } else if (dist < minDist) {
-      //     minDist = dist;
-      //     targetStore = target;
-      //   }
-      // }
     }
 
     // 如果找到最近的

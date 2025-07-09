@@ -57,9 +57,13 @@ class Miner extends BaseRole {
     const targetCreep = creep.pos.findInRange(FIND_MY_CREEPS, 1, {
       filter: (creep) => creep.memory.role !== 'miner' && creep.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
     });
-    if (targetCreep.length > 0) {
-      creep.transfer(targetCreep[0], RESOURCE_ENERGY);
-      intervalSleep(10, () => creep.say(EMOJI.transferring));
+
+    // 防止一直传给同一个单位(类似 Builder 在旁边修东西的特殊情况)
+    for (const target of targetCreep) {
+      if (creep.store[RESOURCE_ENERGY] > 0 && target.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+        creep.transfer(target, RESOURCE_ENERGY);
+        intervalSleep(10, () => creep.say(EMOJI.transferring));
+      }
     }
 
     if (creep.memory.targetId) {

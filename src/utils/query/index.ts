@@ -118,18 +118,28 @@ export function findAvailableTargetByRange(
           filter: (creep) => creep.memory.role === 'miner' && creep.store[RESOURCE_ENERGY] > 0,
         });
   }
-  if (['container', 'storage'].includes(targetType)) {
+  if (targetType === 'container') {
     return closest
       ? (creep.pos.findClosestByRange(FIND_MY_STRUCTURES, {
-          filter: (structure: StructureStorage | StructureContainer) =>
-            ['storage', 'container'].includes(structure.structureType) &&
-            structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+          filter: (structure: StructureContainer) =>
+            structure.structureType === 'container' && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
         }) as StructureStorage | StructureContainer | null)
       : (creep.room.find(FIND_MY_STRUCTURES, {
-          filter: (structure: StructureStorage | StructureContainer) =>
-            ['storage', 'container'].includes(structure.structureType) &&
-            structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
-        }) as unknown as StructureStorage | StructureContainer | null);
+          filter: (structure: StructureContainer) =>
+            structure.structureType === 'container' && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+        }) as unknown as StructureContainer | null);
+  }
+
+  if (targetType === 'storage') {
+    return closest
+      ? (creep.pos.findClosestByRange(FIND_MY_STRUCTURES, {
+          filter: (structure: StructureStorage) =>
+            structure.structureType === 'storage' && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+        }) as StructureStorage | null)
+      : (creep.room.find(FIND_MY_STRUCTURES, {
+          filter: (structure: StructureStorage) =>
+            structure.structureType === 'storage' && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+        }) as unknown as StructureStorage | null);
   }
 
   if (targetType === 'source') {

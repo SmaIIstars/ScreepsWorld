@@ -63,8 +63,7 @@ export class TowerManager {
    */
   private repairStructures(): void {
     const structures = this.tower.room.find(FIND_STRUCTURES, {
-      filter: (structure) =>
-        structure.hits < 10000 && structure.hits < structure.hitsMax,
+      filter: (structure) => structure.hits < 100000 && structure.hits < structure.hitsMax,
     });
 
     if (structures.length > 0) {

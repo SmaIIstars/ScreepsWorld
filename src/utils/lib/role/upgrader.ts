@@ -1,26 +1,24 @@
 import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
-import { BaseRole } from '.';
 import { baseRole } from '../base/role';
 import harvester from './harvester';
 
-const run: BaseRole['run'] = (creep: Creep) => {
+const run = (creep: Creep) => {
   // 1. 如果creep的store.energy === 0 且正在执行升级任务, 则切换到采集任务
   if (creep.memory.task === 'upgrading' && creep.store[RESOURCE_ENERGY] === 0) {
     creep.say(EMOJI.harvesting);
     creep.memory.task = 'harvesting';
-    return;
   }
 
   // 2. 执行采集任务
-  if (creep.memory.task === 'harvesting') {
+  if (creep.memory.task === 'harvesting' && creep.store.getFreeCapacity() === 0) {
     // 3. 如果creep的能量满了, 则切换到升级任务
-    if (creep.store.getFreeCapacity() === 0) {
-      creep.memory.task = 'upgrading';
-      creep.say(EMOJI.upgrading);
-    } else {
-      harvester.run(creep);
-    }
+    creep.memory.task = 'upgrading';
+    creep.say(EMOJI.upgrading);
+  }
+
+  if (creep.memory.task === 'harvesting') {
+    harvester.run(creep);
     return;
   }
 
@@ -28,6 +26,7 @@ const run: BaseRole['run'] = (creep: Creep) => {
   if (creep.memory.task === 'upgrading') {
     const targetController = creep.room.controller;
     if (!targetController) return;
+
     const upgradeResult = creep.upgradeController(targetController);
 
     switch (upgradeResult) {
@@ -51,7 +50,7 @@ const run: BaseRole['run'] = (creep: Creep) => {
   }
 };
 
-const create: BaseRole['create'] = (baseId?: string, spawnCreepParams = {}) => {
+const create = (baseId?: string, spawnCreepParams = {}) => {
   return baseRole.create({
     baseId,
     body: [WORK, CARRY, CARRY, MOVE, MOVE],
