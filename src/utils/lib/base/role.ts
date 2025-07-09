@@ -1,38 +1,30 @@
-import { merge } from 'lodash';
-import { BASE_ID_ENUM } from '../../../constant';
+// import { merge } from 'lodash';
+// import { BASE_ID_ENUM } from '../../../constant';
 
-type BaseRoleCreateParams = {
-  baseId?: string;
-  body: BodyPartConstant[];
-  role: CustomRoleType;
-  name?: string;
-  opts?: Partial<SpawnOptions>;
-};
+// type BaseRoleCreateParams = {
+//   baseId?: string;
+//   body: BodyPartConstant[];
+//   role: CustomRoleType;
+//   name?: string;
+//   opts?: Partial<SpawnOptions>;
+// };
 
-export const baseRole = {
-  getVisualStatus: (creep: Creep) => {
-    const fatigue = creep.fatigue;
-    const text = `${creep.memory.role?.slice(0, 3)} ${fatigue > 0 ? fatigue : ''}`;
+// export const baseRole = {
+//   getVisualStatus: (creep: Creep) => {
+//     const fatigue = creep.fatigue;
+//     const text = `${creep.memory.role?.slice(0, 3)} ${fatigue > 0 ? fatigue : ''}`;
 
-    return creep.room.visual.text(text, creep.pos.x, creep.pos.y - 1, {
-      font: 0.5,
-      color: '#00ff00',
-      stroke: '#000000',
-      strokeWidth: 0.1,
-    });
-  },
+//     return creep.room.visual.text(text, creep.pos.x, creep.pos.y - 1, {
+//       font: 0.5,
+//       color: '#00ff00',
+//       stroke: '#000000',
+//       strokeWidth: 0.1,
+//     });
+//   },
 
-  create: (params: BaseRoleCreateParams) => {
-    const { baseId = BASE_ID_ENUM.MainBase, body, name, role, opts } = params;
-    const curName = name ?? `${role}-${Game.time}`;
-    return Game.spawns?.[baseId]?.spawnCreep(body, curName, merge({ memory: { role } }, opts));
-  },
-};
-
-export const generatorRoleBody = (bodyWidgetConfig: { body: BodyPartConstant; count: number }[]) => {
-  // flatMap 不兼容 es2019
-  // bodyWidgetConfig.flatMap(({ body, count }) => Array(count).fill(body));
-  return bodyWidgetConfig.reduce<BodyPartConstant[]>((acc, { body, count }) => {
-    return acc.concat(Array(count).fill(body));
-  }, []);
-};
+//   create: (params: BaseRoleCreateParams) => {
+//     const { baseId = BASE_ID_ENUM.MainBase, body, name, role, opts } = params;
+//     const curName = name ?? `${role}-${Game.time}`;
+//     return Game.spawns?.[baseId]?.spawnCreep(body, curName, merge({ memory: { role } }, opts));
+//   },
+// };

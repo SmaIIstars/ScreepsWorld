@@ -63,8 +63,22 @@ export class TowerManager {
    */
   private repairStructures(): void {
     const structures = this.tower.room.find(FIND_STRUCTURES, {
-      filter: (structure) => structure.hits < 100000 && structure.hits < structure.hitsMax,
+      filter: (structure) => {
+        // 全部的Road都修复
+        if (structure instanceof StructureRoad) return true;
+        // 全部的Container都修复
+        if (structure instanceof StructureContainer) return true;
+        // 附近6格的Wall都修复
+        if (structure instanceof StructureWall && this.tower.pos.getRangeTo(structure) <= 6) return true;
+        // 其他建筑，修复到100000
+        return structure.hits < structure.hitsMax && structure.hits < 100000;
+      },
     });
+
+    // const structures = this.tower.pos.findInRange(FIND_STRUCTURES, 6, {
+    //   filter: (structure) =>
+    //     structure instanceof StructureRoad || (structure.hits < structure.hitsMax && structure.hits < 100000),
+    // });
 
     if (structures.length > 0) {
       const targetStructure = structures.sort((a, b) => a.hits - b.hits)[0];

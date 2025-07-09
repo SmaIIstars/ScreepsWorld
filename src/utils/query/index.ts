@@ -1,9 +1,7 @@
-import { BASE_ID_ENUM } from '@/constant';
+import { ROOM_ID_ENUM } from '@/constant';
 
 /**
- * 检测指定坐标周围的空位（非墙、非source、无creep/structure），用于拥塞控制。
- * 如果周围的单位为miner或者minerStore，则继续向外扩展，直到找到所有可用空位。
- * @param room 房间对象
+ * 检测指定坐标周围的空位（非墙、非source、无占用单位），用于拥塞控制。
  * @param x 起点x坐标
  * @param y 起点y坐标
  * @param range 检查范围（默认为1）
@@ -14,63 +12,46 @@ export function findAvailableNearbyPositionsWithMinerExpand(
   y: number,
   range: number = 1
 ): Array<{ x: number; y: number }> {
-  const room = Game.rooms[BASE_ID_ENUM.MainBase];
+  const room = Game.rooms[ROOM_ID_ENUM.MainRoom];
   if (!room) return [];
 
-  const visited = new Set<string>();
-  const availablePositions: Array<{ x: number; y: number }> = [];
-  const queue: Array<{ x: number; y: number }> = [{ x, y }];
+  const availablePositionMap: Record<string, boolean> = {};
 
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    const key = `${current.x}-${current.y}`;
-    if (visited.has(key)) continue;
-    visited.add(key);
-
-    // 检查当前点周围的区域
-    const lookArea = room.lookAtArea(current.y - range, current.x - range, current.y + range, current.x + range, true);
-
-    // 以坐标为key聚合所有look结果
-    const posMap: Record<string, LookAtResultWithPos<LookConstant>[]> = {};
-    for (const unit of lookArea) {
-      const posKey = `${unit.x}-${unit.y}`;
-      if (!posMap[posKey]) posMap[posKey] = [];
-      posMap[posKey].push(unit);
+  room.lookAtArea(y - range, x - range, y + range, x + range, true).forEach((pos) => {
+    if (availablePositionMap[`${pos.x},${pos.y}`] === false) return;
+    // 默认为可用位置
+    if (availablePositionMap[`${pos.x},${pos.y}`] === undefined) {
+      availablePositionMap[`${pos.x},${pos.y}`] = true;
     }
 
-    for (const [posKey, units] of Object.entries(posMap)) {
-      // 检查是否有墙或source
-      if (units.some((u) => u.terrain === 'wall' || u.type === 'source')) continue;
-
-      // 检查是否有creep
-      const creepUnit = units.find((u) => u.type === 'creep');
-      if (creepUnit && creepUnit.creep) {
-        const creepObj = Game.creeps[creepUnit.creep.name];
-        if (creepObj && ['miner', 'minerStore'].includes(creepObj.memory.role ?? '')) {
-          // 如果是miner或minerStore，继续向外扩展
-          const [px, py] = posKey.split('-').map(Number);
-          if (!visited.has(posKey)) {
-            queue.push({ x: px, y: py });
-          }
-          continue; // 不计入可用空位
-        } else {
-          continue; // 其他creep占用，跳过
-        }
-      }
-
-      // 检查是否有structure
-      if (units.some((u) => u.type === 'structure')) continue;
-
-      // 该位置为空位
-      const [px, py] = posKey.split('-').map(Number);
-      // 避免重复添加
-      if (!availablePositions.some((pos) => pos.x === px && pos.y === py)) {
-        availablePositions.push({ x: px, y: py });
-      }
+    // 如果是墙或者creep等不可通行单位，则不可用
+    if (pos.type === 'terrain' && pos.terrain === 'wall') {
+      availablePositionMap[`${pos.x},${pos.y}`] = false;
+      return;
     }
-  }
+    if (pos.type === 'creep') {
+      availablePositionMap[`${pos.x},${pos.y}`] = false;
+      return;
+    }
+    if (pos.type === 'structure' && pos.structure) {
+      // 游戏中可以通过的几种结构
+      if (
+        !(pos.structure instanceof StructureContainer) &&
+        !(pos.structure instanceof StructureRoad) &&
+        !(pos.structure instanceof StructureRampart)
+      ) {
+        availablePositionMap[`${pos.x},${pos.y}`] = false;
+      }
+      return;
+    }
+  });
 
-  return availablePositions;
+  return Object.entries(availablePositionMap)
+    .filter(([_, value]) => value === true)
+    .map(([key]) => {
+      const [x, y] = key.split(',');
+      return { x: Number(x), y: Number(y) };
+    });
 }
 
 export type EnergyStoreType =
@@ -118,15 +99,17 @@ export function findAvailableTargetByRange(
           filter: (creep) => creep.memory.role === 'miner' && creep.store[RESOURCE_ENERGY] > 0,
         });
   }
+
+  // Container 建筑不能使用 FIND_MY_STRUCTURES 查询
   if (targetType === 'container') {
     return closest
-      ? (creep.pos.findClosestByRange(FIND_MY_STRUCTURES, {
+      ? (creep.pos.findClosestByRange(FIND_STRUCTURES, {
           filter: (structure: StructureContainer) =>
-            structure.structureType === 'container' && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+            structure.structureType === 'container' && structure.store[RESOURCE_ENERGY] > 0,
         }) as StructureStorage | StructureContainer | null)
-      : (creep.room.find(FIND_MY_STRUCTURES, {
+      : (creep.room.find(FIND_STRUCTURES, {
           filter: (structure: StructureContainer) =>
-            structure.structureType === 'container' && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+            structure.structureType === 'container' && structure.store[RESOURCE_ENERGY] > 0,
         }) as unknown as StructureContainer | null);
   }
 
@@ -134,26 +117,20 @@ export function findAvailableTargetByRange(
     return closest
       ? (creep.pos.findClosestByRange(FIND_MY_STRUCTURES, {
           filter: (structure: StructureStorage) =>
-            structure.structureType === 'storage' && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+            structure.structureType === 'storage' && structure.store[RESOURCE_ENERGY] > 0,
         }) as StructureStorage | null)
       : (creep.room.find(FIND_MY_STRUCTURES, {
           filter: (structure: StructureStorage) =>
-            structure.structureType === 'storage' && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+            structure.structureType === 'storage' && structure.store[RESOURCE_ENERGY] > 0,
         }) as unknown as StructureStorage | null);
   }
 
   if (targetType === 'source') {
     return closest
       ? creep.pos.findClosestByRange(FIND_SOURCES, {
-          filter: (structure) =>
-            structure.energy > 0 &&
-            findAvailableNearbyPositionsWithMinerExpand(structure.pos.x, structure.pos.y).length > 1,
+          filter: (structure) => structure.energy > 0,
         })
-      : creep.room.find(FIND_SOURCES, {
-          filter: (structure) =>
-            structure.energy > 0 &&
-            findAvailableNearbyPositionsWithMinerExpand(structure.pos.x, structure.pos.y).length > 1,
-        });
+      : Memory.sources.Source.map((id) => Game.getObjectById(id) as Source).filter((source) => source.energy > 0);
   }
 
   if (targetType === 'mineral') {

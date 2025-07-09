@@ -1,6 +1,7 @@
 import { BASE_ID_ENUM } from '@/constant';
 import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
+import { EnergyStoreType } from '@/utils/query';
 import { BaseRole, BaseRoleCreateParams } from '../base/BaseRole';
 
 const PriorityQueueOfStoreEnergy: Array<Structure['structureType']> = [
@@ -67,7 +68,6 @@ class Harvester extends BaseRole {
       });
 
     if (targetUnits.length > 0) {
-      // TODO: 可以找最近的或者进行分工
       const transferResult = creep.transfer(targetUnits[0], RESOURCE_ENERGY);
       switch (transferResult) {
         case ERR_NOT_IN_RANGE: {
@@ -82,7 +82,10 @@ class Harvester extends BaseRole {
 
   // Harvester 专属采集任务，只专注于采集能源点，矿车和矿车仓库
   harvestTask(creep: Creep): void {
-    this.getEnergyFromStore(creep, ['resource', 'ruin', 'tombstone', 'container', 'miner', 'source']);
+    // 有WORK组件的，才可以采集能源点
+    const targetTypes: EnergyStoreType[] = ['resource', 'ruin', 'tombstone', 'container', 'miner'];
+    if (creep.body.some((part) => part.type === WORK)) targetTypes.push('source');
+    const targetStore = this.getEnergyFromStore(creep, targetTypes);
   }
 }
 

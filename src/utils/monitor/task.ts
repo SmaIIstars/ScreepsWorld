@@ -2,7 +2,7 @@
 
 import { BASE_ID_ENUM } from '@/constant';
 import { intervalSleep } from '..';
-import { generatorRoleBody } from '../lib/base/role';
+import { BaseRole } from '../lib/base/BaseRole';
 import { generatorRole } from './generatorRole';
 
 const MIN_MINER_LIST = ['MinMiner', 'MinMiner2'];
@@ -23,14 +23,18 @@ const minCreepGroup = (): boolean => {
     { name: 'MinBuilder', role: 'builder' },
   ];
 
+  const minCreepCount =
+    Object.values(Game.creeps).filter((creep) => creep.name.startsWith('MinMiner')).length + Memory.creepsCount.miner;
+
   for (const creep of minCreepsList) {
-    if (creep.name.startsWith('MinMiner') && Memory.creepsCount.miner >= 2) continue;
+    // 有俩矿机，则不孵化
+    if (creep.name.startsWith('MinMiner') && minCreepCount >= 2) continue;
     const minCreep = Game.creeps[creep.name];
     if (!minCreep) {
       let body = [];
       switch (creep.role) {
         case 'miner': {
-          body = generatorRoleBody([
+          body = BaseRole.generatorRoleBody([
             { body: WORK, count: 2 },
             { body: CARRY, count: 1 },
             { body: MOVE, count: 1 },
@@ -38,7 +42,7 @@ const minCreepGroup = (): boolean => {
           break;
         }
         default: {
-          body = generatorRoleBody([
+          body = BaseRole.generatorRoleBody([
             { body: WORK, count: 1 },
             { body: CARRY, count: 2 },
             { body: MOVE, count: 2 },
@@ -77,15 +81,15 @@ const minCreepGroup = (): boolean => {
 
 const miner = () => {
   if (!Memory.creepsCount.miner) return;
-  // 已有miner多少个, 则杀死几个小MinMiner
-  let killed = 0;
-  for (const name in Game.creeps) {
-    if (killed >= Memory.creepsCount.miner) break;
-    if (name.startsWith('MinMiner')) {
-      Game.creeps[name].suicide();
-      Game.creeps[name].say('退役');
-      killed++;
-    }
+  // 大矿机有几个, 则杀死多余的MinMiner
+  const miners = Memory.creepsCount.miner;
+  const minMiners = Object.values(Game.creeps).filter((creep) => creep.name.startsWith('MinMiner'));
+  const keepMinMiners = minMiners.slice(0, 2 - miners);
+
+  for (const minMiner of minMiners) {
+    if (keepMinMiners.includes(minMiner)) continue;
+    minMiner.suicide();
+    console.log(`超过大矿机 miner 上限, 杀死小 MinMiner: ${minMiner.name}`);
   }
 };
 

@@ -1,11 +1,11 @@
-import { generatorRoleBody } from '@/utils/lib/base/role';
+import { BaseRole } from '@/utils/lib/base/BaseRole';
 import { StrategyType } from '.';
 
 const strategy: StrategyType = {
   roleMonitor: {
     harvester: {
       count: 5,
-      body: generatorRoleBody([
+      body: BaseRole.generatorRoleBody([
         { body: WORK, count: 2 },
         { body: CARRY, count: 1 },
         { body: MOVE, count: 1 },
@@ -13,7 +13,7 @@ const strategy: StrategyType = {
     },
     builder: {
       count: 8,
-      body: generatorRoleBody([
+      body: BaseRole.generatorRoleBody([
         { body: WORK, count: 2 },
         { body: CARRY, count: 1 },
         { body: MOVE, count: 1 },
@@ -21,7 +21,7 @@ const strategy: StrategyType = {
     },
     upgrader: {
       count: 5,
-      body: generatorRoleBody([
+      body: BaseRole.generatorRoleBody([
         { body: WORK, count: 2 },
         { body: CARRY, count: 1 },
         { body: MOVE, count: 1 },

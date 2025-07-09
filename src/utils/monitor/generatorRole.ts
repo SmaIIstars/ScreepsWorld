@@ -1,7 +1,6 @@
 import { BASE_ID_ENUM, ROOM_ID_ENUM } from '@/constant';
 import { getStrategy } from '@/strategy';
 import { intervalSleep } from '..';
-import { baseRole } from '../lib/base/role';
 import { role2 } from '../lib/role2';
 
 export const generatorRole = () => {
@@ -22,7 +21,6 @@ const creeps = () => {
     const creep = Game.creeps[name];
     if (creep.memory.role && !creep.name.startsWith('Min')) {
       creepCounter.set(creep.memory.role, (creepCounter.get(creep.memory.role) ?? 0) + 1);
-      intervalSleep(10, () => baseRole.getVisualStatus(creep));
     }
   }
 
@@ -38,14 +36,17 @@ const creeps = () => {
         for (const part of bodyArr) {
           bodyCount[part] = (bodyCount[part] || 0) + 1;
         }
-        console.log(`${role} 数量不足`, JSON.stringify(bodyCount));
+        console.log(
+          `${role} 现有:${count} 需要:${strategy.roleMonitor[role]?.count ?? 0} Body:${JSON.stringify(bodyCount)}`
+        );
       });
       if (role !== 'repairer') {
         role2[role]?.create({
           body: strategy.roleMonitor[role].body,
         });
       } else {
-        utils.role[role].create(BASE_ID_ENUM.MainBase, {
+        utils.role2[role].create({
+          baseId: BASE_ID_ENUM.MainBase,
           body: strategy.roleMonitor[role].body,
         });
       }

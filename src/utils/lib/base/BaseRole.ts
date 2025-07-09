@@ -1,6 +1,11 @@
 import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
-import { EnergyStoreTargetType, EnergyStoreType, findAvailableTargetByRange } from '@/utils/query';
+import {
+  EnergyStoreTargetType,
+  EnergyStoreType,
+  findAvailableNearbyPositionsWithMinerExpand,
+  findAvailableTargetByRange,
+} from '@/utils/query';
 
 export type BaseRoleType = {
   role: CustomRoleType;
@@ -24,21 +29,14 @@ export abstract class BaseRole {
   // abstract create(params: BaseRoleCreateParams): ScreepsReturnCode;
   abstract run(creep: Creep): void;
   abstract roleTask(creep: Creep): void;
-
   abstract create(params: BaseRoleCreateParams): ScreepsReturnCode;
-  // {
-  //   const { baseId = BASE_ID_ENUM.MainBase, body, name, memoryRoleOpts } = params;
-  //   const curName = name ?? `${this.role}-${Game.time}`;
-  //   return Game.spawns[baseId].spawnCreep(body, curName, { memory: memoryRoleOpts });
-  // }
-
   /**
    * 从有能量的存储单位获取能量
    * @param creep
    * @param targetStoreType 有能量的存储单位类型
    * @description targetStoreType 是一个优先队列
    */
-  getEnergyFromStore(creep: Creep, targetStoreTypes: EnergyStoreType[]): void {
+  getEnergyFromStore(creep: Creep, targetStoreTypes: EnergyStoreType[]): EnergyStoreTargetType {
     let targetStore: EnergyStoreTargetType = null;
 
     // 1. 单类型
@@ -68,7 +66,6 @@ export abstract class BaseRole {
         (t) =>
           (t instanceof Resource && t.resourceType === RESOURCE_ENERGY) || t instanceof Ruin || t instanceof Tombstone
       );
-
       if (priorityTargets.length > 0) {
         targetStore = creep.pos.findClosestByRange(priorityTargets);
       }
@@ -105,7 +102,13 @@ export abstract class BaseRole {
 
       // 4. source
       if (!targetStore) {
-        priorityTargets = allTargets.filter((t) => t instanceof Source);
+        priorityTargets = allTargets.filter((t) => {
+          // 在附近，挖
+          if (creep.pos.isNearTo(t.pos)) return true;
+          // 不在附近，判断是否有位置
+          return t instanceof Source && findAvailableNearbyPositionsWithMinerExpand(t.pos.x, t.pos.y).length > 1;
+        });
+
         if (priorityTargets.length > 0) {
           targetStore = creep.pos.findClosestByRange(priorityTargets);
         }
@@ -125,7 +128,7 @@ export abstract class BaseRole {
       // 不在附近则移动过去
       if (!targetStore.pos.isNearTo(creep.pos)) {
         creep.moveTo(targetStore, { visualizePathStyle: { stroke: '#ffffff' } });
-        return;
+        return targetStore;
       }
 
       // 在旁边的根据目标类型进行不同的操作
@@ -135,30 +138,45 @@ export abstract class BaseRole {
       //   pick: ['resource'],
       if (targetStore instanceof Creep && targetStore.memory.role === 'miner') {
         // 非主动, 等待对方transfer,
-        return;
+        return targetStore;
       }
       if (targetStore instanceof Source || targetStore instanceof Mineral) {
         creep.harvest(targetStore);
         intervalSleep(10, () => creep.say(EMOJI.harvesting), { time: creep.ticksToLive });
-        return;
+        return targetStore;
       }
       if (targetStore instanceof Ruin || targetStore instanceof Tombstone) {
         creep.withdraw(targetStore, RESOURCE_ENERGY);
         intervalSleep(10, () => creep.say(EMOJI.withdrawing), { time: creep.ticksToLive });
-        return;
+        return targetStore;
       }
 
       if (targetStore instanceof StructureStorage || targetStore instanceof StructureContainer) {
         creep.withdraw(targetStore, RESOURCE_ENERGY);
         intervalSleep(10, () => creep.say(EMOJI.withdrawing), { time: creep.ticksToLive });
-        return;
+        return targetStore;
       }
 
       if (targetStore instanceof Resource) {
         creep.pickup(targetStore);
         intervalSleep(10, () => creep.say(EMOJI.picking), { time: creep.ticksToLive });
-        return;
+        return targetStore;
       }
     }
+
+    return targetStore;
   }
+
+  /**
+   * 生成角色body
+   * @param bodyWidgetConfig
+   * @returns BodyPartConstant[]
+   */
+  static generatorRoleBody = (bodyWidgetConfig: { body: BodyPartConstant; count: number }[]) => {
+    // flatMap 不兼容 es2019
+    // bodyWidgetConfig.flatMap(({ body, count }) => Array(count).fill(body));
+    return bodyWidgetConfig.reduce<BodyPartConstant[]>((acc, { body, count }) => {
+      return acc.concat(Array(count).fill(body));
+    }, []);
+  };
 }

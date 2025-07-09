@@ -1,6 +1,6 @@
 import { loop } from './index';
-import { role } from './utils';
+import { role2, ticksPerMove } from './utils';
 
 module.exports = { loop };
 
-global.utils = { role };
+global.utils = { role2, ticksPerMove };

@@ -1,8 +1,8 @@
-import { BaseRole } from '../utils/lib/role';
-
+import { BaseRole2 } from '@/utils/lib/role2';
 declare global {
   var utils: {
-    role: Record<string, BaseRole>;
+    role2: Record<string, BaseRole2>;
+    ticksPerMove: (body: BodyPartConstant[]) => number;
   };
 }
 
