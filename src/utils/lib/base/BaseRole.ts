@@ -11,7 +11,7 @@ export type BaseRoleCreateParams = {
   baseId?: string;
   name?: string;
   body: BodyPartConstant[];
-  memoryRoleOpts: BaseRoleType;
+  memoryRoleOpts?: BaseRoleType;
 };
 
 export abstract class BaseRole {

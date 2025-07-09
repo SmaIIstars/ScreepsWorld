@@ -30,6 +30,8 @@ const creepsCount = () => {
     repairer: 0,
   };
   for (const creep of Object.values(Game.creeps)) {
+    // 最小组不参与计数
+    if (creep.name.startsWith('Min')) continue;
     if (creep.memory.role) {
       creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
     }

@@ -20,7 +20,7 @@ const creeps = () => {
 
   for (let name in Game.creeps) {
     const creep = Game.creeps[name];
-    if (creep.memory.role) {
+    if (creep.memory.role && !creep.name.startsWith('Min')) {
       creepCounter.set(creep.memory.role, (creepCounter.get(creep.memory.role) ?? 0) + 1);
       intervalSleep(10, () => baseRole.getVisualStatus(creep));
     }
@@ -40,10 +40,9 @@ const creeps = () => {
         }
         console.log(`${role} 数量不足`, JSON.stringify(bodyCount));
       });
-      if (['harvester', 'builder'].includes(role)) {
+      if (role !== 'repairer') {
         role2[role]?.create({
           body: strategy.roleMonitor[role].body,
-          memoryRoleOpts: { role, task: 'harvesting' },
         });
       } else {
         utils.role[role].create(BASE_ID_ENUM.MainBase, {

@@ -43,10 +43,9 @@ class Builder extends BaseRole {
 
     if (creep.memory.task === 'harvesting') {
       this.getEnergyFromStore(creep, ['resource', 'ruin', 'tombstone', 'storage', 'miner', 'source']);
-      return;
+    } else {
+      this.roleTask(creep);
     }
-
-    this.roleTask(creep);
   }
 
   // 建筑任务

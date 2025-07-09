@@ -20,7 +20,11 @@ const loop = () => {
         if (creep.memory.role == 'miner') {
           role2.miner?.run(creep);
         }
+        if (creep.memory.role == 'upgrader') {
+          role2.upgrader?.run(creep);
+        }
 
+        // repairer
         if (creep.memory.role) {
           role[creep.memory.role]?.run(creep);
         }

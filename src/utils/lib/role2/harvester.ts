@@ -41,10 +41,9 @@ class Harvester extends BaseRole {
 
     if (creep.memory.task === 'harvesting') {
       this.harvestTask(creep);
-      return;
+    } else {
+      this.roleTask(creep);
     }
-
-    this.roleTask(creep);
   }
 
   // 存储任务
