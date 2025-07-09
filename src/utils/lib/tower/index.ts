@@ -18,9 +18,9 @@ export class TowerManager {
     }
 
     // 优先攻击敌人
-    this.healFriendlyCreeps();
-    // 然后治疗友军
     this.attackHostileCreeps();
+    // 然后治疗友军
+    this.healFriendlyCreeps();
     // 最后修复建筑
     this.repairStructures();
   }
@@ -31,7 +31,6 @@ export class TowerManager {
   private attackHostileCreeps(): void {
     const hostileCreeps = this.tower.room.find(FIND_HOSTILE_CREEPS, {
       filter: (creep) => {
-        // 过滤掉没有攻击能力的敌人
         return creep.body.some((part) => part.type === ATTACK || part.type === RANGED_ATTACK);
       },
     });
@@ -64,24 +63,35 @@ export class TowerManager {
   private repairStructures(): void {
     const structures = this.tower.room.find(FIND_STRUCTURES, {
       filter: (structure) => {
+        if (structure.hits === structure.hitsMax) return false;
         // 全部的Road都修复
         if (structure instanceof StructureRoad) return true;
         // 全部的Container都修复
         if (structure instanceof StructureContainer) return true;
+        // 全部的Rampart都修复
+        if (structure instanceof StructureRampart) return true;
         // 附近6格的Wall都修复
         if (structure instanceof StructureWall && this.tower.pos.getRangeTo(structure) <= 6) return true;
         // 其他建筑，修复到100000
-        return structure.hits < structure.hitsMax && structure.hits < 100000;
+        return structure.hits < 100000;
       },
     });
 
-    // const structures = this.tower.pos.findInRange(FIND_STRUCTURES, 6, {
-    //   filter: (structure) =>
-    //     structure instanceof StructureRoad || (structure.hits < structure.hitsMax && structure.hits < 100000),
-    // });
-
     if (structures.length > 0) {
-      const targetStructure = structures.sort((a, b) => a.hits - b.hits)[0];
+      const targetStructure = structures.sort((a, b) => {
+        // 优先修复road
+        if (a instanceof StructureRoad) return -1;
+        if (b instanceof StructureRoad) return 1;
+        // 然后修复Container
+        if (a instanceof StructureContainer) return -1;
+        if (b instanceof StructureContainer) return 1;
+        // 然后修复Rampart
+        if (a instanceof StructureRampart) return -1;
+        if (b instanceof StructureRampart) return 1;
+        // 最后修复其他建筑
+        return a.hits - b.hits;
+      })[0];
+
       this.tower.repair(targetStructure);
     }
   }

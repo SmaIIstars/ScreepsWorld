@@ -34,7 +34,7 @@ const strategy: StrategyType = {
       ]),
     },
     repairer: {
-      count: 1,
+      count: 2,
       body: BaseRole.generatorRoleBody([
         { body: WORK, count: 6 },
         { body: CARRY, count: 4 },
