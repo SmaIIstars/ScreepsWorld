@@ -35,7 +35,7 @@ const strategy: StrategyType = {
       ]),
     },
     upgrader: {
-      count: 2,
+      count: 4,
       body: BaseRole.generatorRoleBody([
         { body: WORK, count: 4 },
         { body: CARRY, count: 12 },

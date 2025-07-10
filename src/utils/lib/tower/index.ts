@@ -80,11 +80,11 @@ export class TowerManager {
         // 全部的Container都修复
         if (structure instanceof StructureContainer && structure.hits < structure.hitsMax * 0.6) return true;
         // 全部的Rampart都修复
-        if (structure instanceof StructureRampart && structure.hits < structure.hitsMax * 0.05) return true;
+        if (structure instanceof StructureRampart && structure.hits < structure.hitsMax * 0.1) return true;
         // 附近6格的Wall都修复
         if (
           structure instanceof StructureWall &&
-          // this.tower.pos.getRangeTo(structure) <= 6 &&
+          this.tower.pos.getRangeTo(structure) <= 6 &&
           structure.hits < structure.hitsMax * 0.0005
         )
           return true;

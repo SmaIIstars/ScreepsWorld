@@ -84,7 +84,24 @@ class Pioneer extends BaseRole {
     if (targetRoom) {
       if (creep.room.name === targetRoom.name) {
         // 且在目标房间，则寻找能量源
-        this.getEnergyFromStore(creep, ['source']);
+        this.getEnergyFromStore(creep, ['resource', 'ruin', 'tombstone', 'source']);
+
+        // const allAvailableStores = this.getAllAvailableStores(creep, ['source']).filter((s) => s instanceof Source);
+        // let targetStore: Source | null = null;
+        // for (const store of allAvailableStores) {
+        //   const pos = getAvailableMiningPosition(store);
+        //   if (pos.length > 0) {
+        //     targetStore = store;
+        //     break;
+        //   }
+        // }
+
+        // if (!targetStore) return;
+        // if (creep.harvest(targetStore) === ERR_NOT_IN_RANGE) {
+        //   creep.moveTo(targetStore);
+        // } else if (creep.harvest(targetStore) === OK) {
+        //   intervalSleep(10, () => creep.say(EMOJI.harvesting), { time: creep.ticksToLive });
+        // }
       } else {
         // 先去目标房间
         creep.moveTo(targetRoom.find(FIND_SOURCES)[0], { visualizePathStyle: { stroke: '#ffaa00' } });

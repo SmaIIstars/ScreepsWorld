@@ -7,11 +7,12 @@ import { generatorRole } from './generatorRole';
 
 const MIN_MINER_LIST = ['MinMiner', 'MinMiner2'];
 const MIN_PIONEER_TARGET_ROOM1 = ['MinPioneer', 'MinPioneer2', 'MinPioneer3'];
-const MIN_PIONEER_TARGET_ROOM2 = ['MinPioneer5', 'MinPioneer6'];
+const MIN_PIONEER_TARGET_ROOM2 = ['MinPioneer4', 'MinPioneer5', 'MinPioneer6', 'MinPioneer7'];
 
 const task = () => {
   mainRoomTask();
   // nearSourceRoomTask();
+  generatePixel();
 };
 
 const mainRoomTask = () => {
@@ -134,34 +135,16 @@ const miner = () => {
 
 export { task };
 
-// 新资源房的探索组任务
-// export const nearSourceRoomTask = () => {
-//   const sourceRoom = Game.rooms[ROOM_ID_ENUM.SourceRoom];
-//   if (!sourceRoom) return;
+// pixel
 
-//   // 新资源房探索组, 先只有一个采集者
-//   const minCreepsList: Array<{ name: string; role: CustomRoleType }> = [
-//     { name: 'MinNearSourceHarvester', role: 'harvester' },
-//   ];
+const generatePixel = () => {
+  if (Game.cpu.bucket >= 10000) {
+    const result = Game.cpu.generatePixel();
 
-//   const body = BaseRole.generatorRoleBody([
-//     { body: WORK, count: 1 },
-//     { body: CARRY, count: 4 },
-//     { body: MOVE, count: 3 },
-//   ]);
-
-//   for (const creep of minCreepsList) {
-//     const minCreep = Game.creeps[creep.name];
-//     if (!minCreep) {
-//       // 孵化
-//       Game.spawns[BASE_ID_ENUM.MainBase].spawnCreep(body, creep.name, {
-//         memory: { role: creep.role, task: creep.role === 'miner' ? 'moving' : 'harvesting', group: 'nearSource' },
-//       });
-//     } else {
-//       const targetSource = sourceRoom.find(FIND_SOURCES)[0];
-//       if (minCreep.harvest(targetSource) === ERR_NOT_IN_RANGE) {
-//         minCreep.moveTo(targetSource);
-//       }
-//     }
-//   }
-// };
+    if (result === OK) {
+      console.log('生成 1 pixel', result);
+    } else {
+      console.log('生成 pixel 失败', result);
+    }
+  }
+};
