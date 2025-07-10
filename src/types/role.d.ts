@@ -1,5 +1,5 @@
 declare global {
-  type CustomRoleType = 'harvester' | 'builder' | 'upgrader' | 'miner' | 'minerStore' | 'repairer';
+  type CustomRoleType = 'harvester' | 'builder' | 'upgrader' | 'miner' | 'minerStore' | 'repairer' | 'pioneer';
 
   type CustomRoleTaskType =
     | 'harvesting'
@@ -9,6 +9,7 @@ declare global {
     | 'moving'
     | 'upgrading'
     | 'repairing'
+    | 'pioneering'
     | 'idle';
 }
 

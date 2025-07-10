@@ -28,6 +28,7 @@ const creepsCount = () => {
     miner: 0,
     minerStore: 0,
     repairer: 0,
+    pioneer: 0,
   };
   for (const creep of Object.values(Game.creeps)) {
     // 最小组不参与计数
@@ -45,8 +46,7 @@ export const resources = () => {
 };
 
 // 地图固定资源, 获取能量源(能源点和矿)
-const getEnergySource = () => {
-  const room = Game.rooms[ROOM_ID_ENUM.MainRoom];
+const getEnergySource = (room = Game.rooms[ROOM_ID_ENUM.MainRoom]) => {
   if (!room) return;
   // Source和Mineral资源是恒定的, 只需要初始化
   if (!Memory.sources?.Source) {

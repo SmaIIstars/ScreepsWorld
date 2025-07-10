@@ -48,9 +48,9 @@ class Harvester extends BaseRole {
   }
 
   // 存储任务
-  roleTask(creep: Creep): void {
+  roleTask(creep: Creep, room = creep.room): void {
     // 1. 找到房间内还可以存储能量的单位并进行优先级排序
-    const targetUnits = creep.room
+    const targetUnits = room
       .find(FIND_MY_STRUCTURES, {
         filter: (structure) =>
           PriorityQueueOfStoreEnergy.includes(structure.structureType) &&
@@ -85,7 +85,7 @@ class Harvester extends BaseRole {
     // 有WORK组件的，才可以采集能源点
     const targetTypes: EnergyStoreType[] = ['resource', 'ruin', 'tombstone', 'container', 'miner'];
     if (creep.body.some((part) => part.type === WORK)) targetTypes.push('source');
-    const targetStore = this.getEnergyFromStore(creep, targetTypes);
+    this.getEnergyFromStore(creep, targetTypes);
   }
 }
 

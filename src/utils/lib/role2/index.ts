@@ -2,6 +2,7 @@ import { BaseRoleCreateParams } from '../base/BaseRole';
 import Builder from './builder';
 import Harvester from './harvester';
 import Miner from './miner';
+import Pioneer from './pioneer';
 import Repairer from './repairer';
 import Upgrader from './upgrader';
 
@@ -16,4 +17,5 @@ export const role2: Partial<Record<CustomRoleType, BaseRole2>> = {
   miner: Miner,
   upgrader: Upgrader,
   repairer: Repairer,
+  pioneer: Pioneer,
 };

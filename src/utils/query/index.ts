@@ -10,11 +10,10 @@ import { ROOM_ID_ENUM } from '@/constant';
 export function findAvailableNearbyPositionsWithMinerExpand(
   x: number,
   y: number,
-  range: number = 1
+  range: number = 1,
+  room: Room = Game.rooms[ROOM_ID_ENUM.MainRoom]
 ): Array<{ x: number; y: number }> {
-  const room = Game.rooms[ROOM_ID_ENUM.MainRoom];
   if (!room) return [];
-
   const availablePositionMap: Record<string, boolean> = {};
 
   room.lookAtArea(y - range, x - range, y + range, x + range, true).forEach((pos) => {
@@ -130,7 +129,7 @@ export function findAvailableTargetByRange(
       ? creep.pos.findClosestByRange(FIND_SOURCES, {
           filter: (structure) => structure.energy > 0,
         })
-      : Memory.sources.Source.map((id) => Game.getObjectById(id) as Source).filter((source) => source.energy > 0);
+      : creep.room.find(FIND_SOURCES, { filter: (source) => source.energy > 0 });
   }
 
   if (targetType === 'mineral') {

@@ -18,17 +18,24 @@ export class TowerManager {
     }
 
     // 优先攻击敌人
-    this.attackHostileCreeps();
-    // 然后治疗友军
-    this.healFriendlyCreeps();
+    if (this.attackHostileCreeps()) {
+      return;
+    }
+    // 然后治疗友军;
+    if (this.healFriendlyCreeps()) {
+      return;
+    }
+
     // 最后修复建筑
-    this.repairStructures();
+    if (this.tower.store[RESOURCE_ENERGY] > (this.tower.store.getCapacity(RESOURCE_ENERGY) ?? 0) * 0.6) {
+      this.repairStructures();
+    }
   }
 
   /**
    * 攻击敌人
    */
-  private attackHostileCreeps(): void {
+  private attackHostileCreeps(): boolean {
     const hostileCreeps = this.tower.room.find(FIND_HOSTILE_CREEPS, {
       filter: (creep) => {
         return creep.body.some((part) => part.type === ATTACK || part.type === RANGED_ATTACK);
@@ -39,13 +46,15 @@ export class TowerManager {
       // 优先攻击生命值最低的敌人
       const targetCreep = hostileCreeps.sort((a, b) => a.hits - a.hitsMax)[0];
       this.tower.attack(targetCreep);
+      return true;
     }
+    return false;
   }
 
   /**
    * 治疗友军
    */
-  private healFriendlyCreeps(): void {
+  private healFriendlyCreeps(): boolean {
     const damagedCreeps = this.tower.room.find(FIND_MY_CREEPS, {
       filter: (creep) => creep.hits < creep.hitsMax,
     });
@@ -54,24 +63,31 @@ export class TowerManager {
       // 优先治疗生命值最低的友军
       const targetCreep = damagedCreeps.sort((a, b) => a.hits - b.hits)[0];
       this.tower.heal(targetCreep);
+      return true;
     }
+    return false;
   }
 
   /**
    * 修复建筑
    */
-  private repairStructures(): void {
+  private repairStructures(): boolean {
     const structures = this.tower.room.find(FIND_STRUCTURES, {
       filter: (structure) => {
         if (structure.hits === structure.hitsMax) return false;
         // 全部的Road都修复
-        if (structure instanceof StructureRoad) return true;
+        if (structure instanceof StructureRoad && structure.hits < structure.hitsMax * 0.6) return true;
         // 全部的Container都修复
-        if (structure instanceof StructureContainer) return true;
+        if (structure instanceof StructureContainer && structure.hits < structure.hitsMax * 0.6) return true;
         // 全部的Rampart都修复
-        if (structure instanceof StructureRampart) return true;
+        if (structure instanceof StructureRampart && structure.hits < structure.hitsMax * 0.05) return true;
         // 附近6格的Wall都修复
-        if (structure instanceof StructureWall && this.tower.pos.getRangeTo(structure) <= 6) return true;
+        if (
+          structure instanceof StructureWall &&
+          // this.tower.pos.getRangeTo(structure) <= 6 &&
+          structure.hits < structure.hitsMax * 0.0005
+        )
+          return true;
         // 其他建筑，修复到100000
         return structure.hits < 100000;
       },
@@ -93,7 +109,9 @@ export class TowerManager {
       })[0];
 
       this.tower.repair(targetStructure);
+      return true;
     }
+    return false;
   }
 }
 

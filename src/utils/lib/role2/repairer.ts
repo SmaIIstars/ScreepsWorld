@@ -5,7 +5,7 @@ import { BaseRole, BaseRoleCreateParams } from '../base/BaseRole';
 
 const RepairerPriorityQueueOfNeedRepair: BuildableStructureConstant[] = [
   STRUCTURE_TOWER,
-  STRUCTURE_RAMPART,
+  // STRUCTURE_RAMPART,
   STRUCTURE_WALL,
   STRUCTURE_ROAD,
 ];

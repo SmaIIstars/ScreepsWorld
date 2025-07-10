@@ -27,6 +27,14 @@ const strategy: StrategyType = {
         { body: MOVE, count: 1 },
       ]),
     },
+    pioneer: {
+      count: 1,
+      body: BaseRole.generatorRoleBody([
+        { body: WORK, count: 2 },
+        { body: CARRY, count: 2 },
+        { body: MOVE, count: 2 },
+      ]),
+    },
   },
 };
 

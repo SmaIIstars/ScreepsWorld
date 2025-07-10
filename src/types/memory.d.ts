@@ -7,6 +7,7 @@ interface CreepMemory {
   targetSourceId?: string;
   // creep专注目标的id
   targetId?: string;
+  targetRoomName?: string;
 }
 
 interface Memory {
