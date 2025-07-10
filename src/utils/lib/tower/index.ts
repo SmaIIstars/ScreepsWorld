@@ -65,11 +65,11 @@ export class TowerManager {
       filter: (structure) => {
         if (structure.hits === structure.hitsMax) return false;
         // 全部的Road都修复
-        if (structure instanceof StructureRoad) return true;
+        if (structure instanceof StructureRoad && structure.hits < structure.hitsMax * 0.6) return true;
         // 全部的Container都修复
-        if (structure instanceof StructureContainer) return true;
+        if (structure instanceof StructureContainer && structure.hits < structure.hitsMax * 0.6) return true;
         // 全部的Rampart都修复
-        if (structure instanceof StructureRampart) return true;
+        if (structure instanceof StructureRampart && structure.hits < structure.hitsMax * 0.05) return true;
         // 附近6格的Wall都修复
         if (structure instanceof StructureWall && this.tower.pos.getRangeTo(structure) <= 6) return true;
         // 其他建筑，修复到100000

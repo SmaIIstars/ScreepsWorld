@@ -9,6 +9,10 @@ const strategy: StrategyType = {
       count: 0,
       body: [WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE],
     },
+    pioneer: {
+      count: 1,
+      body: [WORK, WORK, CARRY, CARRY, MOVE, MOVE],
+    },
   },
 };
 

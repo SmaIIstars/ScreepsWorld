@@ -6,39 +6,47 @@ const strategy: StrategyType = {
     harvester: {
       count: 1,
       body: BaseRole.generatorRoleBody([
-        { body: CARRY, count: 13 },
-        { body: MOVE, count: 13 },
+        { body: CARRY, count: 17 },
+        { body: MOVE, count: 9 },
       ]),
     },
+    // pioneer: {
+    //   count: 3,
+    //   body: BaseRole.generatorRoleBody([
+    //     { body: WORK, count: 6 },
+    //     { body: CARRY, count: 7 },
+    //     { body: MOVE, count: 7 },
+    //   ]),
+    // },
     builder: {
       count: 1,
       body: BaseRole.generatorRoleBody([
         { body: WORK, count: 6 },
-        { body: CARRY, count: 4 },
-        { body: MOVE, count: 10 },
+        { body: CARRY, count: 7 },
+        { body: MOVE, count: 7 },
       ]),
     },
     miner: {
       count: 2,
       body: BaseRole.generatorRoleBody([
         { body: WORK, count: 6 },
-        { body: MOVE, count: 2 },
+        { body: MOVE, count: 4 },
       ]),
     },
     upgrader: {
       count: 6,
       body: BaseRole.generatorRoleBody([
         { body: WORK, count: 6 },
-        { body: CARRY, count: 4 },
-        { body: MOVE, count: 10 },
+        { body: CARRY, count: 7 },
+        { body: MOVE, count: 7 },
       ]),
     },
     repairer: {
       count: 2,
       body: BaseRole.generatorRoleBody([
         { body: WORK, count: 6 },
-        { body: CARRY, count: 4 },
-        { body: MOVE, count: 10 },
+        { body: CARRY, count: 7 },
+        { body: MOVE, count: 7 },
       ]),
     },
   },

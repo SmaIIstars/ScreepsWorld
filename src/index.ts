@@ -7,9 +7,9 @@ const loop = () => {
     const room = Game.rooms[roomName];
     if (room.controller?.my) {
       monitorMain();
+
       for (let name in Game.creeps) {
         let creep = Game.creeps[name];
-
         if (creep.memory.role) {
           role2[creep.memory.role]?.run(creep);
         }

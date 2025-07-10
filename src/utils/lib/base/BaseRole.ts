@@ -106,7 +106,10 @@ export abstract class BaseRole {
           // 在附近，挖
           if (creep.pos.isNearTo(t.pos)) return true;
           // 不在附近，判断是否有位置
-          return t instanceof Source && findAvailableNearbyPositionsWithMinerExpand(t.pos.x, t.pos.y).length > 1;
+          return (
+            t instanceof Source &&
+            findAvailableNearbyPositionsWithMinerExpand(t.pos.x, t.pos.y, 1, creep.room).length > 1
+          );
         });
 
         if (priorityTargets.length > 0) {
