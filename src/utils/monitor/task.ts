@@ -1,10 +1,13 @@
 // Memory 被JSON序列化，不能缓存 Function
 
+import { ROOM_ID_ENUM } from '@/constant';
 import { intervalSleep } from '..';
-import { BaseRole } from '../lib/base/BaseRole';
+import { BaseRole, BaseRoleType } from '../lib/base/BaseRole';
 import { generatorRole } from './generatorRole';
 
 const MIN_MINER_LIST = ['MinMiner', 'MinMiner2'];
+const MIN_PIONEER_TARGET_ROOM1 = ['MinPioneer', 'MinPioneer2', 'MinPioneer3'];
+const MIN_PIONEER_TARGET_ROOM2 = ['MinPioneer5', 'MinPioneer6'];
 
 const task = () => {
   mainRoomTask();
@@ -19,15 +22,28 @@ const mainRoomTask = () => {
 
 // MainRoom最小角色组，用于兜底
 const minCreepGroup = (): boolean => {
-  const minCreepsList: Array<{ name: string; role: CustomRoleType }> = [
+  const minCreepsList: Array<{ name: string; role: CustomRoleType; memoryRoleOpts?: BaseRoleType }> = [
     ...MIN_MINER_LIST.map<{ name: string; role: CustomRoleType }>((name) => ({ name, role: 'miner' })),
     { name: 'MinHarvester', role: 'harvester' },
     { name: 'MinHarvester2', role: 'harvester' },
     { name: 'MinUpgrader', role: 'upgrader' },
     { name: 'MinBuilder', role: 'builder' },
-    { name: 'MinPioneer', role: 'pioneer' },
-    { name: 'MinPioneer2', role: 'pioneer' },
-    { name: 'MinPioneer3', role: 'pioneer' },
+    // TargetRoom1
+    ...MIN_PIONEER_TARGET_ROOM1.map<{ name: string; role: CustomRoleType }>((name) => ({
+      name,
+      role: 'pioneer',
+      memoryRoleOpts: {
+        targetRoomName: ROOM_ID_ENUM.TargetRoomFlag,
+      },
+    })),
+    // TargetRoom2
+    ...MIN_PIONEER_TARGET_ROOM2.map<{ name: string; role: CustomRoleType }>((name) => ({
+      name,
+      role: 'pioneer',
+      memoryRoleOpts: {
+        targetRoomName: ROOM_ID_ENUM.TargetRoomFlag2,
+      },
+    })),
   ];
 
   const minCreepCount =
@@ -49,11 +65,17 @@ const minCreepGroup = (): boolean => {
           break;
         }
         case 'pioneer': {
-          body = BaseRole.generatorRoleBody([
-            { body: WORK, count: 2 },
-            { body: CARRY, count: 5 },
-            { body: MOVE, count: 4 },
-          ]);
+          body = MIN_PIONEER_TARGET_ROOM1.includes(creep.name)
+            ? BaseRole.generatorRoleBody([
+                { body: WORK, count: 2 },
+                { body: CARRY, count: 6 },
+                { body: MOVE, count: 4 },
+              ])
+            : BaseRole.generatorRoleBody([
+                { body: WORK, count: 3 },
+                { body: CARRY, count: 7 },
+                { body: MOVE, count: 5 },
+              ]);
           break;
         }
         default: {
@@ -69,11 +91,8 @@ const minCreepGroup = (): boolean => {
       const spawnResult = utils.role2[creep.role].create({
         body,
         name: creep.name,
+        memoryRoleOpts: creep.memoryRoleOpts,
       });
-      // const spawnResult = Game.spawns[BASE_ID_ENUM.MainBase].spawnCreep(body, creep.name, {
-      //   memory: { role: creep.role, task: creep.role === 'miner' ? 'moving' : 'harvesting' },
-      // });
-
       switch (spawnResult) {
         case OK: {
           console.log(`MiniGroup 孵化${creep.name}成功`);

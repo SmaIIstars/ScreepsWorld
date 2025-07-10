@@ -12,14 +12,16 @@ class Pioneer extends BaseRole {
   }
 
   create = (params: BaseRoleCreateParams) => {
-    const {
-      baseId = BASE_ID_ENUM.MainBase,
-      body,
-      name,
-      memoryRoleOpts = { role: 'pioneer', task: 'harvesting' },
-    } = params;
+    const { baseId = BASE_ID_ENUM.MainBase, body, name, memoryRoleOpts } = params;
     const curName = name ?? `${this.role}-${Game.time}`;
-    return Game.spawns[baseId].spawnCreep(body, curName, { memory: memoryRoleOpts });
+    return Game.spawns[baseId].spawnCreep(body, curName, {
+      memory: {
+        role: 'pioneer',
+        task: 'harvesting',
+        targetRoomName: memoryRoleOpts?.targetRoomName ?? ROOM_ID_ENUM.TargetRoomFlag,
+        ...memoryRoleOpts,
+      },
+    });
   };
 
   run(creep: Creep): void {
@@ -39,11 +41,16 @@ class Pioneer extends BaseRole {
       }
     }
 
+    // 3. 如果身上有能量，且没有执行采集任务，则判断是否有建筑任务
+    if (creep.store[RESOURCE_ENERGY] > 0 && creep.memory.task !== 'harvesting') {
+      this.buildingTask(creep);
+    }
+
     if (creep.memory.task === 'harvesting') {
       this.harvestingTask(creep);
     } else if (creep.memory.task === 'building') {
       this.buildingTask(creep);
-    } else {
+    } else if (creep.memory.task === 'pioneering') {
       this.roleTask(creep);
     }
   }
@@ -56,8 +63,7 @@ class Pioneer extends BaseRole {
       targetRoom = Game.rooms[creep.memory.targetRoomName];
     } else {
       // 没有目标房间则寻找目标房间旗
-      const targetRoomFlag = Game.flags[ROOM_ID_ENUM.TargetRoomFlag];
-
+      const targetRoomFlag = Game.flags[creep.memory.targetRoomName ?? ROOM_ID_ENUM.TargetRoomFlag];
       if (!targetRoomFlag) {
         // 也没有旗子, 则在当前房间做Harvesting任务
         this.getEnergyFromStore(creep, ['source']);
@@ -90,46 +96,45 @@ class Pioneer extends BaseRole {
   }
 
   buildingTask(creep: Creep): void {
-    // // 1. 先判断周围是否有rampart
-    // const ramparts = creep.pos.findInRange(FIND_STRUCTURES, 1, {
-    //   filter: (structure) => structure.structureType === STRUCTURE_RAMPART,
-    // });
-    // // 再判断周围是否有constructionSite
-    // const constructionSites = creep.pos.findInRange(FIND_CONSTRUCTION_SITES, 1, {
-    //   filter: (constructionSite) => constructionSite.structureType === STRUCTURE_RAMPART,
-    // });
+    // 1. 先判断周围是否有road
+    const roads = creep.pos.findInRange(FIND_STRUCTURES, 1, {
+      filter: (structure) => structure.structureType === STRUCTURE_ROAD,
+    });
+    // 再判断周围是否有constructionSite
+    const constructionSites = creep.pos.findInRange(FIND_CONSTRUCTION_SITES, 1, {
+      filter: (constructionSite) => constructionSite.structureType === STRUCTURE_ROAD,
+    });
 
-    // // 如果周围没有rampart和constructionSite，则建一个rampart
-    // if (!ramparts.length && !constructionSites.length) {
-    //   const result = creep.room.createConstructionSite(creep.pos, STRUCTURE_RAMPART);
-    //   console.log(result);
+    // 如果周围没有road和constructionSite，则建一个road
+    // if (!roads.length && !constructionSites.length) {
+    //   const result = creep.room.createConstructionSite(creep.pos, STRUCTURE_ROAD);
     //   if (result === OK) {
-    //     console.log(`Pioneer ${creep.name} 在 ${creep.pos} 创建了rampart建筑工地`);
+    //     creep.say(EMOJI.building);
     //   }
     //   return;
     // }
 
-    // // 2. 如果有constructionSite需要修，则修constructionSite
-    // if (constructionSites.length) {
-    //   const buildResult = creep.build(constructionSites[0]);
-    //   if (buildResult === ERR_NOT_IN_RANGE) {
-    //     creep.moveTo(constructionSites[0]);
-    //   } else if (buildResult === OK) {
-    //     console.log(`Pioneer ${creep.name} 正在修建rampart`);
-    //   }
-    //   return;
-    // }
+    // 2. 如果有constructionSite需要修，则修constructionSite
+    if (constructionSites.length) {
+      const buildResult = creep.build(constructionSites[0]);
+      if (buildResult === ERR_NOT_IN_RANGE) {
+        creep.moveTo(constructionSites[0]);
+      } else if (buildResult === OK) {
+        intervalSleep(10, () => creep.say(EMOJI.building), { time: creep.ticksToLive });
+      }
+      return;
+    }
 
-    // // 3. 如果周围有rampart，且rampart需要修，则修rampart
-    // if (ramparts.length && ramparts[0].hits < ramparts[0].hitsMax) {
-    //   const repairResult = creep.repair(ramparts[0]);
-    //   if (repairResult === ERR_NOT_IN_RANGE) {
-    //     creep.moveTo(ramparts[0]);
-    //   } else if (repairResult === OK) {
-    //     console.log(`Pioneer ${creep.name} 正在修复rampart`);
-    //   }
-    //   return;
-    // }
+    // 3. 如果周围有road，且road需要修，则修road
+    if (roads.length && roads[0].hits < roads[0].hitsMax) {
+      const repairResult = creep.repair(roads[0]);
+      if (repairResult === ERR_NOT_IN_RANGE) {
+        creep.moveTo(roads[0]);
+      } else if (repairResult === OK) {
+        intervalSleep(10, () => creep.say(EMOJI.repairing), { time: creep.ticksToLive });
+      }
+      return;
+    }
 
     creep.memory.task = 'pioneering';
   }

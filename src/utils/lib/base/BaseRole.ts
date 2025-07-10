@@ -10,6 +10,7 @@ import {
 export type BaseRoleType = {
   role: CustomRoleType;
   task: CustomRoleTaskType;
+  targetRoomName?: string;
 };
 
 export type BaseRoleCreateParams = {
@@ -25,6 +26,19 @@ export abstract class BaseRole {
   constructor(role: CustomRoleType) {
     this.role = role;
   }
+
+  /**
+   * 生成角色body
+   * @param bodyWidgetConfig
+   * @returns BodyPartConstant[]
+   */
+  static generatorRoleBody = (bodyWidgetConfig: { body: BodyPartConstant; count: number }[]) => {
+    // flatMap 不兼容 es2019
+    // bodyWidgetConfig.flatMap(({ body, count }) => Array(count).fill(body));
+    return bodyWidgetConfig.reduce<BodyPartConstant[]>((acc, { body, count }) => {
+      return acc.concat(Array(count).fill(body));
+    }, []);
+  };
 
   // abstract create(params: BaseRoleCreateParams): ScreepsReturnCode;
   abstract run(creep: Creep): void;
@@ -51,7 +65,7 @@ export abstract class BaseRole {
       for (const targetStoreType of targetStoreTypes) {
         const targets =
           findAvailableTargetByRange(creep, targetStoreType, false)?.filter((target) => target !== null) ?? [];
-        // es版本的兼容问题
+        // [].push(...[]) 不兼容
         for (const target of targets) {
           if (target) allTargets.push(target);
         }
@@ -70,17 +84,17 @@ export abstract class BaseRole {
         targetStore = creep.pos.findClosestByRange(priorityTargets);
       }
 
-      // 2. container
+      // 2. storage
       if (!targetStore) {
-        priorityTargets = allTargets.filter((t) => t instanceof StructureContainer && t.store[RESOURCE_ENERGY] > 0);
+        priorityTargets = allTargets.filter((t) => t instanceof StructureStorage && t.store[RESOURCE_ENERGY] > 0);
         if (priorityTargets.length > 0) {
           targetStore = creep.pos.findClosestByRange(priorityTargets);
         }
       }
 
-      // 2. storage
+      // 2. container
       if (!targetStore) {
-        priorityTargets = allTargets.filter((t) => t instanceof StructureStorage && t.store[RESOURCE_ENERGY] > 0);
+        priorityTargets = allTargets.filter((t) => t instanceof StructureContainer && t.store[RESOURCE_ENERGY] > 0);
         if (priorityTargets.length > 0) {
           targetStore = creep.pos.findClosestByRange(priorityTargets);
         }
@@ -170,16 +184,15 @@ export abstract class BaseRole {
     return targetStore;
   }
 
-  /**
-   * 生成角色body
-   * @param bodyWidgetConfig
-   * @returns BodyPartConstant[]
-   */
-  static generatorRoleBody = (bodyWidgetConfig: { body: BodyPartConstant; count: number }[]) => {
-    // flatMap 不兼容 es2019
-    // bodyWidgetConfig.flatMap(({ body, count }) => Array(count).fill(body));
-    return bodyWidgetConfig.reduce<BodyPartConstant[]>((acc, { body, count }) => {
-      return acc.concat(Array(count).fill(body));
-    }, []);
-  };
+  getAllAvailableStores(creep: Creep, targetStoreTypes: EnergyStoreType[]): EnergyStoreTargetType[] {
+    const targetStores: EnergyStoreTargetType[] = [];
+    for (const targetStoreType of targetStoreTypes) {
+      const curTargets = findAvailableTargetByRange(creep, targetStoreType, false);
+      // [].push(...[]) 不兼容
+      for (const target of curTargets) {
+        if (target) targetStores.push(target);
+      }
+    }
+    return targetStores;
+  }
 }
