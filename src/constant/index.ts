@@ -9,4 +9,9 @@ export enum ROOM_ID_ENUM {
   TargetRoomFlag2 = 'E48S55',
 }
 
+export enum LINK_ID_ENUM {
+  SourceLink = '687081c9e1144e042a6522ed',
+  ControllerLink = '68708040889973c35ae5588f',
+}
+
 export const BASE_ID = Object.values(BASE_ID_ENUM);

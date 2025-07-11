@@ -1,4 +1,4 @@
-import { BASE_ID_ENUM } from '@/constant';
+import { BASE_ID_ENUM, LINK_ID_ENUM } from '@/constant';
 import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
 import { BaseRole, BaseRoleCreateParams } from '../base/BaseRole';
@@ -53,6 +53,26 @@ class Miner extends BaseRole {
 
   // 采矿任务
   roleTask(creep: Creep): void {
+    if (creep.memory.targetId) {
+      const targetSource = Game.getObjectById<Source>(creep.memory.targetId);
+      if (targetSource) {
+        creep.harvest(targetSource);
+        intervalSleep(10, () => creep.say(EMOJI.mining));
+      } else {
+        // 没找到 targetSource
+        creep.memory.task = 'moving';
+      }
+    }
+
+    // 如果能量满了，则把能量转移给Link
+    if (creep.store[RESOURCE_ENERGY] !== 0) {
+      const link = Game.getObjectById<StructureLink>(LINK_ID_ENUM.SourceLink);
+      if (link?.pos.isNearTo(creep)) {
+        creep.transfer(link, RESOURCE_ENERGY);
+        intervalSleep(10, () => creep.say(EMOJI.transferring));
+      }
+    }
+
     // 如果周围有单位，则把能量转移给对方
     const targetCreep = creep.pos.findInRange(FIND_MY_CREEPS, 1, {
       filter: (creep) => creep.memory.role !== 'miner' && creep.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
@@ -66,16 +86,14 @@ class Miner extends BaseRole {
       }
     }
 
-    if (creep.memory.targetId) {
-      const targetSource = Game.getObjectById<Source>(creep.memory.targetId);
-      if (targetSource) {
-        creep.harvest(targetSource);
-        intervalSleep(10, () => creep.say(EMOJI.mining));
-      }
-      return;
-    }
-    // 没找到 targetSource
-    creep.memory.task = 'moving';
+    // // 如果能量满了，且周围也没有单位，则把能量转移给Container
+    // if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0 && targetCreep.length === 0) {
+    //   const container = Game.getObjectById<StructureContainer>(CONTAINER_ID_ENUM.SourceContainer);
+    //   if (container && container.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+    //     creep.transfer(container, RESOURCE_ENERGY);
+    //     intervalSleep(10, () => creep.say(EMOJI.transferring));
+    //   }
+    // }
   }
 }
 

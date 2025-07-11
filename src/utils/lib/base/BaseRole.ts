@@ -1,3 +1,4 @@
+import { LINK_ID_ENUM } from '@/constant';
 import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
 import {
@@ -84,6 +85,17 @@ export abstract class BaseRole {
         targetStore = creep.pos.findClosestByRange(priorityTargets);
       }
 
+      // 1. link
+      // TODO: ids
+      if (!targetStore) {
+        priorityTargets = allTargets.filter(
+          (t) => t instanceof StructureLink && t.store[RESOURCE_ENERGY] > 0 && t.id === LINK_ID_ENUM.ControllerLink
+        );
+        if (priorityTargets.length > 0) {
+          targetStore = creep.pos.findClosestByRange(priorityTargets);
+        }
+      }
+
       // 2. storage
       if (!targetStore) {
         priorityTargets = allTargets.filter((t) => t instanceof StructureStorage && t.store[RESOURCE_ENERGY] > 0);
@@ -167,7 +179,11 @@ export abstract class BaseRole {
         return targetStore;
       }
 
-      if (targetStore instanceof StructureStorage || targetStore instanceof StructureContainer) {
+      if (
+        targetStore instanceof StructureStorage ||
+        targetStore instanceof StructureContainer ||
+        targetStore instanceof StructureLink
+      ) {
         creep.withdraw(targetStore, RESOURCE_ENERGY);
         intervalSleep(10, () => creep.say(EMOJI.withdrawing), { time: creep.ticksToLive });
         return targetStore;

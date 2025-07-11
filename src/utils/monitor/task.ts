@@ -53,6 +53,11 @@ const minCreepGroup = (): boolean => {
   for (const creep of minCreepsList) {
     // 有俩矿机，则不孵化
     if (creep.name.startsWith('MinMiner') && minCreepCount >= 2) continue;
+    if (creep.name.startsWith('MinHarvester') && Memory.creepsCount.harvester > 0) continue;
+    if (creep.name.startsWith('MinUpgrader') && Memory.creepsCount.upgrader > 0) continue;
+    if (creep.name.startsWith('MinBuilder') && Memory.creepsCount.builder > 0) continue;
+    if (creep.name.startsWith('MinRepairer') && Memory.creepsCount.repairer > 0) continue;
+
     const minCreep = Game.creeps[creep.name];
     if (!minCreep) {
       let body = [];
