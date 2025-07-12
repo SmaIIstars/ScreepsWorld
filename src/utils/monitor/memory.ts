@@ -31,6 +31,8 @@ const creepsCount = () => {
     pioneer: 0,
   };
   for (const creep of Object.values(Game.creeps)) {
+    // 只计数主房间的
+    if (creep.room.name !== ROOM_ID_ENUM.MainRoom) continue;
     // 最小组不参与计数
     if (creep.name.startsWith('Min')) continue;
     if (creep.memory.role) {

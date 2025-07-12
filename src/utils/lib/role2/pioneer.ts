@@ -1,6 +1,7 @@
 import { BASE_ID_ENUM, ROOM_ID_ENUM } from '@/constant';
 import EMOJI from '@/constant/emoji';
 import { intervalSleep } from '@/utils';
+import { EnergyStoreTargetType } from '@/utils/query';
 import { BaseRole, BaseRoleCreateParams } from '../base/BaseRole';
 import harvester from './harvester';
 
@@ -31,26 +32,15 @@ class Pioneer extends BaseRole {
     }
 
     // 2. 如果身上能量满了
-    if (creep.store.getFreeCapacity() === 0) {
-      // 在目标房间，则切换到建筑任务
-      if (creep.room.name === creep.memory?.targetRoomName && creep.memory.task === 'harvesting') {
-        creep.memory.task = 'building';
-      } else {
-        // 不在目标房间，则切换到侦查任务
-        creep.memory.task = 'pioneering';
-      }
-    }
-
-    // 3. 如果身上有能量，且没有执行采集任务，则判断是否有建筑任务
-    if (creep.store[RESOURCE_ENERGY] > 0 && creep.memory.task !== 'harvesting') {
-      this.buildingTask(creep);
+    if (creep.store.getFreeCapacity() === 0 && creep.memory.task === 'harvesting') {
+      creep.memory.task = 'pioneering';
     }
 
     if (creep.memory.task === 'harvesting') {
       this.harvestingTask(creep);
-    } else if (creep.memory.task === 'building') {
-      this.buildingTask(creep);
-    } else if (creep.memory.task === 'pioneering') {
+    }
+    this.buildingTask(creep);
+    if (creep.memory.task === 'pioneering') {
       this.roleTask(creep);
     }
   }
@@ -83,8 +73,17 @@ class Pioneer extends BaseRole {
     // 找到目标房间
     if (targetRoom) {
       if (creep.room.name === targetRoom.name) {
-        // 且在目标房间，则寻找能量源
-        this.getEnergyFromStore(creep, ['resource', 'ruin', 'tombstone', 'source']);
+        // 每15tick更新一次
+        if ((creep.ticksToLive && creep.ticksToLive % 10 === 0) || !creep.memory.cacheTargetStoreId) {
+          // 优先找掉落能量、废墟、墓碑
+          const cacheTargetStore = this.getEnergyFromStore(creep, ['resource', 'ruin', 'tombstone', 'source']);
+          creep.memory.cacheTargetStoreId = cacheTargetStore?.id;
+        } else {
+          const cacheTargetStore: EnergyStoreTargetType = Game.getObjectById(creep.memory.cacheTargetStoreId) ?? null;
+          this.getEnergyFromStore(creep, ['resource', 'ruin', 'tombstone', 'source'], cacheTargetStore);
+        }
+        // // 且在目标房间，则寻找能量源
+        // this.getEnergyFromStore(creep, ['resource', 'ruin', 'tombstone', 'source']);
 
         // const allAvailableStores = this.getAllAvailableStores(creep, ['source']).filter((s) => s instanceof Source);
         // let targetStore: Source | null = null;
@@ -113,47 +112,21 @@ class Pioneer extends BaseRole {
   }
 
   buildingTask(creep: Creep): void {
-    // 1. 先判断周围是否有road
     const roads = creep.pos.findInRange(FIND_STRUCTURES, 1, {
-      filter: (structure) => structure.structureType === STRUCTURE_ROAD,
+      filter: (structure) => structure.structureType === STRUCTURE_ROAD && structure.hits < structure.hitsMax,
     });
-    // 再判断周围是否有constructionSite
+
     const constructionSites = creep.pos.findInRange(FIND_CONSTRUCTION_SITES, 1, {
       filter: (constructionSite) => constructionSite.structureType === STRUCTURE_ROAD,
     });
 
-    // 如果周围没有road和constructionSite，则建一个road
-    // if (!roads.length && !constructionSites.length) {
-    //   const result = creep.room.createConstructionSite(creep.pos, STRUCTURE_ROAD);
-    //   if (result === OK) {
-    //     creep.say(EMOJI.building);
-    //   }
-    //   return;
-    // }
-
-    // 2. 如果有constructionSite需要修，则修constructionSite
+    // 边走边修
     if (constructionSites.length) {
-      const buildResult = creep.build(constructionSites[0]);
-      if (buildResult === ERR_NOT_IN_RANGE) {
-        creep.moveTo(constructionSites[0]);
-      } else if (buildResult === OK) {
-        intervalSleep(10, () => creep.say(EMOJI.building), { time: creep.ticksToLive });
-      }
-      return;
+      creep.build(constructionSites[0]);
     }
-
-    // 3. 如果周围有road，且road需要修，则修road
-    if (roads.length && roads[0].hits < roads[0].hitsMax) {
-      const repairResult = creep.repair(roads[0]);
-      if (repairResult === ERR_NOT_IN_RANGE) {
-        creep.moveTo(roads[0]);
-      } else if (repairResult === OK) {
-        intervalSleep(10, () => creep.say(EMOJI.repairing), { time: creep.ticksToLive });
-      }
-      return;
+    if (roads.length) {
+      creep.repair(roads[0]);
     }
-
-    creep.memory.task = 'pioneering';
   }
 
   // 侦查任务

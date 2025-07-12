@@ -1,7 +1,6 @@
 // Memory 被JSON序列化，不能缓存 Function
 
 import { ROOM_ID_ENUM } from '@/constant';
-import { intervalSleep } from '..';
 import { BaseRole, BaseRoleType } from '../lib/base/BaseRole';
 import { generatorRole } from './generatorRole';
 
@@ -9,6 +8,7 @@ const MIN_MINER_LIST = ['MinMiner', 'MinMiner2'];
 const MIN_PIONEER_TARGET_ROOM1 = ['MinPioneer', 'MinPioneer2', 'MinPioneer3'];
 const MIN_PIONEER_TARGET_ROOM2 = ['MinPioneer4', 'MinPioneer5', 'MinPioneer6', 'MinPioneer7'];
 const MIN_PIONEER_TARGET_ROOM3 = ['MinPioneer8', 'MinPioneer9'];
+const MIN_PIONEER_TARGET_ROOM4 = ['MinPioneer10', 'MinPioneer11', 'MinPioneer12', 'MinPioneer13'];
 
 const task = () => {
   mainRoomTask();
@@ -45,8 +45,21 @@ const minCreepGroup = (): boolean => {
         targetRoomName: ROOM_ID_ENUM.TargetRoomFlag2,
       },
     })),
-    // TargetRoom3
-    ...MIN_PIONEER_TARGET_ROOM3.map<{ name: string; role: CustomRoleType }>((name) => ({
+    // // TargetRoom3
+    // ...MIN_PIONEER_TARGET_ROOM3.map<{ name: string; role: CustomRoleType }>((name) => ({
+    //   name,
+    //   role: 'pioneer',
+    //   body: BaseRole.generatorRoleBody([
+    //     { body: WORK, count: 2 },
+    //     { body: CARRY, count: 2 },
+    //     { body: MOVE, count: 4 },
+    //   ]),
+    //   memoryRoleOpts: {
+    //     targetRoomName: ROOM_ID_ENUM.TargetRoomFlag3,
+    //   },
+    // })),
+    // TargetRoom4
+    ...MIN_PIONEER_TARGET_ROOM4.map<{ name: string; role: CustomRoleType }>((name) => ({
       name,
       role: 'pioneer',
       body: BaseRole.generatorRoleBody([
@@ -55,7 +68,7 @@ const minCreepGroup = (): boolean => {
         { body: MOVE, count: 4 },
       ]),
       memoryRoleOpts: {
-        targetRoomName: ROOM_ID_ENUM.TargetRoomFlag3,
+        targetRoomName: ROOM_ID_ENUM.TargetRoomFlag4,
       },
     })),
   ];
@@ -107,6 +120,7 @@ const minCreepGroup = (): boolean => {
         }
       }
 
+      if (Game.spawns[ROOM_ID_ENUM.MainRoom2]?.spawning) return false;
       const spawnResult = utils.role2[creep.role].create({
         body,
         name: creep.name,
@@ -114,20 +128,9 @@ const minCreepGroup = (): boolean => {
       });
       switch (spawnResult) {
         case OK: {
-          console.log(`MiniGroup 孵化${creep.name}成功`);
+          console.log(`MiniGroup 正在孵化${creep.name}`);
           break;
         }
-        case ERR_NOT_ENOUGH_ENERGY: {
-          intervalSleep(5, () => console.log(`MiniGroup 缺少${creep.name}, 能量不足, 等待孵化`));
-          break;
-        }
-        case ERR_NOT_ENOUGH_RESOURCES: {
-          intervalSleep(5, () => console.log(`MiniGroup 缺少${creep.name}, 资源不足, 等待孵化`));
-          break;
-        }
-        default:
-          intervalSleep(5, () => console.log(`MiniGroup 孵化${creep.name}失败`, spawnResult));
-          break;
       }
 
       return false;
@@ -164,42 +167,4 @@ const generatePixel = () => {
       console.log('生成 pixel 失败', result);
     }
   }
-};
-
-// 临时脚本任务
-export const tempScriptTask = (creep: Creep) => {
-  if (creep.name !== 'MinPioneer8' && creep.name !== 'MinPioneer9') return false;
-  if (creep.room.name !== Game.flags['room2'].room?.name) {
-    creep.moveTo(Game.flags['room2']);
-  } else {
-    // 1. 如果身上没有能量，且正在执行修建或者维修任务，则切换到采集任务
-    if (creep.store[RESOURCE_ENERGY] === 0 && creep.memory.task !== 'harvesting') {
-      creep.memory.task = 'harvesting';
-    }
-
-    // 2. 如果身上能量满了，且正在执行采集任务，则切换到修建任务
-    if (creep.store.getFreeCapacity() === 0 && creep.memory.task === 'harvesting') {
-      creep.memory.task = 'building';
-    }
-
-    if (creep.memory.task === 'building') {
-      const target = creep.pos.findClosestByPath(FIND_CONSTRUCTION_SITES);
-      if (target) {
-        if (target.pos.isNearTo(creep.pos)) {
-          creep.build(target);
-        } else {
-          creep.moveTo(target);
-        }
-      }
-    } else {
-      const source = Game.getObjectById<Source>('5bbcaf8d9099fc012e63ac07');
-      if (source) {
-        if (creep.harvest(source) === ERR_NOT_IN_RANGE) {
-          creep.moveTo(source);
-        }
-      }
-    }
-  }
-
-  return true;
 };

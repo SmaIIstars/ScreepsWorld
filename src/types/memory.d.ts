@@ -8,6 +8,9 @@ interface CreepMemory {
   // creep专注目标的id
   targetId?: string;
   targetRoomName?: string;
+  // 任务系统相关
+  currentTask?: string; // 当前执行的任务ID
+  cacheTargetStoreId?: string;
 }
 
 interface Memory {

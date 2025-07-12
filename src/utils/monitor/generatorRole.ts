@@ -1,4 +1,4 @@
-import { BASE_ID_ENUM, ROOM_ID_ENUM } from '@/constant';
+import { ROOM_ID_ENUM } from '@/constant';
 import { getStrategy } from '@/strategy';
 import { intervalSleep } from '..';
 import { role2 } from '../lib/role2';
@@ -19,6 +19,8 @@ const creeps = () => {
 
   for (let name in Game.creeps) {
     const creep = Game.creeps[name];
+    // 只计数主房间的
+    if (creep.room.name !== ROOM_ID_ENUM.MainRoom) continue;
     if (creep.memory.role && !creep.name.startsWith('Min')) {
       creepCounter.set(creep.memory.role, (creepCounter.get(creep.memory.role) ?? 0) + 1);
     }
@@ -40,16 +42,7 @@ const creeps = () => {
           `${role} 现有:${count} 需要:${strategy.roleMonitor[role]?.count ?? 0} Body:${JSON.stringify(bodyCount)}`
         );
       });
-      if (role !== 'repairer') {
-        role2[role]?.create({
-          body: strategy.roleMonitor[role].body,
-        });
-      } else {
-        utils.role2[role].create({
-          baseId: BASE_ID_ENUM.MainBase,
-          body: strategy.roleMonitor[role].body,
-        });
-      }
+      role2[role]?.create({ body: strategy.roleMonitor[role].body });
       break;
     }
   }

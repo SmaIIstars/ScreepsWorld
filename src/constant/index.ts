@@ -4,10 +4,12 @@ export enum BASE_ID_ENUM {
 
 export enum ROOM_ID_ENUM {
   MainRoom = 'E49S54',
+  MainRoom2 = 'E43S52',
   // TargetRoom, 不可见时命名为房间名
   TargetRoomFlag = 'E48S54',
   TargetRoomFlag2 = 'E48S55',
   TargetRoomFlag3 = 'E43S52',
+  TargetRoomFlag4 = 'E49S53',
 }
 
 export enum LINK_ID_ENUM {

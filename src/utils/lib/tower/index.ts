@@ -22,8 +22,10 @@ export class TowerManager {
       return;
     }
     // 然后治疗友军;
-    if (this.healFriendlyCreeps()) {
-      return;
+    if (this.tower.store[RESOURCE_ENERGY] > (this.tower.store.getCapacity(RESOURCE_ENERGY) ?? 0) * 0.6) {
+      if (this.healFriendlyCreeps()) {
+        return;
+      }
     }
 
     // 最后修复建筑
@@ -38,7 +40,10 @@ export class TowerManager {
   private attackHostileCreeps(): boolean {
     const hostileCreeps = this.tower.room.find(FIND_HOSTILE_CREEPS, {
       filter: (creep) => {
-        return creep.body.some((part) => part.type === ATTACK || part.type === RANGED_ATTACK);
+        return (
+          creep.body.some((part) => part.type === ATTACK || part.type === RANGED_ATTACK || part.type === HEAL) ||
+          this.tower.pos.getRangeTo(creep) <= 10
+        );
       },
     });
 

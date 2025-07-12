@@ -1,6 +1,4 @@
 import { BASE_ID_ENUM } from '@/constant';
-import EMOJI from '@/constant/emoji';
-import { intervalSleep } from '@/utils';
 import { EnergyStoreType } from '@/utils/query';
 import { BaseRole, BaseRoleCreateParams } from '../base/BaseRole';
 
@@ -68,15 +66,32 @@ class Harvester extends BaseRole {
       });
 
     if (targetUnits.length > 0) {
-      const transferResult = creep.transfer(targetUnits[0], RESOURCE_ENERGY);
-      switch (transferResult) {
-        case ERR_NOT_IN_RANGE: {
-          creep.moveTo(targetUnits[0], { visualizePathStyle: { stroke: '#ffffff' } });
-          break;
+      const storeResources: Array<ResourceConstant> = [];
+      for (const [resourceType, amount] of Object.entries(creep.store)) {
+        if (amount > 0) {
+          storeResources.push(resourceType as ResourceConstant);
         }
-        default:
-          intervalSleep(10, () => creep.say(EMOJI.transferring), { time: creep.ticksToLive });
       }
+
+      for (const resourceType of storeResources) {
+        const transferResult = creep.transfer(targetUnits[0], resourceType);
+        switch (transferResult) {
+          case ERR_NOT_IN_RANGE: {
+            creep.moveTo(targetUnits[0], { visualizePathStyle: { stroke: '#ffffff' } });
+            break;
+          }
+        }
+      }
+
+      // const transferResult = creep.transfer(targetUnits[0], RESOURCE_ENERGY);
+      // switch (transferResult) {
+      //   case ERR_NOT_IN_RANGE: {
+      //     creep.moveTo(targetUnits[0], { visualizePathStyle: { stroke: '#ffffff' } });
+      //     break;
+      //   }
+      //   default:
+      //     intervalSleep(10, () => creep.say(EMOJI.transferring), { time: creep.ticksToLive });
+      // }
     }
   }
 
@@ -85,6 +100,7 @@ class Harvester extends BaseRole {
     // 有WORK组件的，才可以采集能源点
     const targetTypes: EnergyStoreType[] = ['resource', 'ruin', 'tombstone', 'container', 'miner'];
     if (creep.body.some((part) => part.type === WORK)) targetTypes.push('source');
+
     this.getEnergyFromStore(creep, targetTypes);
   }
 }

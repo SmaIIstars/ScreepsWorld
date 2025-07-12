@@ -7,7 +7,7 @@ const statusMain = () => {
 const spawnStatus = () => {
   const spawns = Object.values(Game.spawns);
   for (const spawn of spawns) {
-    if (spawn.spawning) {
+    if (spawn?.spawning) {
       spawn.room.visual.text(
         `Spawning:${spawn.spawning.name}`,
         { ...spawn.pos, y: spawn.pos.y - 1 },

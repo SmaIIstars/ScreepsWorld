@@ -51,102 +51,108 @@ export abstract class BaseRole {
    * @param targetStoreType 有能量的存储单位类型
    * @description targetStoreType 是一个优先队列
    */
-  getEnergyFromStore(creep: Creep, targetStoreTypes: EnergyStoreType[]): EnergyStoreTargetType {
-    let targetStore: EnergyStoreTargetType = null;
+  getEnergyFromStore(
+    creep: Creep,
+    targetStoreTypes: EnergyStoreType[],
+    cacheTargetStore: EnergyStoreTargetType = null
+  ): EnergyStoreTargetType {
+    let targetStore: EnergyStoreTargetType = cacheTargetStore;
 
-    // 1. 单类型
-    if (targetStoreTypes.length === 1) {
-      const [targetStoreType] = targetStoreTypes;
-      if (targetStoreType) {
-        targetStore = findAvailableTargetByRange(creep, targetStoreType, true);
-      }
-    } else {
-      // 2. 多类型
-      const allTargets: NonNullable<EnergyStoreTargetType>[] = [];
-      for (const targetStoreType of targetStoreTypes) {
-        const targets =
-          findAvailableTargetByRange(creep, targetStoreType, false)?.filter((target) => target !== null) ?? [];
-        // [].push(...[]) 不兼容
-        for (const target of targets) {
-          if (target) allTargets.push(target);
+    if (!targetStore) {
+      // 1. 单类型
+      if (targetStoreTypes.length === 1) {
+        const [targetStoreType] = targetStoreTypes;
+        if (targetStoreType) {
+          targetStore = findAvailableTargetByRange(creep, targetStoreType, true);
         }
-      }
+      } else {
+        // 2. 多类型
+        const allTargets: NonNullable<EnergyStoreTargetType>[] = [];
+        for (const targetStoreType of targetStoreTypes) {
+          const targets =
+            findAvailableTargetByRange(creep, targetStoreType, false)?.filter((target) => target !== null) ?? [];
+          // [].push(...[]) 不兼容
+          for (const target of targets) {
+            if (target) allTargets.push(target);
+          }
+        }
 
-      // 优先级定义: resource/ruin/tombstone > container/storage > miner > source > mineral/deposit
-      // 其中miner满的优先于最近的
-      let priorityTargets: NonNullable<EnergyStoreTargetType>[] = [];
+        // 优先级定义: resource/ruin/tombstone > container/storage > miner > source > mineral/deposit
+        // 其中miner满的优先于最近的
+        let priorityTargets: NonNullable<EnergyStoreTargetType>[] = [];
 
-      // 1. resource, ruin, tombstone
-      priorityTargets = allTargets.filter(
-        (t) =>
-          (t instanceof Resource && t.resourceType === RESOURCE_ENERGY) || t instanceof Ruin || t instanceof Tombstone
-      );
-      if (priorityTargets.length > 0) {
-        targetStore = creep.pos.findClosestByRange(priorityTargets);
-      }
-
-      // 1. link
-      // TODO: ids
-      if (!targetStore) {
+        // 1. resource, ruin, tombstone
         priorityTargets = allTargets.filter(
-          (t) => t instanceof StructureLink && t.store[RESOURCE_ENERGY] > 0 && t.id === LINK_ID_ENUM.ControllerLink
+          (t) =>
+            (t instanceof Resource && t.resourceType === RESOURCE_ENERGY) || t instanceof Ruin || t instanceof Tombstone
         );
         if (priorityTargets.length > 0) {
           targetStore = creep.pos.findClosestByRange(priorityTargets);
         }
-      }
 
-      // 2. storage
-      if (!targetStore) {
-        priorityTargets = allTargets.filter((t) => t instanceof StructureStorage && t.store[RESOURCE_ENERGY] > 0);
-        if (priorityTargets.length > 0) {
-          targetStore = creep.pos.findClosestByRange(priorityTargets);
-        }
-      }
-
-      // 2. container
-      if (!targetStore) {
-        priorityTargets = allTargets.filter((t) => t instanceof StructureContainer && t.store[RESOURCE_ENERGY] > 0);
-        if (priorityTargets.length > 0) {
-          targetStore = creep.pos.findClosestByRange(priorityTargets);
-        }
-      }
-
-      // 3. miner (Creep, role === 'miner')
-      if (!targetStore) {
-        const miners = allTargets.filter(
-          (t) => t instanceof Creep && t.memory && t.memory.role === 'miner' && t.store[RESOURCE_ENERGY] > 0
-        ) as Creep[];
-        // 满的优先
-        const fullMiners = miners.filter((c) => c.store.getFreeCapacity(RESOURCE_ENERGY) === 0);
-        if (fullMiners.length > 0) {
-          targetStore = creep.pos.findClosestByRange(fullMiners);
-        } else if (miners.length > 0) {
-          targetStore = creep.pos.findClosestByRange(miners);
-        }
-      }
-
-      // 4. source
-      if (!targetStore) {
-        priorityTargets = allTargets.filter((t) => {
-          // 在附近，挖
-          if (creep.pos.isNearTo(t.pos)) return true;
-          // 不在附近，判断是否有位置
-          return (
-            t instanceof Source && findAvailableNearbyPositionsWithMinerExpand(t.pos.x, t.pos.y, 1, creep.room).length
+        // 1. link
+        // TODO: ids
+        if (!targetStore) {
+          priorityTargets = allTargets.filter(
+            (t) => t instanceof StructureLink && t.store[RESOURCE_ENERGY] > 0 && t.id === LINK_ID_ENUM.ControllerLink
           );
-        });
-
-        if (priorityTargets.length > 0) {
-          targetStore = creep.pos.findClosestByRange(priorityTargets);
+          if (priorityTargets.length > 0) {
+            targetStore = creep.pos.findClosestByRange(priorityTargets);
+          }
         }
-      }
 
-      // 5. mineral, deposit
-      if (!targetStore) {
-        priorityTargets = allTargets.filter((t) => t instanceof Mineral || t instanceof Deposit);
-        if (priorityTargets.length > 0) {
-          targetStore = creep.pos.findClosestByRange(priorityTargets);
+        // 2. storage
+        if (!targetStore) {
+          priorityTargets = allTargets.filter((t) => t instanceof StructureStorage && t.store[RESOURCE_ENERGY] > 0);
+          if (priorityTargets.length > 0) {
+            targetStore = creep.pos.findClosestByRange(priorityTargets);
+          }
+        }
+
+        // 2. container
+        if (!targetStore) {
+          priorityTargets = allTargets.filter((t) => t instanceof StructureContainer && t.store[RESOURCE_ENERGY] > 0);
+          if (priorityTargets.length > 0) {
+            targetStore = creep.pos.findClosestByRange(priorityTargets);
+          }
+        }
+
+        // 3. miner (Creep, role === 'miner')
+        if (!targetStore) {
+          const miners = allTargets.filter(
+            (t) => t instanceof Creep && t.memory && t.memory.role === 'miner' && t.store[RESOURCE_ENERGY] > 0
+          ) as Creep[];
+          // 满的优先
+          const fullMiners = miners.filter((c) => c.store.getFreeCapacity(RESOURCE_ENERGY) === 0);
+          if (fullMiners.length > 0) {
+            targetStore = creep.pos.findClosestByRange(fullMiners);
+          } else if (miners.length > 0) {
+            targetStore = creep.pos.findClosestByRange(miners);
+          }
+        }
+
+        // 4. source
+        if (!targetStore) {
+          priorityTargets = allTargets.filter((t) => {
+            // 在附近，挖
+            if (creep.pos.isNearTo(t.pos)) return true;
+            // 不在附近，判断是否有位置
+            return (
+              t instanceof Source && findAvailableNearbyPositionsWithMinerExpand(t.pos.x, t.pos.y, 1, creep.room).length
+            );
+          });
+
+          if (priorityTargets.length > 0) {
+            targetStore = creep.pos.findClosestByRange(priorityTargets);
+          }
+        }
+
+        // 5. mineral, deposit
+        if (!targetStore) {
+          priorityTargets = allTargets.filter((t) => t instanceof Mineral || t instanceof Deposit);
+          if (priorityTargets.length > 0) {
+            targetStore = creep.pos.findClosestByRange(priorityTargets);
+          }
         }
       }
     }
