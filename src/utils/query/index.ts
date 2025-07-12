@@ -1,4 +1,4 @@
-import { ROOM_ID_ENUM } from '@/constant';
+import { LINK_ID_ENUM, ROOM_ID_ENUM } from '@/constant';
 
 /**
  * 检测指定坐标周围的空位（非墙、非source、无占用单位），用于拥塞控制。
@@ -62,7 +62,9 @@ export type EnergyStoreType =
   | 'storage'
   | 'ruin'
   | 'tombstone'
-  | 'resource';
+  | 'resource'
+  | 'link';
+
 export type EnergyStoreTargetType =
   | Creep
   | StructureStorage
@@ -72,6 +74,7 @@ export type EnergyStoreTargetType =
   | Ruin
   | Tombstone
   | Resource
+  | StructureLink
   | null;
 
 export function findAvailableTargetByRange(
@@ -97,6 +100,22 @@ export function findAvailableTargetByRange(
       : creep.room.find(FIND_MY_CREEPS, {
           filter: (creep) => creep.memory.role === 'miner' && creep.store[RESOURCE_ENERGY] > 0,
         });
+  }
+
+  if (targetType === 'link') {
+    return closest
+      ? (creep.pos.findClosestByRange(FIND_MY_STRUCTURES, {
+          filter: (structure: StructureLink) =>
+            structure.structureType === 'link' &&
+            structure.store[RESOURCE_ENERGY] > 0 &&
+            structure.id !== LINK_ID_ENUM.SourceLink,
+        }) as StructureLink | null)
+      : (creep.room.find(FIND_MY_STRUCTURES, {
+          filter: (structure: StructureLink) =>
+            structure.structureType === 'link' &&
+            structure.store[RESOURCE_ENERGY] > 0 &&
+            structure.id !== LINK_ID_ENUM.SourceLink,
+        }) as unknown as StructureLink | null);
   }
 
   // Container 建筑不能使用 FIND_MY_STRUCTURES 查询

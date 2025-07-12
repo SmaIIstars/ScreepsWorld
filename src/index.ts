@@ -1,3 +1,4 @@
+import { runLinks } from './utils/lib/link';
 import { role2 } from './utils/lib/role2';
 import { runTowers } from './utils/lib/tower';
 import monitorMain from './utils/monitor';
@@ -16,6 +17,7 @@ const loop = () => {
       }
 
       runTowers(room);
+      runLinks(room);
     }
   }
 };
