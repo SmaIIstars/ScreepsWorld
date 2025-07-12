@@ -7,6 +7,7 @@ export enum ROOM_ID_ENUM {
   // TargetRoom, 不可见时命名为房间名
   TargetRoomFlag = 'E48S54',
   TargetRoomFlag2 = 'E48S55',
+  TargetRoomFlag3 = 'E43S52',
 }
 
 export enum LINK_ID_ENUM {

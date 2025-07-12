@@ -4,7 +4,7 @@ import { StrategyType } from '.';
 const strategy: StrategyType = {
   roleMonitor: {
     harvester: {
-      count: 2,
+      count: 1,
       body: BaseRole.generatorRoleBody([
         { body: CARRY, count: 23 },
         { body: MOVE, count: 12 },

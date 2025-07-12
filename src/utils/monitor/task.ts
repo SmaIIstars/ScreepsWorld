@@ -8,10 +8,10 @@ import { generatorRole } from './generatorRole';
 const MIN_MINER_LIST = ['MinMiner', 'MinMiner2'];
 const MIN_PIONEER_TARGET_ROOM1 = ['MinPioneer', 'MinPioneer2', 'MinPioneer3'];
 const MIN_PIONEER_TARGET_ROOM2 = ['MinPioneer4', 'MinPioneer5', 'MinPioneer6', 'MinPioneer7'];
+const MIN_PIONEER_TARGET_ROOM3 = ['MinPioneer8', 'MinPioneer9'];
 
 const task = () => {
   mainRoomTask();
-  // nearSourceRoomTask();
   generatePixel();
 };
 
@@ -43,6 +43,19 @@ const minCreepGroup = (): boolean => {
       role: 'pioneer',
       memoryRoleOpts: {
         targetRoomName: ROOM_ID_ENUM.TargetRoomFlag2,
+      },
+    })),
+    // TargetRoom3
+    ...MIN_PIONEER_TARGET_ROOM3.map<{ name: string; role: CustomRoleType }>((name) => ({
+      name,
+      role: 'pioneer',
+      body: BaseRole.generatorRoleBody([
+        { body: WORK, count: 2 },
+        { body: CARRY, count: 2 },
+        { body: MOVE, count: 4 },
+      ]),
+      memoryRoleOpts: {
+        targetRoomName: ROOM_ID_ENUM.TargetRoomFlag3,
       },
     })),
   ];
@@ -141,7 +154,6 @@ const miner = () => {
 export { task };
 
 // pixel
-
 const generatePixel = () => {
   if (Game.cpu.bucket >= 10000) {
     const result = Game.cpu.generatePixel();
@@ -152,4 +164,42 @@ const generatePixel = () => {
       console.log('生成 pixel 失败', result);
     }
   }
+};
+
+// 临时脚本任务
+export const tempScriptTask = (creep: Creep) => {
+  if (creep.name !== 'MinPioneer8' && creep.name !== 'MinPioneer9') return false;
+  if (creep.room.name !== Game.flags['room2'].room?.name) {
+    creep.moveTo(Game.flags['room2']);
+  } else {
+    // 1. 如果身上没有能量，且正在执行修建或者维修任务，则切换到采集任务
+    if (creep.store[RESOURCE_ENERGY] === 0 && creep.memory.task !== 'harvesting') {
+      creep.memory.task = 'harvesting';
+    }
+
+    // 2. 如果身上能量满了，且正在执行采集任务，则切换到修建任务
+    if (creep.store.getFreeCapacity() === 0 && creep.memory.task === 'harvesting') {
+      creep.memory.task = 'building';
+    }
+
+    if (creep.memory.task === 'building') {
+      const target = creep.pos.findClosestByPath(FIND_CONSTRUCTION_SITES);
+      if (target) {
+        if (target.pos.isNearTo(creep.pos)) {
+          creep.build(target);
+        } else {
+          creep.moveTo(target);
+        }
+      }
+    } else {
+      const source = Game.getObjectById<Source>('5bbcaf8d9099fc012e63ac07');
+      if (source) {
+        if (creep.harvest(source) === ERR_NOT_IN_RANGE) {
+          creep.moveTo(source);
+        }
+      }
+    }
+  }
+
+  return true;
 };
