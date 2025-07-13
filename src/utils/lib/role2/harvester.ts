@@ -97,10 +97,19 @@ class Harvester extends BaseRole {
 
   // Harvester 专属采集任务，只专注于采集能源点，矿车和矿车仓库
   harvestTask(creep: Creep): void {
+    // 加速重启
+    let respawnBase = false;
+    if (creep.room.find(FIND_MY_CREEPS).every((creep) => creep.name.startsWith('Min'))) {
+      respawnBase = true;
+    }
+
     // 有WORK组件的，才可以采集能源点
     const targetTypes: EnergyStoreType[] = ['resource', 'ruin', 'tombstone', 'container', 'miner'];
-    if (creep.body.some((part) => part.type === WORK)) targetTypes.push('source');
 
+    if (creep.body.some((part) => part.type === WORK)) targetTypes.push('source');
+    if (respawnBase) {
+      targetTypes.unshift('storage');
+    }
     this.getEnergyFromStore(creep, targetTypes);
   }
 }

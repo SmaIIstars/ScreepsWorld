@@ -6,13 +6,21 @@ import { generatorRole } from './generatorRole';
 
 const MIN_MINER_LIST = ['MinMiner', 'MinMiner2'];
 const MIN_PIONEER_TARGET_ROOM1 = ['MinPioneer', 'MinPioneer2', 'MinPioneer3'];
-const MIN_PIONEER_TARGET_ROOM2 = ['MinPioneer4', 'MinPioneer5', 'MinPioneer6', 'MinPioneer7'];
+const MIN_PIONEER_TARGET_ROOM2 = ['MinPioneer4', 'MinPioneer5', 'MinPioneer6', 'MinPioneer7', 'MinPioneer15'];
 const MIN_PIONEER_TARGET_ROOM3 = ['MinPioneer8', 'MinPioneer9'];
-const MIN_PIONEER_TARGET_ROOM4 = ['MinPioneer10', 'MinPioneer11', 'MinPioneer12', 'MinPioneer13'];
+const MIN_PIONEER_TARGET_ROOM4 = [
+  'MinPioneer10',
+  'MinPioneer11',
+  'MinPioneer12',
+  'MinPioneer13',
+  'MinPioneer14',
+  'MinPioneer15',
+];
 
 const task = () => {
   mainRoomTask();
   generatePixel();
+  // combatGroupTask();
 };
 
 const mainRoomTask = () => {
@@ -38,13 +46,13 @@ const minCreepGroup = (): boolean => {
       },
     })),
     // TargetRoom2
-    ...MIN_PIONEER_TARGET_ROOM2.map<{ name: string; role: CustomRoleType }>((name) => ({
-      name,
-      role: 'pioneer',
-      memoryRoleOpts: {
-        targetRoomName: ROOM_ID_ENUM.TargetRoomFlag2,
-      },
-    })),
+    // ...MIN_PIONEER_TARGET_ROOM2.map<{ name: string; role: CustomRoleType }>((name) => ({
+    //   name,
+    //   role: 'pioneer',
+    //   memoryRoleOpts: {
+    //     targetRoomName: ROOM_ID_ENUM.TargetRoomFlag2,
+    //   },
+    // })),
     // // TargetRoom3
     // ...MIN_PIONEER_TARGET_ROOM3.map<{ name: string; role: CustomRoleType }>((name) => ({
     //   name,
@@ -154,8 +162,6 @@ const miner = () => {
   }
 };
 
-export { task };
-
 // pixel
 const generatePixel = () => {
   if (Game.cpu.bucket >= 10000) {
@@ -168,3 +174,85 @@ const generatePixel = () => {
     }
   }
 };
+
+// 战斗小组，由两个治疗带一个近战攻击
+const COMBAT_GROUP = [
+  { name: 'CombatHealer1', role: 'healer' },
+  { name: 'CombatHealer2', role: 'healer' },
+  { name: 'CombatAttacker', role: 'attacker' },
+];
+
+const combatGroupTask = () => {
+  for (const creepConfig of COMBAT_GROUP) {
+    const creep = Game.creeps[creepConfig.name];
+    if (!creep) {
+      // 生成对应的身体部件
+      let body: BodyPartConstant[];
+      if (creepConfig.role === 'healer') {
+        body = [HEAL, HEAL, MOVE, MOVE];
+      } else if (creepConfig.role === 'attacker') {
+        body = [ATTACK, ATTACK, MOVE, MOVE];
+      } else {
+        continue;
+      }
+      // 生成creep
+      const spawn = Game.spawns[ROOM_ID_ENUM.MainRoom];
+      if (spawn && !spawn.spawning) {
+        const result = utils.role2[creepConfig.role]?.create({
+          body,
+          name: creepConfig.name,
+        });
+        if (result === OK) {
+          console.log(`战斗小组正在孵化: ${creepConfig.name}`);
+        }
+      }
+    }
+  }
+  // 战斗小组AI逻辑：抱团，治疗者治疗攻击手，攻击手主动进攻
+  const attacker = Game.creeps['CombatAttacker'];
+  const healer1 = Game.creeps['CombatHealer1'];
+  const healer2 = Game.creeps['CombatHealer2'];
+
+  // 让治疗者跟随攻击手
+  function followAndHeal(healer: Creep, target: Creep) {
+    if (!healer || !target) return;
+    // 如果攻击手受伤，优先治疗
+    if (target.hits < target.hitsMax) {
+      if (healer.pos.isNearTo(target)) {
+        healer.heal(target);
+      } else {
+        healer.moveTo(target, { visualizePathStyle: { stroke: '#00ff00' } });
+      }
+    } else {
+      // 没受伤就跟随
+      if (!healer.pos.isNearTo(target)) {
+        healer.moveTo(target, { visualizePathStyle: { stroke: '#00ff00' } });
+      }
+    }
+  }
+
+  // 攻击手AI：寻找最近的敌人并进攻
+  if (attacker) {
+    // 寻找最近的敌对creep
+    const hostile = attacker.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
+    if (hostile) {
+      if (attacker.pos.inRangeTo(hostile, 1)) {
+        attacker.attack(hostile);
+      } else {
+        attacker.moveTo(hostile, { visualizePathStyle: { stroke: '#ff0000' } });
+      }
+    } else {
+      // 没有敌人时，原地等待
+      attacker.say('待命');
+    }
+  }
+
+  // 治疗者跟随并治疗攻击手
+  if (healer1 && attacker) {
+    followAndHeal(healer1, attacker);
+  }
+  if (healer2 && attacker) {
+    followAndHeal(healer2, attacker);
+  }
+};
+export { task };

@@ -1,5 +1,13 @@
 import { ROOM_ID_ENUM } from '@/constant';
 
+const generatorRoleBody = (bodyWidgetConfig: { body: BodyPartConstant; count: number }[]) => {
+  // flatMap 不兼容 es2019
+  // bodyWidgetConfig.flatMap(({ body, count }) => Array(count).fill(body));
+  return bodyWidgetConfig.reduce<BodyPartConstant[]>((acc, { body, count }) => {
+    return acc.concat(Array(count).fill(body));
+  }, []);
+};
+
 // 临时脚本任务
 export const tempScriptTask = () => {
   // if (creep.name === 'MinPioneer8' || creep.name === 'MinPioneer9') {
@@ -8,7 +16,7 @@ export const tempScriptTask = () => {
   // 本房间自己的临时任务
   currentRoomTask();
   // }
-
+  autoTowerDefend(Game.rooms[ROOM_ID_ENUM.MainRoom2]);
   return true;
 };
 
@@ -61,13 +69,18 @@ const currentRoomTask = () => {
   // 最小组 (采矿和升级)
   const minCreepGroup = ['Room2MinHarvester1'];
   const minCreepGroup2 = [
-    'Room2MinHarvester2',
+    'Room2MinMiner',
     'Room2MinUpgrader',
+    'Room2MinRepairer',
+    'Room2MinBuilder',
+    'Room2MinHarvester2',
     'Room2MinUpgrader2',
     'Room2MinUpgrader3',
-    'Room2MinBuilder',
-    'Room2MinBuilder2',
-    'Room2MinBuilder3',
+    'Room2MinUpgrader4',
+    'Room2MinUpgrader5',
+    'Room2MinUpgrader6',
+    'Room2MinUpgrader7',
+    'Room2MinUpgrader8',
   ];
 
   const allMinCreep = [...minCreepGroup, ...minCreepGroup2];
@@ -86,11 +99,28 @@ const currentRoomTask = () => {
           role = 'upgrader';
         } else if (creepName.includes('Builder')) {
           role = 'builder';
+        } else if (creepName.includes('Miner')) {
+          role = 'miner';
+        } else if (creepName.includes('Repairer')) {
+          role = 'repairing';
         } else {
           continue;
         }
-        // 造一个基础body
-        const body = minCreepGroup.includes(creepName) ? miniBody : [WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE];
+        // TODO: 替换，造一个基础body
+
+        // console.log(creepName, role);
+        const body = minCreepGroup.includes(creepName)
+          ? miniBody
+          : role === 'miner'
+          ? generatorRoleBody([
+              { body: WORK, count: 6 },
+              { body: MOVE, count: 1 },
+            ])
+          : generatorRoleBody([
+              { body: WORK, count: 4 },
+              { body: CARRY, count: 2 },
+              { body: MOVE, count: 3 },
+            ]);
         const memoryOpts: { role?: CustomRoleType; task?: CustomRoleTaskType } = {};
         if (role === 'harvester') {
           memoryOpts.task = 'harvesting';
@@ -98,6 +128,10 @@ const currentRoomTask = () => {
           memoryOpts.task = 'upgrading';
         } else if (role === 'builder') {
           memoryOpts.task = 'building';
+        } else if (role === 'miner') {
+          memoryOpts.task = 'mining';
+        } else if (role === 'repairing') {
+          memoryOpts.task = 'repairing';
         }
         memoryOpts.role = role as CustomRoleType;
         const result = spawn.spawnCreep(body, creepName, { memory: memoryOpts });
@@ -105,6 +139,7 @@ const currentRoomTask = () => {
           console.log(`[临时任务] 在Spawn2造出 ${creepName} (${role})`);
         }
       }
+      break;
     }
   }
 
@@ -129,6 +164,12 @@ const currentRoomTask = () => {
       case 'building':
         buildTask(creep);
         break;
+      case 'mining':
+        miningTask(creep);
+        break;
+      case 'repairing':
+        repairTask(creep);
+        break;
       default:
         break;
     }
@@ -148,6 +189,9 @@ const harvestTask = (creep: Creep) => {
       case 'builder':
         creep.memory.task = 'building';
         break;
+      case 'repairer':
+        creep.memory.task = 'repairing';
+        break;
       default:
         break;
     }
@@ -156,8 +200,30 @@ const harvestTask = (creep: Creep) => {
   if (creep.memory.task === 'harvesting') {
     let target = Game.getObjectById<Source>(SourceIds[0]);
 
-    if (creep.memory.role === 'upgrader') {
+    if (creep.memory.role === 'upgrader' || creep.memory.role === 'miner') {
       target = Game.getObjectById<Source>(SourceIds[1]);
+    }
+
+    if (creep.memory.role === 'upgrader') {
+      const containerTarget = creep.pos.findInRange(FIND_STRUCTURES, 1, {
+        filter: (structure) => structure.structureType === STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] > 0,
+      });
+      if (containerTarget.length > 0) {
+        if (creep.withdraw(containerTarget[0], RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+          creep.moveTo(containerTarget[0]);
+        }
+        return;
+      }
+
+      const dropResource = creep.pos.findInRange(FIND_DROPPED_RESOURCES, 1, {
+        filter: (resource) => resource.resourceType === RESOURCE_ENERGY,
+      });
+      if (dropResource.length > 0) {
+        if (creep.pickup(dropResource[0]) === ERR_NOT_IN_RANGE) {
+          creep.moveTo(dropResource[0]);
+        }
+        return;
+      }
     }
 
     if (target) {
@@ -168,6 +234,9 @@ const harvestTask = (creep: Creep) => {
   } else {
     // 做自己的临时任务
     switch (creep.memory.task) {
+      case 'mining':
+        miningTask(creep);
+        break;
       case 'transferring':
         transferTask(creep);
         break;
@@ -177,9 +246,20 @@ const harvestTask = (creep: Creep) => {
       case 'upgrading':
         upgradeTask(creep);
         break;
+      case 'repairing':
+        repairTask(creep);
+        break;
       default:
         break;
     }
+  }
+};
+
+const miningTask = (creep: Creep) => {
+  const target = Game.getObjectById<Source>(SourceIds[1]);
+  if (!target) return;
+  if (creep.harvest(target) === ERR_NOT_IN_RANGE) {
+    creep.moveTo(target);
   }
 };
 
@@ -228,6 +308,68 @@ const buildTask = (creep: Creep) => {
       // if (repairTarget.length > 0) {
       //   creep.repair(repairTarget[0]);
       // }
+    }
+  }
+};
+
+const repairTask = (creep: Creep) => {
+  // 专门给塔传能量
+  if (creep.memory.targetId) {
+    const target = Game.getObjectById<StructureTower>(creep.memory.targetId);
+    if (target && target.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+      const result = creep.transfer(target, RESOURCE_ENERGY);
+      if (result === ERR_NOT_IN_RANGE) {
+        creep.moveTo(target);
+      } else if (result === ERR_FULL || result === ERR_INVALID_TARGET) {
+        creep.memory.targetId = undefined;
+      }
+    } else {
+      creep.memory.targetId = undefined;
+    }
+  } else {
+    // 查找能量未满的塔
+    const towers = creep.room.find(FIND_MY_STRUCTURES, {
+      filter: (structure) =>
+        structure.structureType === STRUCTURE_TOWER && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+    }) as StructureTower[];
+    if (towers.length > 0) {
+      creep.memory.targetId = towers[0].id;
+    }
+  }
+};
+
+/**
+ * 自动防御塔逻辑：自动攻击敌人、修理己方建筑、为己方creep治疗
+ * @param room 需要自动防御的房间
+ */
+const autoTowerDefend = (room: Room) => {
+  const towers = room.find<StructureTower>(FIND_MY_STRUCTURES, {
+    filter: (s): s is StructureTower => s.structureType === STRUCTURE_TOWER,
+  });
+
+  for (const tower of towers) {
+    // 1. 优先攻击敌人
+    const hostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
+    if (hostile) {
+      tower.attack(hostile);
+      continue;
+    }
+
+    // 2. 治疗受伤的友方creep
+    const injured = tower.pos.findClosestByRange(FIND_MY_CREEPS, {
+      filter: (c) => c.hits < c.hitsMax,
+    });
+    if (injured) {
+      tower.heal(injured);
+      continue;
+    }
+
+    // 3. 修理受损的建筑（不修墙和rampart，防止浪费能量）
+    const damagedStructure = tower.pos.findClosestByRange(FIND_STRUCTURES, {
+      filter: (s) => s.hits < s.hitsMax && s.structureType !== STRUCTURE_WALL && s.structureType !== STRUCTURE_RAMPART,
+    });
+    if (damagedStructure) {
+      tower.repair(damagedStructure);
     }
   }
 };

@@ -61,6 +61,7 @@ export class OptimizedTaskSystem {
           payload: { resourceType: RESOURCE_ENERGY, amount: source.energy },
           timestamp: Game.time,
           status: 'published',
+          room: room.name,
         };
 
         this.taskQueue.add(task);
@@ -93,6 +94,7 @@ export class OptimizedTaskSystem {
             },
             timestamp: Game.time,
             status: 'published',
+            room: room.name,
           };
 
           this.taskQueue.add(task);
@@ -127,6 +129,7 @@ export class OptimizedTaskSystem {
             },
             timestamp: Game.time,
             status: 'published',
+            room: room.name,
           };
 
           this.taskQueue.add(task);

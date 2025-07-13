@@ -1,3 +1,4 @@
+import { TaskSystemType } from '@/lib/taskSystem';
 import { BaseRole2 } from '@/utils/lib/role2';
 declare global {
   var utils: {
@@ -15,6 +16,8 @@ declare global {
       fatigueParts: number;
     };
   };
+
+  var taskSystem: TaskSystemType | undefined;
 }
 
 export {};

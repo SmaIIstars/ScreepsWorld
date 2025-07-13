@@ -31,7 +31,7 @@ export class TaskPublisher {
 
     for (const source of sources) {
       if (source.energy > 0) {
-        const taskId = `harvest_${source.id}_${Game.time}`;
+        const taskId = `harvest_${source.id}`;
 
         if (!this.taskQueue.hasTask(taskId)) {
           const task: Task = {
@@ -47,6 +47,7 @@ export class TaskPublisher {
             },
             timestamp: Game.time,
             status: 'published',
+            room: room.name,
           };
 
           this.taskQueue.add(task);
@@ -60,7 +61,7 @@ export class TaskPublisher {
    */
   private publishUpgradeTasks(room: Room): void {
     if (room.controller && room.controller.my) {
-      const taskId = `upgrade_${room.controller.id}_${Game.time}`;
+      const taskId = `upgrade_${room.controller.id}`;
 
       if (!this.taskQueue.hasTask(taskId)) {
         const task: Task = {
@@ -77,6 +78,7 @@ export class TaskPublisher {
           },
           timestamp: Game.time,
           status: 'published',
+          room: room.name,
         };
 
         this.taskQueue.add(task);
@@ -91,7 +93,7 @@ export class TaskPublisher {
     const constructionSites = room.find(FIND_CONSTRUCTION_SITES);
 
     for (const site of constructionSites) {
-      const taskId = `build_${site.id}_${Game.time}`;
+      const taskId = `build_${site.id}`;
 
       if (!this.taskQueue.hasTask(taskId)) {
         const task: Task = {
@@ -108,6 +110,7 @@ export class TaskPublisher {
           },
           timestamp: Game.time,
           status: 'published',
+          room: room.name,
         };
 
         this.taskQueue.add(task);
@@ -130,7 +133,7 @@ export class TaskPublisher {
     });
 
     for (const structure of structures) {
-      const taskId = `repair_${structure.id}_${Game.time}`;
+      const taskId = `repair_${structure.id}`;
 
       if (!this.taskQueue.hasTask(taskId)) {
         const task: Task = {
@@ -147,6 +150,7 @@ export class TaskPublisher {
           },
           timestamp: Game.time,
           status: 'published',
+          room: room.name,
         };
 
         this.taskQueue.add(task);
@@ -166,7 +170,7 @@ export class TaskPublisher {
     });
 
     for (const structure of structures) {
-      const taskId = `transfer_${structure.id}_${Game.time}`;
+      const taskId = `transfer_${structure.id}`;
 
       if (!this.taskQueue.hasTask(taskId)) {
         const task: Task = {
@@ -182,6 +186,7 @@ export class TaskPublisher {
           },
           timestamp: Game.time,
           status: 'published',
+          room: room.name,
         };
 
         this.taskQueue.add(task);

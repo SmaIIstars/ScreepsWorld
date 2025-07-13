@@ -17,7 +17,7 @@ export class TaskExecutor {
    */
   assignTasks(room: Room): void {
     const creeps = Object.values(Game.creeps).filter((creep) => creep.room.name === room.name);
-    const tasks = this.taskQueue.getAll().filter((task) => task.status === 'published');
+    const tasks = this.taskQueue.getByStatus('published');
 
     for (const creep of creeps) {
       // 如果creep已经有任务，跳过
@@ -29,9 +29,10 @@ export class TaskExecutor {
       if (suitableTask) {
         // 分配任务给creep
         creep.memory.currentTask = suitableTask.id;
-        suitableTask.status = 'assigned';
-        suitableTask.assignedTo = suitableTask.assignedTo || [];
-        suitableTask.assignedTo.push(creep.name);
+        this.taskQueue.updateTask(suitableTask.id, {
+          status: 'assigned',
+          assignedTo: [...(suitableTask.assignedTo || []), creep.name],
+        });
 
         console.log(`[任务系统] 分配任务 ${suitableTask.id} 给 ${creep.name}`);
       }
@@ -60,12 +61,12 @@ export class TaskExecutor {
 
       if (result === 'completed') {
         // 任务完成
-        task.status = 'completed';
+        this.taskQueue.updateTask(task.id, { status: 'completed' });
         delete creep.memory.currentTask;
         console.log(`[任务系统] 任务 ${task.id} 完成`);
       } else if (result === 'failed') {
         // 任务失败，重新分配
-        task.status = 'published';
+        this.taskQueue.updateTask(task.id, { status: 'published' });
         delete creep.memory.currentTask;
         console.log(`[任务系统] 任务 ${task.id} 失败，重新分配`);
       }

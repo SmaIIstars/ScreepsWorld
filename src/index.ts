@@ -1,5 +1,6 @@
 import { ROOM_ID_ENUM } from './constant';
 import { tempScriptTask } from './lib/monitor/tempTask';
+import { runTaskSystem } from './lib/taskSystem';
 import { runLinks } from './utils/lib/link';
 import { role2 } from './utils/lib/role2';
 import { runTowers } from './utils/lib/tower';
@@ -11,10 +12,7 @@ const loop = () => {
     // 在Room2中，采用任务分配模式
     if (room.name === ROOM_ID_ENUM.MainRoom2) {
       tempScriptTask();
-      // for (let name in Game.creeps) {
-      //   let creep = Game.creeps[name];
-      // }
-      // 这个是room循环的continue,不能return
+      runTaskSystem(room);
     } else {
       // 这部分是主房间逻辑，采用角色分配模式
       if (room.controller?.my) {

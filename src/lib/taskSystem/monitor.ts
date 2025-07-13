@@ -1,3 +1,4 @@
+import { merge } from 'lodash';
 import { TaskQueue } from '../utils/taskQueue';
 
 /**
@@ -25,18 +26,22 @@ export class TaskMonitor {
    * 监控任务队列状态
    */
   private monitorTaskQueue(room: Room): void {
-    const tasks = this.taskQueue.getAll();
-    const publishedTasks = tasks.filter((t) => t.status === 'published').length;
-    const assignedTasks = tasks.filter((t) => t.status === 'assigned').length;
-    const completedTasks = tasks.filter((t) => t.status === 'completed').length;
+    const stats = this.taskQueue.getStats();
 
     // 每100 tick输出一次状态
     if (Game.time % 100 === 0) {
       console.log(`[任务监控][${room.name}] 任务队列状态:`);
-      console.log(`  - 总任务数: ${tasks.length}`);
-      console.log(`  - 待分配: ${publishedTasks}`);
-      console.log(`  - 执行中: ${assignedTasks}`);
-      console.log(`  - 已完成: ${completedTasks}`);
+      console.log(`  - 总任务数: ${stats.total}`);
+      console.log(`  - 待分配: ${stats.published}`);
+      console.log(`  - 执行中: ${stats.assigned}`);
+      console.log(`  - 已完成: ${stats.completed}`);
+      console.log(`  - 按类型:`, JSON.stringify(stats.byType));
+    }
+
+    global.taskSystem = merge(global.taskSystem, { taskQueue: this.taskQueue.getAll() });
+    // 每10 tick保存一次任务队列到Memory作为备份
+    if (Game.time % 10 === 0) {
+      Memory.taskSystem.taskQueue = this.taskQueue.getAll();
     }
   }
 
@@ -106,19 +111,14 @@ export class TaskMonitor {
     completedTasks: number;
     taskTypes: Record<string, number>;
   } {
-    const tasks = this.taskQueue.getAll();
-    const taskTypes: Record<string, number> = {};
-
-    for (const task of tasks) {
-      taskTypes[task.type] = (taskTypes[task.type] || 0) + 1;
-    }
+    const stats = this.taskQueue.getStats();
 
     return {
-      totalTasks: tasks.length,
-      publishedTasks: tasks.filter((t) => t.status === 'published').length,
-      assignedTasks: tasks.filter((t) => t.status === 'assigned').length,
-      completedTasks: tasks.filter((t) => t.status === 'completed').length,
-      taskTypes,
+      totalTasks: stats.total,
+      publishedTasks: stats.published,
+      assignedTasks: stats.assigned,
+      completedTasks: stats.completed,
+      taskTypes: stats.byType,
     };
   }
 
