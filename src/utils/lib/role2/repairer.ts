@@ -40,7 +40,16 @@ class Repairer extends BaseRole {
     }
 
     if (creep.memory.task === 'harvesting') {
-      this.getEnergyFromStore(creep, ['storage', 'resource', 'ruin', 'tombstone', 'container', 'miner', 'source']);
+      this.getEnergyFromStore(creep, [
+        'storage',
+        'resource',
+        'ruin',
+        'tombstone',
+        'terminal',
+        'container',
+        'miner',
+        'source',
+      ]);
     } else {
       this.roleTask(creep);
     }

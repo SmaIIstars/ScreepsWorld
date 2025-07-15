@@ -38,6 +38,7 @@ class Upgrader extends BaseRole {
         'ruin',
         'tombstone',
         'link',
+        'terminal',
         'storage',
         'container',
         'miner',

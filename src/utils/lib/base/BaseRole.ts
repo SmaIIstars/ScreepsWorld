@@ -81,15 +81,26 @@ export abstract class BaseRole {
         // 其中miner满的优先于最近的
         let priorityTargets: NonNullable<EnergyStoreTargetType>[] = [];
 
-        // 1. resource, ruin, tombstone
-        priorityTargets = allTargets.filter(
-          (t) =>
-            (t instanceof Resource && t.resourceType === RESOURCE_ENERGY) || t instanceof Ruin || t instanceof Tombstone
-        );
-        if (priorityTargets.length > 0) {
-          targetStore = creep.pos.findClosestByRange(priorityTargets);
+        // 1. terminal
+        if (!targetStore) {
+          priorityTargets = allTargets.filter((t) => t instanceof StructureTerminal && t.store[RESOURCE_ENERGY] > 0);
+          if (priorityTargets.length > 0) {
+            targetStore = priorityTargets.pop() ?? null;
+          }
         }
 
+        // 1. resource, ruin, tombstone
+        if (!targetStore) {
+          priorityTargets = allTargets.filter(
+            (t) =>
+              (t instanceof Resource && t.resourceType === RESOURCE_ENERGY) ||
+              t instanceof Ruin ||
+              t instanceof Tombstone
+          );
+          if (priorityTargets.length > 0) {
+            targetStore = creep.pos.findClosestByRange(priorityTargets);
+          }
+        }
         // 1. link
         // TODO: ids
         if (!targetStore) {
@@ -168,7 +179,7 @@ export abstract class BaseRole {
       // 在旁边的根据目标类型进行不同的操作
       //   harvest: ['deposit', 'mineral', 'source'],
       //   transfer: ['miner'],
-      //   withdraw: ['ruin', 'tombstone', 'container', 'storage'],
+      //   withdraw: ['ruin', 'tombstone', 'container', 'storage', 'terminal'],
       //   pick: ['resource'],
       if (targetStore instanceof Creep && targetStore.memory.role === 'miner') {
         // 非主动, 等待对方transfer,
@@ -188,7 +199,8 @@ export abstract class BaseRole {
       if (
         targetStore instanceof StructureStorage ||
         targetStore instanceof StructureContainer ||
-        targetStore instanceof StructureLink
+        targetStore instanceof StructureLink ||
+        targetStore instanceof StructureTerminal
       ) {
         creep.withdraw(targetStore, RESOURCE_ENERGY);
         intervalSleep(10, () => creep.say(EMOJI.withdrawing), { time: creep.ticksToLive });

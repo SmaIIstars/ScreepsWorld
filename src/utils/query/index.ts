@@ -63,7 +63,8 @@ export type EnergyStoreType =
   | 'ruin'
   | 'tombstone'
   | 'resource'
-  | 'link';
+  | 'link'
+  | 'terminal';
 
 export type EnergyStoreTargetType =
   | Creep
@@ -75,6 +76,7 @@ export type EnergyStoreTargetType =
   | Tombstone
   | Resource
   | StructureLink
+  | StructureTerminal
   | null;
 
 export function findAvailableTargetByRange(
@@ -92,6 +94,10 @@ export function findAvailableTargetByRange(
   targetType: EnergyStoreType,
   closest?: boolean
 ): EnergyStoreTargetType | EnergyStoreTargetType[] {
+  if (targetType === 'terminal') {
+    return creep.room.terminal ? [creep.room.terminal] : null;
+  }
+
   if (targetType === 'miner') {
     return closest
       ? creep.pos.findClosestByRange(FIND_MY_CREEPS, {
