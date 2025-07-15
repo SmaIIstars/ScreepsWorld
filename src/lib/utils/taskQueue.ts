@@ -21,21 +21,9 @@ export type Task = {
 export class TaskQueue {
   private queue: Task[] = [];
 
-  constructor() {
-    // 如果全局内存被清除，则从Memory加载备份
-    if (global.taskSystem) {
-      this.queue = global.taskSystem.taskQueue;
-    } else {
-      this.loadFromMemory();
-    }
-  }
-
-  /**
-   * 从内存加载任务队列
-   */
-  private loadFromMemory(): void {
-    if (Memory.taskSystem.taskQueue) {
-      this.queue = Memory.taskSystem.taskQueue;
+  constructor(initQueue?: Task[]) {
+    if (initQueue) {
+      this.queue = initQueue;
     }
   }
 
@@ -44,7 +32,6 @@ export class TaskQueue {
    */
   private save(): void {
     global.taskSystem = merge(global.taskSystem, { taskQueue: this.queue });
-    Memory.taskSystem.taskQueue = this.queue;
   }
 
   /**
@@ -212,13 +199,6 @@ export class TaskQueue {
     }
 
     return stats;
-  }
-
-  /**
-   * 强制重新加载内存数据
-   */
-  reload(): void {
-    this.loadFromMemory();
   }
 }
 

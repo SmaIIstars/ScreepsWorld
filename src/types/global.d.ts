@@ -1,4 +1,3 @@
-import { TaskSystemType } from '@/lib/taskSystem';
 import { BaseRole2 } from '@/utils/lib/role2';
 declare global {
   var utils: {
@@ -17,7 +16,7 @@ declare global {
     };
   };
 
-  var taskSystem: TaskSystemType | undefined;
+  var rooms: Record<string, RoomMemory>;
 }
 
 export {};

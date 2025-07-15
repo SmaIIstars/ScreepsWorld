@@ -1,3 +1,10 @@
+// 以下是Memory都有简写
+// creeps -> Memory.creeps
+// powerCreeps -> Memory.powerCreeps
+// flags -> Memory.flags
+// rooms -> Memory.rooms
+// spawns -> Memory.spawns
+
 interface CreepMemory {
   role?: CustomRoleType;
   task?: CustomRoleTaskType;
@@ -10,19 +17,14 @@ interface CreepMemory {
   cacheTargetStoreId?: string;
 }
 
-// 以下是Memory都有简写
-// creeps -> Memory.creeps
-// powerCreeps -> Memory.powerCreeps
-// flags -> Memory.flags
-// rooms -> Memory.rooms
-// spawns -> Memory.spawns
+interface RoomMemory {
+  name: string;
+  structures: Partial<Record<StructureConstant, string[]>>;
+  taskQueue: import('@/lib/utils/taskQueue').Task[];
+}
 
 interface Memory {
   sources: Record<'Source' | 'Mineral', string[]>;
   creepsCount: Record<CustomRoleType, number>;
-
-  // 任务系统相关内存
-  taskSystem: {
-    taskQueue: import('@/lib/utils/taskQueue').Task[];
-  };
+  rooms: Record<string, RoomMemory>;
 }
