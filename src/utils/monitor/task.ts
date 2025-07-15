@@ -1,6 +1,6 @@
 // Memory 被JSON序列化，不能缓存 Function
 
-import { ROOM_ID_ENUM } from '@/constant';
+import { BASE_ID_ENUM, ROOM_ID_ENUM } from '@/constant';
 import { BaseRole, BaseRoleType } from '../lib/base/BaseRole';
 import { generatorRole } from './generatorRole';
 
@@ -18,9 +18,9 @@ const MIN_PIONEER_TARGET_ROOM4 = [
 ];
 
 const task = () => {
+  combatGroupTask();
   mainRoomTask();
   generatePixel();
-  // combatGroupTask();
 };
 
 const mainRoomTask = () => {
@@ -37,14 +37,7 @@ const minCreepGroup = (): boolean => {
     { name: 'MinHarvester2', role: 'harvester' },
     { name: 'MinUpgrader', role: 'upgrader' },
     { name: 'MinBuilder', role: 'builder' },
-    // TargetRoom1
-    ...MIN_PIONEER_TARGET_ROOM1.map<{ name: string; role: CustomRoleType }>((name) => ({
-      name,
-      role: 'pioneer',
-      memoryRoleOpts: {
-        targetRoomName: ROOM_ID_ENUM.TargetRoomFlag,
-      },
-    })),
+
     // TargetRoom2
     // ...MIN_PIONEER_TARGET_ROOM2.map<{ name: string; role: CustomRoleType }>((name) => ({
     //   name,
@@ -53,7 +46,7 @@ const minCreepGroup = (): boolean => {
     //     targetRoomName: ROOM_ID_ENUM.TargetRoomFlag2,
     //   },
     // })),
-    // // TargetRoom3
+    // TargetRoom3
     // ...MIN_PIONEER_TARGET_ROOM3.map<{ name: string; role: CustomRoleType }>((name) => ({
     //   name,
     //   role: 'pioneer',
@@ -67,19 +60,67 @@ const minCreepGroup = (): boolean => {
     //   },
     // })),
     // TargetRoom4
-    ...MIN_PIONEER_TARGET_ROOM4.map<{ name: string; role: CustomRoleType }>((name) => ({
-      name,
-      role: 'pioneer',
-      body: BaseRole.generatorRoleBody([
-        { body: WORK, count: 2 },
-        { body: CARRY, count: 2 },
-        { body: MOVE, count: 4 },
-      ]),
-      memoryRoleOpts: {
-        targetRoomName: ROOM_ID_ENUM.TargetRoomFlag4,
-      },
-    })),
+    // ...MIN_PIONEER_TARGET_ROOM4.map<{ name: string; role: CustomRoleType }>((name) => ({
+    //   name,
+    //   role: 'pioneer',
+    //   body: BaseRole.generatorRoleBody([
+    //     { body: WORK, count: 2 },
+    //     { body: CARRY, count: 2 },
+    //     { body: MOVE, count: 4 },
+    //   ]),
+    //   memoryRoleOpts: {
+    //     targetRoomName: ROOM_ID_ENUM.TargetRoomFlag4,
+    //   },
+    // })),
   ];
+
+  if (!Game.flags[ROOM_ID_ENUM.TargetRoomFlag].room?.find(FIND_HOSTILE_CREEPS).length) {
+    // TargetRoom1
+    minCreepsList.push(
+      ...MIN_PIONEER_TARGET_ROOM3.map<{ name: string; role: CustomRoleType }>((name) => ({
+        name,
+        role: 'pioneer',
+        body: BaseRole.generatorRoleBody([
+          { body: WORK, count: 2 },
+          { body: CARRY, count: 2 },
+          { body: MOVE, count: 4 },
+        ]),
+        memoryRoleOpts: {
+          targetRoomName: ROOM_ID_ENUM.TargetRoomFlag,
+        },
+      }))
+    );
+  }
+
+  if (!Game.flags[ROOM_ID_ENUM.TargetRoomFlag2].room?.find(FIND_HOSTILE_CREEPS).length) {
+    // TargetRoom2
+    minCreepsList.push(
+      ...MIN_PIONEER_TARGET_ROOM2.map<{ name: string; role: CustomRoleType }>((name) => ({
+        name,
+        role: 'pioneer',
+        memoryRoleOpts: {
+          targetRoomName: ROOM_ID_ENUM.TargetRoomFlag2,
+        },
+      }))
+    );
+  }
+
+  if (!Game.flags[ROOM_ID_ENUM.TargetRoomFlag4].room?.find(FIND_HOSTILE_CREEPS).length) {
+    minCreepsList.push(
+      ...MIN_PIONEER_TARGET_ROOM4.map<{ name: string; role: CustomRoleType }>((name) => ({
+        name,
+        role: 'pioneer',
+        body: BaseRole.generatorRoleBody([
+          { body: WORK, count: 2 },
+          { body: CARRY, count: 2 },
+          { body: MOVE, count: 4 },
+        ]),
+        memoryRoleOpts: {
+          targetRoomName: ROOM_ID_ENUM.TargetRoomFlag4,
+        },
+      }))
+    );
+  }
 
   const minCreepCount =
     Object.values(Game.creeps).filter((creep) => creep.name.startsWith('MinMiner')).length + Memory.creepsCount.miner;
@@ -177,82 +218,45 @@ const generatePixel = () => {
 
 // 战斗小组，由两个治疗带一个近战攻击
 const COMBAT_GROUP = [
-  { name: 'CombatHealer1', role: 'healer' },
-  { name: 'CombatHealer2', role: 'healer' },
-  { name: 'CombatAttacker', role: 'attacker' },
+  { name: 'CombatAttacker1', role: 'attacker' },
+  { name: 'CombatAttacker2', role: 'attacker' },
 ];
 
 const combatGroupTask = () => {
   for (const creepConfig of COMBAT_GROUP) {
     const creep = Game.creeps[creepConfig.name];
     if (!creep) {
-      // 生成对应的身体部件
-      let body: BodyPartConstant[];
-      if (creepConfig.role === 'healer') {
-        body = [HEAL, HEAL, MOVE, MOVE];
-      } else if (creepConfig.role === 'attacker') {
-        body = [ATTACK, ATTACK, MOVE, MOVE];
-      } else {
-        continue;
-      }
+      const body = BaseRole.generatorRoleBody([
+        { body: ATTACK, count: 1 },
+        { body: MOVE, count: 1 },
+      ]);
       // 生成creep
-      const spawn = Game.spawns[ROOM_ID_ENUM.MainRoom];
+      const spawn = Game.spawns[BASE_ID_ENUM.MainBase];
       if (spawn && !spawn.spawning) {
-        const result = utils.role2[creepConfig.role]?.create({
-          body,
-          name: creepConfig.name,
-        });
+        const result = spawn.spawnCreep(body, creepConfig.name);
         if (result === OK) {
           console.log(`战斗小组正在孵化: ${creepConfig.name}`);
+          break;
         }
       }
     }
   }
-  // 战斗小组AI逻辑：抱团，治疗者治疗攻击手，攻击手主动进攻
-  const attacker = Game.creeps['CombatAttacker'];
-  const healer1 = Game.creeps['CombatHealer1'];
-  const healer2 = Game.creeps['CombatHealer2'];
+  const attackers = [Game.creeps['CombatAttacker1'], Game.creeps['CombatAttacker2']];
+  const fixPos: { x: number; y: number }[] = [
+    { x: 31, y: 0 },
+    { x: 0, y: 31 },
+  ];
 
-  // 让治疗者跟随攻击手
-  function followAndHeal(healer: Creep, target: Creep) {
-    if (!healer || !target) return;
-    // 如果攻击手受伤，优先治疗
-    if (target.hits < target.hitsMax) {
-      if (healer.pos.isNearTo(target)) {
-        healer.heal(target);
-      } else {
-        healer.moveTo(target, { visualizePathStyle: { stroke: '#00ff00' } });
-      }
-    } else {
-      // 没受伤就跟随
-      if (!healer.pos.isNearTo(target)) {
-        healer.moveTo(target, { visualizePathStyle: { stroke: '#00ff00' } });
-      }
+  attackers.forEach((attacker, index) => {
+    if (!attacker) return;
+    // 如果attacker不在边界则向边界移动
+    if (attacker.pos.x !== 0 && attacker.pos.x !== 49 && attacker.pos.y !== 0 && attacker.pos.y !== 49) {
+      attacker.moveTo(fixPos[index].x, fixPos[index].y);
     }
-  }
-
-  // 攻击手AI：寻找最近的敌人并进攻
-  if (attacker) {
-    // 寻找最近的敌对creep
-    const hostile = attacker.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
-    if (hostile) {
-      if (attacker.pos.inRangeTo(hostile, 1)) {
-        attacker.attack(hostile);
-      } else {
-        attacker.moveTo(hostile, { visualizePathStyle: { stroke: '#ff0000' } });
-      }
-    } else {
-      // 没有敌人时，原地等待
-      attacker.say('待命');
+    const hostile = attacker.pos.findInRange(FIND_HOSTILE_CREEPS, 1);
+    if (hostile.length > 0) {
+      attacker.attack(hostile[0]);
     }
-  }
-
-  // 治疗者跟随并治疗攻击手
-  if (healer1 && attacker) {
-    followAndHeal(healer1, attacker);
-  }
-  if (healer2 && attacker) {
-    followAndHeal(healer2, attacker);
-  }
+  });
 };
 export { task };
