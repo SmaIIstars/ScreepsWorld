@@ -1,5 +1,3 @@
-import { merge } from 'lodash';
-
 export type TaskStatus = 'published' | 'assigned' | 'completed' | 'expired';
 
 export type Task = {
@@ -20,18 +18,18 @@ export type Task = {
 
 export class TaskQueue {
   private queue: Task[] = [];
+  private roomName: string;
 
-  constructor(initQueue?: Task[]) {
-    if (initQueue) {
-      this.queue = initQueue;
-    }
+  constructor(roomName: string) {
+    this.roomName = roomName;
+    this.queue = Memory.rooms?.[roomName]?.taskQueue ?? [];
   }
 
   /**
    * 保存任务队列
    */
   private save(): void {
-    global.taskSystem = merge(global.taskSystem, { taskQueue: this.queue });
+    Memory.rooms[this.roomName].taskQueue = this.queue;
   }
 
   /**
@@ -201,6 +199,3 @@ export class TaskQueue {
     return stats;
   }
 }
-
-// 导出单例实例
-export const taskQueue = new TaskQueue();

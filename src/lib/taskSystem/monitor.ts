@@ -1,4 +1,3 @@
-import { merge } from 'lodash';
 import { TaskQueue } from '../utils/taskQueue';
 
 /**
@@ -38,10 +37,10 @@ export class TaskMonitor {
       console.log(`  - 按类型:`, JSON.stringify(stats.byType));
     }
 
-    global.taskSystem = merge(global.taskSystem, { taskQueue: this.taskQueue.getAll() });
+    // global.taskSystem = merge(global.taskSystem, { taskQueue: this.taskQueue.getAll() });
     // 每10 tick保存一次任务队列到Memory作为备份
     if (Game.time % 10 === 0) {
-      Memory.taskSystem.taskQueue = this.taskQueue.getAll();
+      // Memory.taskSystem.taskQueue = this.taskQueue.getAll();
     }
   }
 

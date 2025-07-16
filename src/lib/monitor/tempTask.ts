@@ -74,17 +74,26 @@ const currentRoomTask = () => {
     'Room2MinUpgrader',
     'Room2MinRepairer',
     'Room2MinBuilder',
-    'Room2MinBuilder2',
-    'Room2MinBuilder3',
     'Room2MinHarvester2',
     'Room2MinUpgrader2',
     'Room2MinUpgrader3',
     'Room2MinUpgrader4',
   ];
 
-  const allMinCreep = [...minCreepGroup, ...minCreepGroup2];
+  minCreepGroup.forEach((creepName) => {
+    const creep = Game.creeps[creepName];
+    if (!creep) {
+      const spawn = Game.spawns['Spawn2'];
+      spawn.spawnCreep(miniBody, creepName, {
+        memory: {
+          role: 'harvester',
+          task: 'harvesting',
+        },
+      });
+    }
+  });
 
-  for (const creepName of allMinCreep) {
+  for (const creepName of minCreepGroup2) {
     const creep = Game.creeps[creepName];
     if (!creep) {
       // 如果creep不存在，则尝试在Spawn2基地造

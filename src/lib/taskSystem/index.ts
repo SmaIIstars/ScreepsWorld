@@ -24,17 +24,16 @@ export class TaskSystem {
   private monitor: TaskMonitor;
 
   constructor(roomName: string) {
-    if (!global.rooms[roomName]) {
-      global.rooms[roomName] = Memory.rooms[roomName]
+    if (!global.rooms?.[roomName]) {
+      global.rooms[roomName] = Memory.rooms?.[roomName]
         ? cloneDeep(Memory.rooms[roomName])
         : { ...defaultRoomMemory, name: roomName };
     }
-
     // 确保 taskQueue 存在
     if (!global.rooms[roomName].taskQueue) global.rooms[roomName].taskQueue = [];
 
     // 用房间的 taskQueue 初始化 TaskQueue 实例
-    this.taskQueue = new TaskQueue(global.rooms[roomName].taskQueue);
+    this.taskQueue = new TaskQueue(roomName);
     this.monitor = new TaskMonitor(this.taskQueue);
     // this.publisher = new TaskPublisher(this.taskQueue);
     // this.executor = new TaskExecutor(this.taskQueue);
