@@ -69,12 +69,12 @@ const currentRoomTask = () => {
   // 最小组 (采矿和升级)
   const minCreepGroup = ['Room2MinHarvester1'];
   const minCreepGroup2 = [
-    'Room2MinMiner',
     'Room2MinMiner2',
+    'Room2MinMiner',
     'Room2MinUpgrader',
+    'Room2MinHarvester2',
     'Room2MinRepairer',
     'Room2MinBuilder',
-    'Room2MinHarvester2',
     'Room2MinUpgrader2',
     'Room2MinUpgrader3',
     'Room2MinUpgrader4',
@@ -130,8 +130,8 @@ const currentRoomTask = () => {
 
         if (creepName.includes('MinHarvester')) {
           body = generatorRoleBody([
-            { body: WORK, count: 2 },
-            { body: CARRY, count: 7 },
+            { body: WORK, count: 0 },
+            { body: CARRY, count: 10 },
             { body: MOVE, count: 5 },
           ]);
         }

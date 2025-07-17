@@ -34,11 +34,11 @@ class Upgrader extends BaseRole {
 
     if (creep.memory.task === 'harvesting') {
       this.getEnergyFromStore(creep, [
-        'resource',
-        'ruin',
-        'tombstone',
+        // 'resource',
+        // 'ruin',
+        // 'tombstone',
         'link',
-        'terminal',
+        // 'terminal',
         'storage',
         'container',
         'miner',

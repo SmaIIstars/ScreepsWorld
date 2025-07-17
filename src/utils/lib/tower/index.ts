@@ -90,7 +90,7 @@ export class TowerManager {
         if (
           structure instanceof StructureWall &&
           this.tower.pos.getRangeTo(structure) <= 6 &&
-          structure.hits < structure.hitsMax * 0.0005
+          structure.hits < structure.hitsMax * 0.005
         )
           return true;
         // 其他建筑，修复到100000

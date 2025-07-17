@@ -7,7 +7,7 @@ import { generatorRole } from './generatorRole';
 const MIN_MINER_LIST = ['MinMiner', 'MinMiner2'];
 const MIN_PIONEER_TARGET_ROOM1 = ['MinPioneer', 'MinPioneer2', 'MinPioneer3'];
 const MIN_PIONEER_TARGET_ROOM2 = ['MinPioneer4', 'MinPioneer5', 'MinPioneer6', 'MinPioneer7', 'MinPioneer15'];
-const MIN_PIONEER_TARGET_ROOM3 = ['MinPioneer8', 'MinPioneer9'];
+// const MIN_PIONEER_TARGET_ROOM3 = ['MinPioneer8', 'MinPioneer9'];
 const MIN_PIONEER_TARGET_ROOM4 = [
   'MinPioneer10',
   'MinPioneer11',
@@ -77,7 +77,7 @@ const minCreepGroup = (): boolean => {
   if (!Game.flags[ROOM_ID_ENUM.TargetRoomFlag].room?.find(FIND_HOSTILE_CREEPS).length) {
     // TargetRoom1
     minCreepsList.push(
-      ...MIN_PIONEER_TARGET_ROOM3.map<{ name: string; role: CustomRoleType }>((name) => ({
+      ...MIN_PIONEER_TARGET_ROOM1.map<{ name: string; role: CustomRoleType }>((name) => ({
         name,
         role: 'pioneer',
         body: BaseRole.generatorRoleBody([
@@ -146,17 +146,11 @@ const minCreepGroup = (): boolean => {
           break;
         }
         case 'pioneer': {
-          body = MIN_PIONEER_TARGET_ROOM1.includes(creep.name)
-            ? BaseRole.generatorRoleBody([
-                { body: WORK, count: 2 },
-                { body: CARRY, count: 6 },
-                { body: MOVE, count: 4 },
-              ])
-            : BaseRole.generatorRoleBody([
-                { body: WORK, count: 3 },
-                { body: CARRY, count: 7 },
-                { body: MOVE, count: 5 },
-              ]);
+          body = BaseRole.generatorRoleBody([
+            { body: WORK, count: 5 },
+            { body: CARRY, count: 15 },
+            { body: MOVE, count: 10 },
+          ]);
           break;
         }
         default: {
@@ -216,7 +210,6 @@ const generatePixel = () => {
   }
 };
 
-// 战斗小组，由两个治疗带一个近战攻击
 const COMBAT_GROUP = [
   { name: 'CombatAttacker1', role: 'attacker' },
   { name: 'CombatAttacker2', role: 'attacker' },

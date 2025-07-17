@@ -78,8 +78,17 @@ class Repairer extends BaseRole {
         if (aIndex !== bIndex) {
           return aIndex - bIndex;
         }
-        // 同类型按血量升序
-        return a.hits - b.hits;
+        // 同类型按血量升序, 血量相同按能量
+        if (a.hits !== b.hits) {
+          return a.hits - b.hits;
+        }
+        if (a instanceof StructureTower && b instanceof StructureTower) {
+          const aEnergy = a.store.getFreeCapacity(RESOURCE_ENERGY);
+          const bEnergy = b.store.getFreeCapacity(RESOURCE_ENERGY);
+          // 谁的少谁优先
+          return bEnergy - aEnergy;
+        }
+        return 0;
       });
 
     if (!targetStructures.length) return;

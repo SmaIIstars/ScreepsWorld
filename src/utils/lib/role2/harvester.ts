@@ -7,6 +7,7 @@ const PriorityQueueOfStoreEnergy: Array<Structure['structureType']> = [
   STRUCTURE_SPAWN,
   STRUCTURE_STORAGE,
   STRUCTURE_CONTAINER,
+  STRUCTURE_LAB,
 ];
 
 class Harvester extends BaseRole {
