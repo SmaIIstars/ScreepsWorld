@@ -7,8 +7,16 @@
     "strict": true,
     "esModuleInterop": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
-  "include": ["src/**/*", "src/utils/lib/role/.ts"]
+  "include": [
+    "src/**/*",
+  ],
+  "exclude": [
+    "src/utils/**/*",
+    // "src/lib/taskSystem/*"
+  ]
 }

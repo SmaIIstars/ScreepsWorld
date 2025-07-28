@@ -22,7 +22,7 @@ export class TowerManager {
       return;
     }
     // 然后治疗友军;
-    if (this.tower.store[RESOURCE_ENERGY] > (this.tower.store.getCapacity(RESOURCE_ENERGY) ?? 0) * 0.6) {
+    if (this.tower.store[RESOURCE_ENERGY] > (this.tower.store.getCapacity(RESOURCE_ENERGY) ?? 0) * 0.01) {
       if (this.healFriendlyCreeps()) {
         return;
       }
@@ -94,7 +94,8 @@ export class TowerManager {
         )
           return true;
         // 其他建筑，修复到100000
-        return structure.hits < 100000;
+        // return structure.hits < 100000;
+        return false;
       },
     });
 

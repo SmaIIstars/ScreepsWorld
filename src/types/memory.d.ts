@@ -6,25 +6,32 @@
 // spawns -> Memory.spawns
 
 interface CreepMemory {
-  role?: CustomRoleType;
-  task?: CustomRoleTaskType;
-  // creep专注目标的id
+  role: CustomRoleType;
+  currentTask?: string; // 当前执行的任务ID
+  /**
+   * @deprecated 仅在 tempTask 中 Min 相关用法，后续不推荐使用
+   */
+  task?: TaskType;
+  /**
+   * @deprecated 仅在 tempTask 中 Min 相关用法，后续不推荐使用
+   */
   targetId?: string;
-  targetRoomName?: string;
+  // targetRoomName?: string;
 
   // 任务系统相关
-  currentTask?: string; // 当前执行的任务ID
-  cacheTargetStoreId?: string;
+  // cacheTargetStoreId?: string;
 }
 
+type RoomSourceType = LOOK_SOURCES | LOOK_MINERALS | LOOK_RESOURCES | LOOK_RUINS | LOOK_TOMBSTONES;
+
 interface RoomMemory {
-  name: string;
-  structures: Partial<Record<StructureConstant, string[]>>;
-  taskQueue: import('@/lib/utils/taskQueue').Task[];
+  taskMap?: Record<string, import('@/lib/utils/taskMap').Task>; // New Map-based structure
+  taskMapVersion?: number; // New Map-based version
+  creepsCount?: Record<CustomRoleType, number>;
+  sources?: Partial<Record<RoomSourceType, string[]>>;
 }
 
 interface Memory {
-  sources: Record<'Source' | 'Mineral', string[]>;
-  creepsCount: Record<CustomRoleType, number>;
+  [x: string]: any;
   rooms: Record<string, RoomMemory>;
 }

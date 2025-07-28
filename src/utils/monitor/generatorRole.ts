@@ -1,4 +1,4 @@
-import { ROOM_ID_ENUM } from '@/constant';
+import { BASE_ID_ENUM, ROOM_ID_ENUM } from '@/constant';
 import { getStrategy } from '@/strategy';
 import { intervalSleep } from '..';
 import { role2 } from '../lib/role2';
@@ -42,7 +42,9 @@ const creeps = () => {
           `${role} 现有:${count} 需要:${strategy.roleMonitor[role]?.count ?? 0} Body:${JSON.stringify(bodyCount)}`
         );
       });
-      role2[role]?.create({ body: strategy.roleMonitor[role].body });
+
+      const base = Game.spawns[BASE_ID_ENUM.MainBase].spawning ? BASE_ID_ENUM.MainBase3 : BASE_ID_ENUM.MainBase;
+      role2[role]?.create({ body: strategy.roleMonitor[role].body, baseId: base });
       break;
     }
   }

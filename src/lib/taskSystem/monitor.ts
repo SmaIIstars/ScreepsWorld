@@ -1,14 +1,15 @@
-import { TaskQueue } from '../utils/taskQueue';
+import { intervalSleep } from '@/utils';
+import { TaskMap, TaskStatusEnum } from '../utils/taskMap';
 
 /**
  * 任务监控器
  * 负责监控任务系统的状态和性能
  */
 export class TaskMonitor {
-  private taskQueue: TaskQueue;
+  private taskMap: TaskMap;
 
-  constructor(taskQueue: TaskQueue) {
-    this.taskQueue = taskQueue;
+  constructor(taskMap: TaskMap) {
+    this.taskMap = taskMap;
   }
 
   /**
@@ -22,26 +23,29 @@ export class TaskMonitor {
   }
 
   /**
-   * 监控任务队列状态
+   * 监控任务Map状态
    */
   private monitorTaskQueue(room: Room): void {
-    const stats = this.taskQueue.getStats();
+    const stats = this.taskMap.getStats();
 
-    // 每100 tick输出一次状态
-    if (Game.time % 100 === 0) {
-      console.log(`[任务监控][${room.name}] 任务队列状态:`);
+    // 更新任务状态
+    const tasks = this.taskMap.getAll();
+    for (const task of tasks) {
+      // 1. 采集任务
+
+      if (task.type === 'harvesting' && task.payload && Object.values(task.payload).every((amount) => amount === 0)) {
+        this.taskMap.updateTask(task.id, { status: TaskStatusEnum.completed });
+      }
+    }
+
+    // 打印任务状态
+    intervalSleep(50, () => {
+      console.log(`[任务监控][${room.name}] 任务Map状态:`);
       console.log(`  - 总任务数: ${stats.total}`);
       console.log(`  - 待分配: ${stats.published}`);
       console.log(`  - 执行中: ${stats.assigned}`);
       console.log(`  - 已完成: ${stats.completed}`);
-      console.log(`  - 按类型:`, JSON.stringify(stats.byType));
-    }
-
-    // global.taskSystem = merge(global.taskSystem, { taskQueue: this.taskQueue.getAll() });
-    // 每10 tick保存一次任务队列到Memory作为备份
-    if (Game.time % 10 === 0) {
-      // Memory.taskSystem.taskQueue = this.taskQueue.getAll();
-    }
+    });
   }
 
   /**
@@ -49,11 +53,17 @@ export class TaskMonitor {
    */
   private monitorCreepTasks(room: Room): void {
     const creeps = Object.values(Game.creeps).filter((creep) => creep.room.name === room.name);
-    const creepsWithTasks = creeps.filter((creep) => creep.memory.currentTask);
-    const creepsWithoutTasks = creeps.filter((creep) => !creep.memory.currentTask);
+    const creepsWithTasks: Creep[] = [];
+    const creepsWithoutTasks: Creep[] = [];
+    for (const creep of creeps) {
+      if (creep.memory.currentTask) {
+        creepsWithTasks.push(creep);
+      } else {
+        creepsWithoutTasks.push(creep);
+      }
+    }
 
-    // 每100 tick输出一次状态
-    if (Game.time % 100 === 0) {
+    intervalSleep(50, () => {
       console.log(`[任务监控][${room.name}] Creep任务状态:`);
       console.log(`  - 总creep数: ${creeps.length}`);
       console.log(`  - 有任务: ${creepsWithTasks.length}`);
@@ -75,7 +85,7 @@ export class TaskMonitor {
       for (const [role, stats] of Object.entries(roleStats)) {
         console.log(`    ${role}: ${stats.withTask}/${stats.total}`);
       }
-    }
+    });
   }
 
   /**
@@ -90,14 +100,13 @@ export class TaskMonitor {
       filter: (structure) => structure.hits < structure.hitsMax,
     });
 
-    // 每100 tick输出一次状态
-    if (Game.time % 100 === 0) {
+    intervalSleep(50, () => {
       console.log(`[任务监控][${room.name}] 资源状态:`);
       console.log(`  - 能量: ${energyAvailable}/${energyCapacity}`);
       console.log(`  - 能量源: ${sources.length}个`);
       console.log(`  - 建筑工地: ${constructionSites.length}个`);
       console.log(`  - 受损建筑: ${damagedStructures.length}个`);
-    }
+    });
   }
 
   /**
@@ -110,7 +119,7 @@ export class TaskMonitor {
     completedTasks: number;
     taskTypes: Record<string, number>;
   } {
-    const stats = this.taskQueue.getStats();
+    const stats = this.taskMap.getStats();
 
     return {
       totalTasks: stats.total,
@@ -124,35 +133,35 @@ export class TaskMonitor {
   /**
    * 获取性能指标
    */
-  getPerformanceMetrics(): {
-    taskCompletionRate: number;
-    averageTaskDuration: number;
-    idleCreepRate: number;
-  } {
-    const tasks = this.taskQueue.getAll();
-    const creeps = Object.values(Game.creeps);
+  // getPerformanceMetrics(): {
+  //   taskCompletionRate: number;
+  //   averageTaskDuration: number;
+  //   idleCreepRate: number;
+  // } {
+  //   const tasks = this.taskMap.getAll();
+  //   const creeps = Object.values(Game.creeps);
 
-    // 计算任务完成率
-    const completedTasks = tasks.filter((t) => t.status === 'completed').length;
-    const totalTasks = tasks.length;
-    const taskCompletionRate = totalTasks > 0 ? completedTasks / totalTasks : 0;
+  //   // 计算任务完成率
+  //   const completedTasks = tasks.filter((t) => t.status === TaskStatusEnum.completed).length;
+  //   const totalTasks = tasks.length;
+  //   const taskCompletionRate = totalTasks > 0 ? completedTasks / totalTasks : 0;
 
-    // 计算平均任务持续时间
-    const completedTasksWithTimestamp = tasks.filter((t) => t.status === 'completed' && t.timestamp);
-    const totalDuration = completedTasksWithTimestamp.reduce((sum, task) => {
-      return sum + (Game.time - (task.timestamp || 0));
-    }, 0);
-    const averageTaskDuration =
-      completedTasksWithTimestamp.length > 0 ? totalDuration / completedTasksWithTimestamp.length : 0;
+  //   // 计算平均任务持续时间
+  //   const completedTasksWithTimestamp = tasks.filter((t) => t.status === TaskStatusEnum.completed && t.timestamp);
+  //   const totalDuration = completedTasksWithTimestamp.reduce((sum, task) => {
+  //     return sum + (Game.time - (task.timestamp || 0));
+  //   }, 0);
+  //   const averageTaskDuration =
+  //     completedTasksWithTimestamp.length > 0 ? totalDuration / completedTasksWithTimestamp.length : 0;
 
-    // 计算空闲creep率
-    const creepsWithTasks = creeps.filter((creep) => creep.memory.currentTask).length;
-    const idleCreepRate = creeps.length > 0 ? (creeps.length - creepsWithTasks) / creeps.length : 0;
+  //   // 计算空闲creep率
+  //   const creepsWithTasks = creeps.filter((creep) => creep.memory.currentTask).length;
+  //   const idleCreepRate = creeps.length > 0 ? (creeps.length - creepsWithTasks) / creeps.length : 0;
 
-    return {
-      taskCompletionRate,
-      averageTaskDuration,
-      idleCreepRate,
-    };
-  }
+  //   return {
+  //     taskCompletionRate,
+  //     averageTaskDuration,
+  //     idleCreepRate,
+  //   };
+  // }
 }

@@ -1,8 +1,14 @@
-export { role2 } from './lib/role2';
-
 type IntervalTypeOpts = Partial<{
   time: number;
 }>;
+
+export const generatorRoleBody = (bodyWidgetConfig: { body: BodyPartConstant; count: number }[]) => {
+  // flatMap 不兼容 es2019
+  // bodyWidgetConfig.flatMap(({ body, count }) => Array(count).fill(body));
+  return bodyWidgetConfig.reduce<BodyPartConstant[]>((acc, { body, count }) => {
+    return acc.concat(Array(count).fill(body));
+  }, []);
+};
 
 export const intervalSleep = (ticks: number, fn: (...args: any[]) => any, opts: IntervalTypeOpts = {}) => {
   const { time = Game.time } = opts;

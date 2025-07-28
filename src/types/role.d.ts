@@ -1,7 +1,7 @@
 declare global {
-  type CustomRoleType = 'harvester' | 'builder' | 'upgrader' | 'miner' | 'minerStore' | 'repairer' | 'pioneer';
+  type CustomRoleType = 'harvester' | 'builder' | 'upgrader' | 'miner' | 'repairer' | 'pioneer' | 'claimer';
 
-  type CustomRoleTaskType =
+  type TaskType =
     | 'harvesting'
     | 'mining'
     | 'building'

@@ -8,6 +8,8 @@ const PriorityQueueOfStoreEnergy: Array<Structure['structureType']> = [
   STRUCTURE_STORAGE,
   STRUCTURE_CONTAINER,
   STRUCTURE_LAB,
+  STRUCTURE_TERMINAL,
+  STRUCTURE_CONTAINER,
 ];
 
 class Harvester extends BaseRole {
@@ -50,7 +52,7 @@ class Harvester extends BaseRole {
   roleTask(creep: Creep, room = creep.room): void {
     // 1. 找到房间内还可以存储能量的单位并进行优先级排序
     const targetUnits = room
-      .find(FIND_MY_STRUCTURES, {
+      .find(FIND_STRUCTURES, {
         filter: (structure) =>
           PriorityQueueOfStoreEnergy.includes(structure.structureType) &&
           'store' in structure &&

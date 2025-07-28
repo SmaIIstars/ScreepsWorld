@@ -29,6 +29,7 @@ const creepsCount = () => {
     minerStore: 0,
     repairer: 0,
     pioneer: 0,
+    claimer: 0,
   };
   for (const creep of Object.values(Game.creeps)) {
     // 只计数主房间的

@@ -10,7 +10,7 @@ import {
 
 export type BaseRoleType = {
   role: CustomRoleType;
-  task: CustomRoleTaskType;
+  task: TaskType;
   targetRoomName?: string;
 };
 

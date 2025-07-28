@@ -1,18 +1,18 @@
-import { BaseRole } from '@/utils/lib/base/BaseRole';
+import { generatorRoleBody } from '@/utils';
 import { StrategyType } from '.';
 
 const strategy: StrategyType = {
   roleMonitor: {
     harvester: {
       count: 1,
-      body: BaseRole.generatorRoleBody([
+      body: generatorRoleBody([
         { body: CARRY, count: 23 },
         { body: MOVE, count: 12 },
       ]),
     },
     pioneer: {
       count: 0,
-      body: BaseRole.generatorRoleBody([
+      body: generatorRoleBody([
         { body: WORK, count: 6 },
         { body: CARRY, count: 7 },
         { body: MOVE, count: 7 },
@@ -20,7 +20,7 @@ const strategy: StrategyType = {
     },
     builder: {
       count: 1,
-      body: BaseRole.generatorRoleBody([
+      body: generatorRoleBody([
         { body: WORK, count: 6 },
         { body: CARRY, count: 7 },
         { body: MOVE, count: 7 },
@@ -28,7 +28,7 @@ const strategy: StrategyType = {
     },
     miner: {
       count: 2,
-      body: BaseRole.generatorRoleBody([
+      body: generatorRoleBody([
         { body: WORK, count: 6 },
         { body: CARRY, count: 1 },
         { body: MOVE, count: 4 },
@@ -36,7 +36,7 @@ const strategy: StrategyType = {
     },
     upgrader: {
       count: 2,
-      body: BaseRole.generatorRoleBody([
+      body: generatorRoleBody([
         { body: WORK, count: 10 },
         { body: CARRY, count: 7 },
         { body: MOVE, count: 9 },
@@ -44,7 +44,7 @@ const strategy: StrategyType = {
     },
     repairer: {
       count: 1,
-      body: BaseRole.generatorRoleBody([
+      body: generatorRoleBody([
         { body: WORK, count: 1 },
         { body: CARRY, count: 15 },
         { body: MOVE, count: 4 },
