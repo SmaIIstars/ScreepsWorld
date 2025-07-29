@@ -1,8 +1,6 @@
 import { BaseRole, BaseRoleCreateParams } from './base';
-
-import { EnergyStoreTargetType } from '@/constant';
+import type { Task, TaskMap } from '../utils/taskMap';
 import { TaskExecuteStatusEnum } from '../taskSystem/executor';
-import type { Task } from '../utils/taskMap';
 
 class Upgrader extends BaseRole {
   static readonly role: Extract<CustomRoleType, 'upgrader'> = 'upgrader';
@@ -16,40 +14,60 @@ class Upgrader extends BaseRole {
     return this.baseCreate(spawn, body, name, { memory: memoryRoleOpts });
   }
 
-  run(creep: Creep, task: Task) {
-    switch (task.type) {
-      case 'upgrading': {
-        return this.roleTask(creep, task);
-      }
-      case 'harvesting': {
-        const harvestResult = this.baseHarvestTask(creep, task);
-        if (harvestResult === ERR_NOT_IN_RANGE) {
-          const targetStore = Game.getObjectById<NonNullable<EnergyStoreTargetType>>(task.toId);
-          if (!targetStore) return TaskExecuteStatusEnum.failed;
-          this.baseMoveTo(creep, targetStore);
-        }
-      }
-      default:
-        return TaskExecuteStatusEnum.inProgress;
+  run(creep: Creep, taskId: string) {
+    const task = global.rooms[creep.room.name]?.taskMap?.[taskId];
+    if (!task) return TaskExecuteStatusEnum.failed;
+    if (task.type === 'harvesting') {
+      return this.baseHarvestTask(creep, task as Task<'harvesting'>);
+    } else if (task.type === 'upgrading') {
+      return this.roleTask(creep, task as Task<'upgrading'>);
     }
+
+    return TaskExecuteStatusEnum.failed;
   }
 
   // 升级任务
   roleTask(creep: Creep, task: Task): TaskExecuteStatusEnum {
+    // TODO: 可以优化，OK 是纳入计划，这时候还有能量，但是如果通过 -6 状态码判断，又会多触发一次操作, 需要判断这次OK之后能量是否归零，可以减少一个tick
+    if (creep.store.energy === 0) {
+      this.baseSubmitTask(creep, task.id);
+      return TaskExecuteStatusEnum.completed;
+    }
+
     const targetController = Game.getObjectById<StructureController>(task.toId);
     if (!targetController) return TaskExecuteStatusEnum.failed;
+
     const upgradeResult = creep.upgradeController(targetController);
-    switch (upgradeResult) {
-      case ERR_NOT_IN_RANGE: {
-        this.baseMoveTo(creep, targetController);
-      }
+    if (upgradeResult === ERR_NOT_IN_RANGE) {
+      this.baseMoveTo(creep, targetController);
+      return TaskExecuteStatusEnum.inProgress;
+    } else if (upgradeResult === OK) {
+      return TaskExecuteStatusEnum.inProgress;
+    } else {
+      return TaskExecuteStatusEnum.failed;
     }
+  }
 
+  claimTask(creep: Creep, taskMap: TaskMap) {
+    // 1. 如果没有能量，先认领获取能量的任务
     if (creep.store.energy === 0) {
-      this.baseSubmitTask(creep, task);
+      const harvestingTasks = taskMap.taskPriorityQueue('harvesting', [
+        LOOK_RESOURCES,
+        LOOK_RUINS,
+        LOOK_TOMBSTONES,
+        STRUCTURE_CONTAINER,
+        STRUCTURE_TERMINAL,
+        STRUCTURE_STORAGE,
+        LOOK_SOURCES,
+      ]);
+      return harvestingTasks[0]?.id;
     }
 
-    return TaskExecuteStatusEnum.inProgress;
+    // 2. 有能量则认领升级任务
+    else {
+      const upgradingTasks = taskMap.taskPriorityQueue('upgrading');
+      return upgradingTasks[0]?.id;
+    }
   }
 }
 

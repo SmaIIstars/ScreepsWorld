@@ -1,11 +1,37 @@
-import { cloneDeep, merge } from 'lodash';
-
 export enum TaskStatusEnum {
-  'published',
-  'assigned',
+  'inProgress',
   'completed',
-  'expired',
+  'failed',
+  'published',
 }
+
+export type TaskPublisherType =
+  | STRUCTURE_SPAWN
+  | STRUCTURE_EXTENSION
+  | STRUCTURE_ROAD
+  | STRUCTURE_WALL
+  | STRUCTURE_RAMPART
+  | STRUCTURE_KEEPER_LAIR
+  | STRUCTURE_PORTAL
+  | STRUCTURE_CONTROLLER
+  | STRUCTURE_LINK
+  | STRUCTURE_STORAGE
+  | STRUCTURE_TOWER
+  | STRUCTURE_OBSERVER
+  | STRUCTURE_POWER_BANK
+  | STRUCTURE_POWER_SPAWN
+  | STRUCTURE_EXTRACTOR
+  | STRUCTURE_LAB
+  | STRUCTURE_TERMINAL
+  | STRUCTURE_CONTAINER
+  | STRUCTURE_NUKER
+  | STRUCTURE_FACTORY
+  | STRUCTURE_INVADER_CORE
+  | LOOK_SOURCES
+  | LOOK_RUINS
+  | LOOK_TOMBSTONES
+  | LOOK_MINERALS
+  | LOOK_RESOURCES;
 
 export type HarvestingPayload = Partial<Record<ResourceConstant, number>>;
 
@@ -49,6 +75,7 @@ export type TaskPayloadMap = {
 
 export type Task<P extends TaskType = TaskType> = {
   room: string; // 任务所属房间
+  publisherType: TaskPublisherType; // 发布者
   publisher: string; // 发布者
   id: string; // 任务唯一标识
   type: P; // 任务类型
@@ -66,21 +93,17 @@ export type Task<P extends TaskType = TaskType> = {
 const defaultRoomMemory: RoomMemory = {
   taskMap: {},
   taskMapVersion: 0,
-  sources: {},
 };
 
 export class TaskMap {
   private taskMap: Map<string, Task> = new Map();
-  private priorityQueue: string[] = []; // 按优先级排序的任务ID队列
   private roomName: string;
 
   constructor(roomName: string) {
     this.roomName = roomName;
 
-    if (!global.rooms?.[roomName]?.taskMap) {
-      global.rooms[roomName] = Memory.rooms?.[roomName] ? cloneDeep(Memory.rooms[roomName]) : { ...defaultRoomMemory };
-      // 确保 taskMap 存在
-      if (!global.rooms[roomName].taskMap) global.rooms[roomName].taskMap = {};
+    if (!global.rooms?.[roomName]) {
+      global.rooms[roomName] = Memory.rooms?.[roomName] ? { ...Memory.rooms[roomName] } : { ...defaultRoomMemory };
     }
 
     // 从内存加载任务到 Map
@@ -88,7 +111,6 @@ export class TaskMap {
     for (const [taskId, task] of Object.entries(taskMapData)) {
       this.taskMap.set(taskId, task as Task);
     }
-    this.updatePriorityQueue();
 
     if (Game.time % 10 === 0) {
       this.saveToMemory();
@@ -96,34 +118,14 @@ export class TaskMap {
   }
 
   /**
-   * 更新优先级队列
-   */
-  private updatePriorityQueue(): void {
-    this.priorityQueue = Array.from(this.taskMap.values())
-      .sort((a, b) => {
-        // 按优先级排序，优先级高的在前
-        const priorityA = a.priority ?? 0;
-        const priorityB = b.priority ?? 0;
-        if (priorityA !== priorityB) {
-          return priorityB - priorityA; // 降序
-        }
-        // 优先级相同时，按时间戳排序
-        const timeA = a.timestamp ?? 0;
-        const timeB = b.timestamp ?? 0;
-        return timeA - timeB; // 升序
-      })
-      .map((task) => task.id);
-  }
-
-  /**
    * 保存任务Map
    */
   private save(): void {
-    const taskMapObject: Record<string, Task> = {};
-    for (const [taskId, task] of this.taskMap) {
-      taskMapObject[taskId] = task;
+    const taskMapObj: Record<string, Task> = {};
+    for (const [key, value] of this.taskMap) {
+      taskMapObj[key] = value;
     }
-    global.rooms[this.roomName].taskMap = taskMapObject;
+    global.rooms[this.roomName].taskMap = taskMapObj;
     global.rooms[this.roomName].taskMapVersion = Game.time;
   }
 
@@ -135,6 +137,52 @@ export class TaskMap {
     Memory.rooms[this.roomName].taskMap = global.rooms[this.roomName].taskMap;
     Memory.rooms[this.roomName].taskMapVersion = Game.time;
   };
+
+  /**
+   * 任务优先级队列
+   */
+  taskPriorityQueue(targetTaskType: TaskType, targetPriorityList?: TaskPublisherType[]): Task[] {
+    const availableTaskList = Array.from(this.taskMap.values()).filter((task) => {
+      if (task.status === TaskStatusEnum.completed) return false;
+      if (task.status === TaskStatusEnum.failed) return false;
+      if (task.assignedTo?.length && task.needCreepCount && task.assignedTo.length === task.needCreepCount)
+        return false;
+      return true;
+    });
+
+    if (!targetPriorityList) {
+      // 如果targetPriorityList为空，则只需要将目标类型任务优先级提高
+      return availableTaskList.sort((a, b) => {
+        if (a.type === targetTaskType && b.type !== targetTaskType) {
+          return -1;
+        } else if (a.type !== targetTaskType && b.type === targetTaskType) {
+          return 1;
+        } else {
+          return (a.timestamp ?? 0) - (b.timestamp ?? 0);
+        }
+      });
+    } else {
+      // 如果targetPriorityList不为空，则除了将目标类型任务优先级提高，还要按照targetPriorityList的顺序进行排序
+      return availableTaskList.sort((a, b) => {
+        // 首先按任务类型排序
+        if (a.type === targetTaskType && b.type !== targetTaskType) {
+          return -1;
+        } else if (a.type !== targetTaskType && b.type === targetTaskType) {
+          return 1;
+        }
+
+        // 然后按发布者类型优先级排序
+        const idxA = targetPriorityList.indexOf(a.publisherType);
+        const idxB = targetPriorityList.indexOf(b.publisherType);
+        if (idxA !== idxB) {
+          return idxA - idxB; // 升序
+        }
+
+        // 最后按时间戳排序
+        return (a.timestamp ?? 0) - (b.timestamp ?? 0);
+      });
+    }
+  }
 
   /**
    * 检查Map中是否已存在指定id的任务
@@ -150,7 +198,6 @@ export class TaskMap {
    */
   init() {
     this.taskMap.clear();
-    this.priorityQueue = [];
     this.save();
   }
 
@@ -159,30 +206,9 @@ export class TaskMap {
    * @param task 任务对象
    */
   add(task: Task) {
-    if (this.taskMap.has(task.id)) {
-      // 已存在则不添加
-      return;
-    }
+    if (this.taskMap.has(task.id)) return;
     this.taskMap.set(task.id, task);
-    this.updatePriorityQueue();
     this.save();
-  }
-
-  /**
-   * 取出（弹出）最高优先级任务
-   * @returns 任务对象或undefined
-   */
-  pop(): Task | undefined {
-    if (this.priorityQueue.length === 0) {
-      return undefined;
-    }
-    const taskId = this.priorityQueue.shift()!;
-    const task = this.taskMap.get(taskId);
-    if (task) {
-      this.taskMap.delete(taskId);
-      this.save();
-    }
-    return task;
   }
 
   /**
@@ -213,7 +239,6 @@ export class TaskMap {
         }
       }
       this.taskMap.delete(taskId);
-      this.updatePriorityQueue();
       this.save();
       return true;
     }
@@ -250,7 +275,6 @@ export class TaskMap {
     const task = this.taskMap.get(taskId);
     if (task) {
       Object.assign(task, updates);
-      this.updatePriorityQueue();
       this.save();
       return true;
     }
@@ -266,18 +290,6 @@ export class TaskMap {
   }
 
   /**
-   * 查看最高优先级任务但不移除
-   * @returns 任务对象或undefined
-   */
-  peek(): Task | undefined {
-    if (this.priorityQueue.length === 0) {
-      return undefined;
-    }
-    const taskId = this.priorityQueue[0];
-    return this.taskMap.get(taskId);
-  }
-
-  /**
    * 获取所有任务
    * @returns 任务数组的副本
    */
@@ -290,8 +302,8 @@ export class TaskMap {
    * @param status 任务状态
    * @returns 任务数组
    */
-  getByStatus(status: TaskStatusEnum): Task[] {
-    return Array.from(this.taskMap.values()).filter((t) => t.status === status);
+  getByStatus(status: TaskStatusEnum[]): Task[] {
+    return Array.from(this.taskMap.values()).filter((t) => status.includes(t.status ?? TaskStatusEnum.published));
   }
 
   /**
@@ -326,7 +338,6 @@ export class TaskMap {
 
     const cleanedCount = initialSize - this.taskMap.size;
     if (cleanedCount) {
-      this.updatePriorityQueue();
       this.save();
     }
     return cleanedCount;
@@ -352,7 +363,6 @@ export class TaskMap {
     }
 
     if (completedTasks.length) {
-      this.updatePriorityQueue();
       this.save();
     }
     return completedTasks.length;
@@ -377,7 +387,6 @@ export class TaskMap {
     }
 
     if (invalidTasks.length) {
-      this.updatePriorityQueue();
       this.save();
     }
     return invalidTasks.length;
@@ -427,13 +436,6 @@ export class TaskMap {
   }
 
   /**
-   * 获取优先级队列（用于调试）
-   */
-  getPriorityQueue(): string[] {
-    return [...this.priorityQueue];
-  }
-
-  /**
    * 获取所有任务ID
    * @returns 任务ID数组
    */
@@ -470,7 +472,6 @@ export class TaskMap {
    */
   clear(): void {
     this.taskMap.clear();
-    this.priorityQueue = [];
     this.save();
   }
 }

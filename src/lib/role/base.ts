@@ -1,6 +1,6 @@
 import { EnergyStoreTargetType } from '@/constant';
+import type { Task, TaskMap } from '../utils/taskMap';
 import { TaskExecuteStatusEnum } from '../taskSystem/executor';
-import type { Task } from '../utils/taskMap';
 
 export type BaseRoleType = {
   role: CustomRoleType;
@@ -32,9 +32,10 @@ export abstract class BaseRole {
     }, []);
   };
 
-  // abstract create(params: BaseRoleCreateParams): ScreepsReturnCode;
-  abstract run(creep: Creep, task: Task): TaskExecuteStatusEnum;
-  // abstract roleTask(creep: Creep): void;
+  abstract create(spawn: StructureSpawn, params: BaseRoleCreateParams): ScreepsReturnCode;
+  abstract run(creep: Creep, taskId: string): TaskExecuteStatusEnum;
+  abstract claimTask(creep: Creep, taskMap: TaskMap): string | undefined;
+
   baseCreate = (
     spawn: StructureSpawn,
     body: BodyPartConstant[],
@@ -45,47 +46,81 @@ export abstract class BaseRole {
     return spawn.spawnCreep(body, curName, opts);
   };
 
-  baseHarvestTask = (creep: Creep, task: Task): ScreepsReturnCode => {
+  baseHarvestTask = (creep: Creep, task: Task<'harvesting'>): TaskExecuteStatusEnum => {
     if (creep.store.getFreeCapacity() === 0) {
-      this.baseSubmitTask(creep, task);
-      return OK;
+      this.baseSubmitTask(creep, task.id);
+      return TaskExecuteStatusEnum.completed;
     }
 
-    // 通过toId拿到目标对象，再判断类型
-    const targetStore: EnergyStoreTargetType = Game.getObjectById(task.toId);
+    const targetStore = Game.getObjectById<NonNullable<EnergyStoreTargetType>>(task.toId);
+    if (!targetStore) return TaskExecuteStatusEnum.failed;
 
-    if (targetStore) {
-      let returnCode: ScreepsReturnCode = OK;
-
-      if (targetStore instanceof Creep) {
-        // Just wait creep transfer
-        returnCode = creep.pos.isNearTo(targetStore) ? OK : ERR_NOT_IN_RANGE;
-      } else if (targetStore instanceof Source || targetStore instanceof Mineral) {
-        returnCode = creep.harvest(targetStore);
-      } else if (targetStore instanceof Resource) {
-        returnCode = creep.pickup(targetStore);
-      } else {
-        // targetStore instanceof Ruin ||
-        // targetStore instanceof Tombstone ||
-        // targetStore instanceof StructureStorage ||
-        // targetStore instanceof StructureContainer ||
-        // targetStore instanceof StructureLink ||
-        // targetStore instanceof StructureTerminal
-        returnCode = creep.withdraw(targetStore, RESOURCE_ENERGY);
-      }
-
-      return returnCode;
+    let returnCode: ScreepsReturnCode = OK;
+    if (targetStore instanceof Creep) {
+      // Just wait creep transfer
+      returnCode = creep.pos.isNearTo(targetStore) ? OK : ERR_NOT_IN_RANGE;
+    } else if (targetStore instanceof Source || targetStore instanceof Mineral) {
+      returnCode = creep.harvest(targetStore);
+    } else if (targetStore instanceof Resource) {
+      returnCode = creep.pickup(targetStore);
+    } else {
+      // targetStore instanceof Ruin ||
+      // targetStore instanceof Tombstone ||
+      // targetStore instanceof StructureStorage ||
+      // targetStore instanceof StructureContainer ||
+      // targetStore instanceof StructureLink ||
+      // targetStore instanceof StructureTerminal
+      returnCode = creep.withdraw(targetStore, RESOURCE_ENERGY);
     }
 
-    return ERR_INVALID_TARGET;
+    if (returnCode === ERR_NOT_IN_RANGE) {
+      this.baseMoveTo(creep, targetStore);
+      return TaskExecuteStatusEnum.inProgress;
+    } else if (returnCode === OK) {
+      return TaskExecuteStatusEnum.inProgress;
+    } else {
+      this.baseSubmitTask(creep, task.id);
+      return TaskExecuteStatusEnum.failed;
+    }
   };
 
-  baseMoveTo = (creep: Creep, target: RoomPosition | { pos: RoomPosition }) => {
-    if (!creep.pos.isNearTo(target)) creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
-  };
+  // TODO: 做寻路优化
+  baseMoveTo(
+    creep: Creep,
+    target: RoomPosition | { pos: RoomPosition },
+    opts?: MoveToOpts
+  ): CreepMoveReturnCode | ERR_NO_PATH | ERR_INVALID_TARGET | ERR_NOT_FOUND;
+  baseMoveTo(
+    creep: Creep,
+    x: number,
+    y: number,
+    opts?: MoveToOpts
+  ): CreepMoveReturnCode | ERR_NO_PATH | ERR_INVALID_TARGET;
+  baseMoveTo(
+    creep: Creep,
+    target: RoomPosition | { pos: RoomPosition } | number,
+    y?: number | MoveToOpts,
+    opts?: MoveToOpts
+  ): CreepMoveReturnCode | ERR_NO_PATH | ERR_INVALID_TARGET | ERR_NOT_FOUND {
+    const defaultOpts = { visualizePathStyle: { stroke: '#ffffff' }, ...opts };
+    if (typeof target === 'number' && typeof y === 'number') {
+      if (creep.pos.isNearTo(target, y)) return OK;
+      return creep.moveTo(target, y, defaultOpts);
+    } else if (target instanceof RoomPosition || (typeof target !== 'number' && target?.pos instanceof RoomPosition)) {
+      if (creep.pos.isNearTo(target)) return OK;
+      return creep.moveTo(target, defaultOpts);
+    }
+    return OK;
+  }
 
-  baseSubmitTask = (creep: Creep, task: Task) => {
-    if (creep.memory.currentTask && task && task.id === creep.memory.currentTask) {
+  baseSubmitTask = (creep: Creep, taskId: string) => {
+    const task = global.rooms[creep.room.name]?.taskMap?.[taskId];
+    if (!task) {
+      delete creep.memory.currentTask;
+      return;
+    }
+
+    if (task.id === creep.memory?.currentTask) {
       const idx = task.assignedTo?.indexOf(creep.name);
       if (idx !== undefined && idx !== -1) {
         task.assignedTo?.splice(idx, 1);

@@ -1,9 +1,9 @@
 import { Task, TaskMap, TaskStatusEnum } from '../utils/taskMap';
 
 export enum TaskExecuteStatusEnum {
+  'inProgress',
   'completed',
   'failed',
-  'inProgress',
 }
 
 /**
@@ -15,58 +15,6 @@ export class TaskExecutor {
 
   constructor(taskMap: TaskMap) {
     this.taskMap = taskMap;
-  }
-
-  /**
-   * 分配任务给creep
-   * @param room 房间对象
-   */
-  assignTasks(room: Room): void {
-    const creeps = Object.values(Game.creeps).filter(
-      (creep) => creep.room.name === room.name && !creep.memory.currentTask && !creep.name.includes('Min')
-    );
-    const tasks = this.taskMap.getByStatus(TaskStatusEnum.published);
-
-    // TODO: 复杂度优化
-    // 找到适合这个creep的任务
-    for (const creep of creeps) {
-      // 根据task的allowedCreepRoles中的顺序进行任务分配，优先分配匹配度高的任务
-      let suitableTask: Task | undefined;
-      let bestMatchScore = -1;
-      if (creep.name === '1') {
-        console.log(JSON.stringify(tasks));
-      }
-      for (const task of tasks) {
-        if (['building', 'transferring', 'upgrading', 'repairing'].includes(task.type) && creep.store.energy === 0)
-          continue;
-        if (!creep.memory.role) continue;
-        if (task.assignedTo?.length && task.needCreepCount && task.assignedTo?.length > task.needCreepCount) continue;
-        const idx = task.allowedCreepRoles.indexOf(creep.memory.role);
-        let matchScore: number;
-        if (idx === -1) {
-          // 如果allowedCreepRoles为空，表示所有职业都可以做，给最低优先级
-          matchScore = task.allowedCreepRoles.length === 0 ? 0 : -1;
-        } else {
-          // 匹配度高的（index越小优先级越高）
-          matchScore = 1000 - idx;
-        }
-        if (matchScore > bestMatchScore) {
-          bestMatchScore = matchScore;
-          suitableTask = task;
-        }
-      }
-
-      if (suitableTask) {
-        // 分配任务给creep
-        creep.memory.currentTask = suitableTask.id;
-        this.taskMap.updateTask(suitableTask.id, {
-          status: TaskStatusEnum.assigned,
-          assignedTo: [...(suitableTask.assignedTo || []), creep.name],
-        });
-
-        console.log(`[任务系统] 分配任务 ${suitableTask.id} 给 ${creep.name}`);
-      }
-    }
   }
 
   /**
@@ -87,7 +35,7 @@ export class TaskExecutor {
       }
 
       // 执行任务
-      const result = this.executeTask(creep, task);
+      const result = this.executeTask(creep, task.id);
 
       if (result === TaskExecuteStatusEnum.completed) {
         // 任务完成
@@ -109,10 +57,10 @@ export class TaskExecutor {
    * @param task 任务对象
    * @returns 执行结果
    */
-  private executeTask(creep: Creep, task: Task): TaskExecuteStatusEnum {
+  private executeTask(creep: Creep, taskId: string): TaskExecuteStatusEnum {
     const creepRole = utils?.roles?.[creep.memory.role];
     if (creepRole) {
-      return creepRole.run(creep, task);
+      return creepRole.run(creep, taskId);
     }
     return TaskExecuteStatusEnum.failed;
   }

@@ -1,4 +1,4 @@
-import { HarvestingPayload, Task, TaskMap, TaskStatusEnum } from '@/lib/utils/taskMap';
+import { HarvestingPayload, Task, TaskMap, TaskPublisherType, TaskStatusEnum } from '@/lib/utils/taskMap';
 import { AllStoreStructure } from '@/types';
 
 /**
@@ -57,20 +57,26 @@ export class TaskPublisher {
     if (this.taskMap.hasTask(taskId)) return;
 
     const payload: HarvestingPayload = {};
+    let publisherType: TaskPublisherType = LOOK_SOURCES;
     if (target instanceof Source) {
       payload[RESOURCE_ENERGY] = target.energy;
+      publisherType = LOOK_SOURCES;
     } else if (target instanceof Resource) {
+      publisherType = LOOK_RESOURCES;
       payload[target.resourceType] = target.amount;
     } else if (target instanceof Ruin || target instanceof Tombstone) {
+      publisherType = target instanceof Ruin ? LOOK_RUINS : LOOK_TOMBSTONES;
       for (const resourceType in target.store) {
         payload[resourceType as ResourceConstant] = target.store[resourceType as ResourceConstant];
       }
     } else if (target instanceof Mineral) {
+      publisherType = LOOK_MINERALS;
       payload[target.mineralType] = target.mineralAmount;
     }
 
     const task: Task<'harvesting'> = {
       id: taskId,
+      publisherType,
       publisher: target.id,
       type: 'harvesting',
       toId: target.id,
@@ -96,6 +102,7 @@ export class TaskPublisher {
         const task: Task<'upgrading'> = {
           id: taskId,
           type: 'upgrading',
+          publisherType: STRUCTURE_CONTROLLER,
           publisher: room.controller.id,
           toId: room.controller.id,
           allowedCreepRoles: ['upgrader'],
@@ -104,12 +111,10 @@ export class TaskPublisher {
             progressTotal: room.controller.progressTotal,
             level: room.controller.level,
           },
-          timestamp: Game.time,
-          status: TaskStatusEnum.published,
           room: room.name,
         };
 
-        this.taskMap.add(task);
+        this.taskMap.publish(task);
       }
     }
   }
@@ -126,6 +131,7 @@ export class TaskPublisher {
       if (!this.taskMap.hasTask(taskId)) {
         const task: Task = {
           id: taskId,
+          publisherType: site.structureType,
           type: 'building',
           publisher: site.id,
           toId: site.id,
@@ -135,12 +141,10 @@ export class TaskPublisher {
             progress: site.progress,
             progressTotal: site.progressTotal,
           },
-          timestamp: Game.time,
-          status: TaskStatusEnum.published,
           room: room.name,
         };
 
-        this.taskMap.add(task);
+        this.taskMap.publish(task);
       }
     }
   }
@@ -166,6 +170,7 @@ export class TaskPublisher {
         const task: Task = {
           id: taskId,
           type: 'repairing',
+          publisherType: structure.structureType,
           publisher: structure.id,
           toId: structure.id,
           allowedCreepRoles: ['repairer', 'builder'],
@@ -174,12 +179,10 @@ export class TaskPublisher {
             hits: structure.hits,
             hitsMax: structure.hitsMax,
           },
-          timestamp: Game.time,
-          status: TaskStatusEnum.published,
           room: room.name,
         };
 
-        this.taskMap.add(task);
+        this.taskMap.publish(task);
       }
     }
   }
@@ -232,6 +235,7 @@ export class TaskPublisher {
         const task: Task<'transferring'> = {
           id: taskId,
           type: 'transferring',
+          publisherType: structure.structureType,
           publisher: structure.id,
           toId: structure.id,
           allowedCreepRoles: ['harvester'],

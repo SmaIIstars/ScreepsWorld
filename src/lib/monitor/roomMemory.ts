@@ -1,7 +1,7 @@
-import { ROOM_ID_ENUM } from '@/constant';
-import { set } from 'lodash';
+export const roomMemory = (room: Room) => {
+  if (!Memory.rooms[room.name]) Memory.rooms[room.name] = {};
+  Memory.rooms[room.name].visible = Memory.rooms[room.name] ? true : false;
 
-export const memory = (room: Room) => {
   clearCreepMemory();
   creepsCount(room);
   resources(room);
@@ -35,16 +35,12 @@ const creepsCount = (room: Room) => {
       creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
     }
   }
+
   Memory.rooms[room.name].creepsCount = creepTypeCount;
 };
 
 // 资源监控
 export const resources = (room: Room) => {
-  // 初始化房间记忆
-  if (!Memory.rooms[room.name]) {
-    Memory.rooms[room.name] = {};
-  }
-
   // 获取所有资源
   const sources = room.find(FIND_SOURCES, { filter: (source) => source.energy > 0 });
   const minerals = room.find(FIND_MINERALS, { filter: (mineral) => mineral.mineralAmount > 0 });
@@ -64,20 +60,4 @@ export const resources = (room: Room) => {
     ruin: ruins.map((r) => r.id),
     tombstone: tombstones.map((t) => t.id),
   };
-
-  // 在房间中显示资源数量
-  // sources.forEach((source) => {
-  //   room.visual.text(`${source.energy}`, source.pos.x, source.pos.y - 1, { font: 0.5, color: '#ffff00' });
-  // });
-
-  // droppedResources.forEach((resource) => {
-  //   room.visual.text(`${resource.amount}`, resource.pos.x, resource.pos.y - 1, { font: 0.5, color: '#00ff00' });
-  // });
-
-  // [...ruins, ...tombstones].forEach((structure) => {
-  //   const energy = structure.store[RESOURCE_ENERGY];
-  //   if (energy > 0) {
-  //     room.visual.text(`${energy}`, structure.pos.x, structure.pos.y - 1, { font: 0.5, color: '#ff0000' });
-  //   }
-  // });
 };

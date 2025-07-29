@@ -33,10 +33,10 @@ export class TaskSystem {
     this.monitor.monitorRoom(room);
     // 2. 发布任务
     this.publisher.publishTasks(room);
-    // 3. 分配任务给creep
-    // this.executor.assignTasks(room);
+    // 3. 闲置的creep认领任务
+    this.claimTasks(room);
     // 4. 执行任务
-    // this.executor.executeTasks(room);
+    this.executor.executeTasks(room);
     // 5. 清理任务
     this.cleanupTasks();
   }
@@ -64,6 +64,25 @@ export class TaskSystem {
       assignedTasks: stats.assigned,
       completedTasks: stats.completed,
     };
+  }
+
+  /**
+   * 让creep主动认领任务
+   * @param room 房间对象
+   */
+  private claimTasks(room: Room): void {
+    const availableCreeps = Object.values(Game.creeps).filter(
+      (creep) => creep.room.name === room.name && !creep.memory.currentTask && !creep.name.includes('Min')
+    );
+
+    for (const creep of availableCreeps) {
+      if (!creep.memory.role) continue;
+      // 让creep自己选择任务
+      const claimedTaskId = utils.roles[creep.memory.role]?.claimTask(creep, this.taskMap);
+      if (claimedTaskId) {
+        creep.memory.currentTask = claimedTaskId;
+      }
+    }
   }
 }
 

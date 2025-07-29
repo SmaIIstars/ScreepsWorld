@@ -32,7 +32,6 @@ export class TaskMonitor {
     const tasks = this.taskMap.getAll();
     for (const task of tasks) {
       // 1. 采集任务
-
       if (task.type === 'harvesting' && task.payload && Object.values(task.payload).every((amount) => amount === 0)) {
         this.taskMap.updateTask(task.id, { status: TaskStatusEnum.completed });
       }

@@ -1,17 +1,6 @@
-import { EnergyStoreTargetType } from '@/constant';
 import { TaskExecuteStatusEnum } from '../taskSystem/executor';
-import { Task } from '../utils/taskMap';
+import { Task, TaskMap, TaskStatusEnum } from '../utils/taskMap';
 import { BaseRole, BaseRoleCreateParams } from './base';
-
-const PriorityQueueOfStoreEnergy: Array<Structure['structureType']> = [
-  STRUCTURE_EXTENSION,
-  STRUCTURE_SPAWN,
-  STRUCTURE_STORAGE,
-  STRUCTURE_CONTAINER,
-  STRUCTURE_LAB,
-  STRUCTURE_TERMINAL,
-  STRUCTURE_CONTAINER,
-];
 
 class Harvester extends BaseRole {
   static readonly role: Extract<CustomRoleType, 'harvester'> = 'harvester';
@@ -25,46 +14,76 @@ class Harvester extends BaseRole {
     return this.baseCreate(spawn, body, name, { memory: memoryRoleOpts });
   }
 
-  run(creep: Creep, task: Task) {
-    switch (task.type) {
-      case 'harvesting': {
-        const harvestResult = this.baseHarvestTask(creep, task);
-        if (harvestResult === ERR_NOT_IN_RANGE) {
-          const targetStore = Game.getObjectById<NonNullable<EnergyStoreTargetType>>(task.toId);
-          if (!targetStore) {
-            return TaskExecuteStatusEnum.failed;
-          }
-          this.baseMoveTo(creep, targetStore);
-        }
-      }
-      case 'transferring': {
-        return this.roleTask(creep, task);
-      }
-      default:
-        return TaskExecuteStatusEnum.inProgress;
+  run(creep: Creep, taskId: string) {
+    const task = global.rooms[creep.room.name]?.taskMap?.[taskId];
+    if (!task) return TaskExecuteStatusEnum.failed;
+    if (task.type === 'harvesting') {
+      return this.baseHarvestTask(creep, task as Task<'harvesting'>);
+    } else if (task.type === 'transferring') {
+      return this.roleTask(creep, task as Task<'transferring'>);
     }
+    return TaskExecuteStatusEnum.failed;
   }
 
   // 传输任务
-  roleTask(creep: Creep, task: Task): TaskExecuteStatusEnum {
+  roleTask(creep: Creep, task: Task<'transferring'>): TaskExecuteStatusEnum {
     const target = Game.getObjectById<Structure>(task.toId);
     if (!target) return TaskExecuteStatusEnum.failed;
 
-    const transferResult = creep.transfer(target, RESOURCE_ENERGY);
-    switch (transferResult) {
-      case ERR_NOT_IN_RANGE: {
+    for (const resourceType of task.payload?.resourceTypes ?? []) {
+      const transferResult = creep.transfer(target, resourceType);
+
+      // 没在附近
+      if (transferResult === ERR_NOT_IN_RANGE) {
         this.baseMoveTo(creep, target);
-        break;
-      }
-      case OK: {
-        if (creep.store[RESOURCE_ENERGY] === 0) {
-          this.baseSubmitTask(creep, task);
+        return TaskExecuteStatusEnum.inProgress;
+      } else if (transferResult === ERR_FULL) {
+        // target 满了
+        this.baseSubmitTask(creep, task.id);
+        return TaskExecuteStatusEnum.completed;
+      } else if (transferResult === OK) {
+        // 检查是否还有其他需要转移的资源
+        let hasMoreResources = false;
+        for (const [resourceType, amount] of Object.entries(creep.store)) {
+          if (amount > 0) {
+            // 如果任务没有指定资源类型，则表示可以转移所有资源
+            if (!task.payload?.resourceTypes) {
+              hasMoreResources = true;
+            } else if (task.payload?.resourceTypes.includes(resourceType as ResourceConstant)) {
+              hasMoreResources = true;
+            }
+            break;
+          }
         }
-        break;
+        if (!hasMoreResources) {
+          this.baseSubmitTask(creep, task.id);
+          return TaskExecuteStatusEnum.completed;
+        } else {
+          return TaskExecuteStatusEnum.inProgress;
+        }
       }
     }
 
-    return TaskExecuteStatusEnum.inProgress;
+    return TaskExecuteStatusEnum.failed;
+  }
+
+  claimTask(creep: Creep, taskMap: TaskMap) {
+    // 1. 如果没有能量，先认领获取能量的任务
+    if (creep.store.energy === 0) {
+      const harvestingTasks = taskMap.taskPriorityQueue('harvesting', [
+        LOOK_RESOURCES,
+        LOOK_RUINS,
+        LOOK_TOMBSTONES,
+        STRUCTURE_CONTAINER,
+      ]);
+      return harvestingTasks[0]?.id;
+    }
+
+    // 2. 有能量则认领建造任务
+    else {
+      const transferringTasks = taskMap.taskPriorityQueue('transferring');
+      return transferringTasks[0]?.id;
+    }
   }
 }
 
