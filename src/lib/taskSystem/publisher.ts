@@ -1,3 +1,4 @@
+import { EnergyStoreTargetType } from '@/constant';
 import { HarvestingPayload, Task, TaskMap, TaskPublisherType, TaskStatusEnum } from '@/lib/utils/taskMap';
 import { AllStoreStructure } from '@/types';
 
@@ -31,6 +32,7 @@ export class TaskPublisher {
     const roomMemory = Memory.rooms[room.name];
     if (!roomMemory?.sources) return;
 
+    // 资源开采类
     // 遍历所有资源类型并处理
     Object.entries(roomMemory.sources).forEach(([type, ids]) => {
       if (!ids) return;
@@ -43,13 +45,35 @@ export class TaskPublisher {
         this.createHarvestTask(target, room, roles);
       });
     });
+
+    // 存储容器获取类
+    const sourceStores: (StructureContainer | StructureStorage | StructureTerminal)[] = room.find(FIND_STRUCTURES, {
+      filter: (structure) => {
+        if (structure.structureType === STRUCTURE_CONTAINER) return true;
+        if (structure.structureType === STRUCTURE_STORAGE) return true;
+        if (structure.structureType === STRUCTURE_TERMINAL) return true;
+        return false;
+      },
+    });
+    sourceStores.forEach((structure) => {
+      this.createHarvestTask(structure, room, ['harvester']);
+    });
   }
 
   /**
    * 创建采集任务
    */
   private createHarvestTask(
-    target: Source | Resource | Ruin | Tombstone | Mineral,
+    target:
+      | Source
+      | Resource
+      | Ruin
+      | Tombstone
+      | Mineral
+      | StructureContainer
+      | StructureStorage
+      | StructureTerminal
+      | StructureLink,
     room: Room,
     allowedRoles: string[]
   ): void {
@@ -64,31 +88,63 @@ export class TaskPublisher {
     } else if (target instanceof Resource) {
       publisherType = LOOK_RESOURCES;
       payload[target.resourceType] = target.amount;
-    } else if (target instanceof Ruin || target instanceof Tombstone) {
-      publisherType = target instanceof Ruin ? LOOK_RUINS : LOOK_TOMBSTONES;
-      for (const resourceType in target.store) {
-        payload[resourceType as ResourceConstant] = target.store[resourceType as ResourceConstant];
-      }
     } else if (target instanceof Mineral) {
       publisherType = LOOK_MINERALS;
       payload[target.mineralType] = target.mineralAmount;
+    } else if (
+      target instanceof Ruin ||
+      target instanceof Tombstone ||
+      target instanceof StructureContainer ||
+      target instanceof StructureStorage ||
+      target instanceof StructureTerminal ||
+      target instanceof StructureLink
+    ) {
+      if (target instanceof Ruin) {
+        publisherType = LOOK_RUINS;
+      } else if (target instanceof Tombstone) {
+        publisherType = LOOK_TOMBSTONES;
+      } else if (target instanceof StructureContainer) {
+        publisherType = STRUCTURE_CONTAINER;
+      } else if (target instanceof StructureStorage) {
+        publisherType = STRUCTURE_STORAGE;
+      } else if (target instanceof StructureTerminal) {
+        publisherType = STRUCTURE_TERMINAL;
+      } else if (target instanceof StructureLink) {
+        publisherType = STRUCTURE_LINK;
+      }
+
+      for (const resourceType in target.store) {
+        payload[resourceType as ResourceConstant] = target.store[resourceType as ResourceConstant];
+      }
     }
 
-    const task: Task<'harvesting'> = {
-      id: taskId,
-      publisherType,
-      publisher: target.id,
-      type: 'harvesting',
-      toId: target.id,
-      allowedCreepRoles: allowedRoles,
-      payload,
-      timestamp: Game.time,
-      status: TaskStatusEnum.published,
-      room: room.name,
-      needCreepCount: 1,
-    };
+    const hasSource = Object.values(payload).reduce((a, b) => a + b, 0) > 0;
 
-    this.taskMap.publish(task);
+    if (this.taskMap.hasTask(taskId)) {
+      if (hasSource) {
+        this.taskMap.updateTask(taskId, { status: TaskStatusEnum.completed });
+      } else {
+        this.taskMap.updateTask(taskId, { payload });
+      }
+    } else {
+      if (hasSource) {
+        const task: Task<'harvesting'> = {
+          id: taskId,
+          publisherType,
+          publisher: target.id,
+          type: 'harvesting',
+          toId: target.id,
+          allowedCreepRoles: allowedRoles,
+          payload,
+          timestamp: Game.time,
+          status: TaskStatusEnum.published,
+          room: room.name,
+          needCreepCount: 1,
+        };
+
+        this.taskMap.publish(task);
+      }
+    }
   }
 
   /**
@@ -155,11 +211,16 @@ export class TaskPublisher {
   private publishRepairTasks(room: Room): void {
     const structures = room.find(FIND_STRUCTURES, {
       filter: (structure) => {
-        return (
-          structure.hits < structure.hitsMax * 0.6 &&
-          structure.structureType !== STRUCTURE_WALL &&
-          structure.structureType !== STRUCTURE_RAMPART
-        );
+        //  return (
+        //   structure.hits < structure.hitsMax * 0.6 &&
+        //   structure.structureType !== STRUCTURE_WALL &&
+        //   structure.structureType !== STRUCTURE_RAMPART
+        // );
+        if (structure.structureType === STRUCTURE_WALL || structure.structureType === STRUCTURE_RAMPART) {
+          return structure.hits < 300000;
+        } else {
+          return structure.hits < structure.hitsMax * 0.6;
+        }
       },
     });
 
@@ -198,13 +259,14 @@ export class TaskPublisher {
           [STRUCTURE_TOWER, STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_CONTAINER, STRUCTURE_STORAGE].some(
             (type) => structure.structureType === type
           )
-        )
+        ) {
           return true;
+        }
 
-        // if (structure instanceof StructureLink) return true;
-        // if (structure instanceof StructureTerminal) return true;
-        // if (structure instanceof StructureLab) return true;
-        // if (structure instanceof StructureNuker) return true;
+        // if (structure instanceof StructureLink) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
+        // if (structure instanceof StructureTerminal) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
+        // if (structure instanceof StructureLab) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
+        // if (structure instanceof StructureNuker) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
         return false;
       },
     });

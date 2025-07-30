@@ -15,7 +15,7 @@ class Harvester extends BaseRole {
   }
 
   run(creep: Creep, taskId: string) {
-    const task = global.rooms[creep.room.name]?.taskMap?.[taskId];
+    const task = global.rooms[creep.room.name]?.taskMap?.get(taskId);
     if (!task) return TaskExecuteStatusEnum.failed;
     if (task.type === 'harvesting') {
       return this.baseHarvestTask(creep, task as Task<'harvesting'>);
@@ -27,61 +27,52 @@ class Harvester extends BaseRole {
 
   // 传输任务
   roleTask(creep: Creep, task: Task<'transferring'>): TaskExecuteStatusEnum {
-    const target = Game.getObjectById<Structure>(task.toId);
-    if (!target) return TaskExecuteStatusEnum.failed;
-
-    for (const resourceType of task.payload?.resourceTypes ?? []) {
-      const transferResult = creep.transfer(target, resourceType);
-
-      // 没在附近
-      if (transferResult === ERR_NOT_IN_RANGE) {
-        this.baseMoveTo(creep, target);
-        return TaskExecuteStatusEnum.inProgress;
-      } else if (transferResult === ERR_FULL) {
-        // target 满了
-        this.baseSubmitTask(creep, task.id);
-        return TaskExecuteStatusEnum.completed;
-      } else if (transferResult === OK) {
-        // 检查是否还有其他需要转移的资源
-        let hasMoreResources = false;
-        for (const [resourceType, amount] of Object.entries(creep.store)) {
-          if (amount > 0) {
-            // 如果任务没有指定资源类型，则表示可以转移所有资源
-            if (!task.payload?.resourceTypes) {
-              hasMoreResources = true;
-            } else if (task.payload?.resourceTypes.includes(resourceType as ResourceConstant)) {
-              hasMoreResources = true;
-            }
-            break;
-          }
-        }
-        if (!hasMoreResources) {
-          this.baseSubmitTask(creep, task.id);
-          return TaskExecuteStatusEnum.completed;
-        } else {
-          return TaskExecuteStatusEnum.inProgress;
-        }
-      }
-    }
-
-    return TaskExecuteStatusEnum.failed;
+    return this.baseTransferTask(creep, task);
   }
 
   claimTask(creep: Creep, taskMap: TaskMap) {
     // 1. 如果没有能量，先认领获取能量的任务
-    if (creep.store.energy === 0) {
-      const harvestingTasks = taskMap.taskPriorityQueue('harvesting', [
-        LOOK_RESOURCES,
-        LOOK_RUINS,
-        LOOK_TOMBSTONES,
-        STRUCTURE_CONTAINER,
-      ]);
+    if (creep.store[RESOURCE_ENERGY] === 0) {
+      let harvestingTasks = taskMap.taskPriorityQueue('harvesting', {
+        filter: (task) => {
+          if (task.type === 'harvesting') return true;
+          if (task.payload) {
+            let allSourceAmount = 0;
+            for (const amount of Object.values(task.payload)) {
+              allSourceAmount += amount;
+            }
+            if (allSourceAmount > creep.store.getCapacity() >> 1) return true;
+          }
+          return false;
+        },
+        targetPriorityList: [LOOK_RESOURCES, LOOK_RUINS, LOOK_TOMBSTONES, STRUCTURE_CONTAINER],
+      });
+
+      // 如果没有WORK组件，则不能认领Source或者Mineral任务
+      if (!creep.body.some((part) => part.type === WORK)) {
+        harvestingTasks = harvestingTasks.filter((task) => task.publisherType !== LOOK_SOURCES);
+        harvestingTasks = harvestingTasks.filter((task) => task.publisherType !== LOOK_MINERALS);
+      }
+
+      const targetType = harvestingTasks[0]?.publisherType;
+      // 按距离排序
+      harvestingTasks
+        .filter((task) => task.publisherType === targetType)
+        .sort((a, b) => {
+          const targetA = Game.getObjectById<Structure>(a.toId);
+          const targetB = Game.getObjectById<Structure>(b.toId);
+          if (!targetA || !targetB) return 0;
+          return creep.pos.getRangeTo(targetA) - creep.pos.getRangeTo(targetB);
+        });
       return harvestingTasks[0]?.id;
     }
 
-    // 2. 有能量则认领建造任务
+    // 2. 有能量则认领传输任务
     else {
-      const transferringTasks = taskMap.taskPriorityQueue('transferring');
+      const transferringTasks = taskMap.taskPriorityQueue('transferring', {
+        filter: (task) => task.type === 'transferring',
+        targetPriorityList: [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_CONTAINER, STRUCTURE_STORAGE],
+      });
       return transferringTasks[0]?.id;
     }
   }

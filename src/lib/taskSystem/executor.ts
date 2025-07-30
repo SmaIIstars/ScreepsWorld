@@ -41,12 +41,12 @@ export class TaskExecutor {
         // 任务完成
         this.taskMap.updateTask(task.id, { status: TaskStatusEnum.completed });
         delete creep.memory.currentTask;
-        console.log(`[任务系统] 任务 ${task.id} 完成`);
+        console.log(`[任务系统] ${creep.name} 的任务 ${task.id} 完成`);
       } else if (result === TaskExecuteStatusEnum.failed) {
         // 任务失败，重新分配
         this.taskMap.remove(task.id);
         delete creep.memory.currentTask;
-        console.log(`[任务系统] 任务 ${task.id} 失败，删除任务`);
+        console.log(`[任务系统] ${creep.name} 的任务 ${task.id} 失败，删除任务`);
       }
     }
   }

@@ -36,6 +36,29 @@ export abstract class BaseRole {
   abstract run(creep: Creep, taskId: string): TaskExecuteStatusEnum;
   abstract claimTask(creep: Creep, taskMap: TaskMap): string | undefined;
 
+  // 所有角色都需要执行的内容，可以处理一些紧急或者边界情况
+  baseRun = (creep: Creep) => {
+    // 如果不是harvester但身上有除了energy之外的矿
+    // if (creep.memory.role !== 'harvester') {
+    //   const extralResourceType = Object.keys(creep.store).filter((type) => type !== RESOURCE_ENERGY);
+    //   if(!extralResourceType.length) return
+    //   // 存到storage中
+    //   const storage = creep.room.find(FIND_STRUCTURES, {
+    //     filter: (s) => s.structureType === STRUCTURE_STORAGE,
+    //   })[0];
+    //   if (storage) {
+    //     if (storage.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
+    //       // 如果满了则丢掉
+    //       creep.drop(Object.keys(creep.store)[0] as ResourceConstant);
+    //     }
+    //     const transferResult = creep.transfer(storage, Object.keys(creep.store)[0] as ResourceConstant);
+    //     if (transferResult === ERR_NOT_IN_RANGE) {
+    //       this.baseMoveTo(creep, storage);
+    //     }
+    //   }
+    // }
+  };
+
   baseCreate = (
     spawn: StructureSpawn,
     body: BodyPartConstant[],
@@ -47,7 +70,7 @@ export abstract class BaseRole {
   };
 
   baseHarvestTask = (creep: Creep, task: Task<'harvesting'>): TaskExecuteStatusEnum => {
-    if (creep.store.getFreeCapacity() === 0) {
+    if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
       this.baseSubmitTask(creep, task.id);
       return TaskExecuteStatusEnum.completed;
     }
@@ -84,6 +107,72 @@ export abstract class BaseRole {
     }
   };
 
+  baseRepairTask = (creep: Creep, task: Task<'repairing'>): TaskExecuteStatusEnum => {
+    if (creep.store.energy === 0) {
+      this.baseSubmitTask(creep, task.id);
+      return TaskExecuteStatusEnum.completed;
+    }
+
+    const targetStructure = Game.getObjectById<Structure>(task.toId);
+    if (!targetStructure) return TaskExecuteStatusEnum.failed;
+
+    const repairResult = creep.repair(targetStructure);
+    if (repairResult === ERR_NOT_IN_RANGE) {
+      this.baseMoveTo(creep, targetStructure);
+      return TaskExecuteStatusEnum.inProgress;
+    } else if (repairResult === OK) {
+      if (targetStructure.hits >= targetStructure.hitsMax) {
+        this.baseSubmitTask(creep, task.id);
+        return TaskExecuteStatusEnum.completed;
+      }
+      return TaskExecuteStatusEnum.inProgress;
+    } else {
+      this.baseSubmitTask(creep, task.id);
+      return TaskExecuteStatusEnum.failed;
+    }
+  };
+
+  baseTransferTask = (creep: Creep, task: Task<'transferring'>): TaskExecuteStatusEnum => {
+    const target = Game.getObjectById<Structure>(task.toId);
+    if (!target) return TaskExecuteStatusEnum.failed;
+    // 先走到附近
+    if (!creep.pos.isNearTo(target)) {
+      this.baseMoveTo(creep, target);
+      return TaskExecuteStatusEnum.inProgress;
+    }
+
+    const transferResourceList = task.payload?.resourceTypes?.length
+      ? Object.entries(creep.store)
+          .filter(([type]) => task.payload?.resourceTypes?.includes(type as ResourceConstant))
+          .map(([type]) => type as ResourceConstant)
+      : Object.entries(creep.store)
+          .filter(([, amount]) => amount > 0)
+          .map(([type]) => type as ResourceConstant);
+
+    while (transferResourceList.length > 0) {
+      const resourceType = transferResourceList.pop();
+      if (!resourceType) break;
+      const transferResult = creep.transfer(target, resourceType);
+      // 没在附近
+      if (transferResult === ERR_NOT_IN_RANGE) {
+        this.baseMoveTo(creep, target);
+        return TaskExecuteStatusEnum.inProgress;
+      } else if (transferResult === ERR_FULL) {
+        // target 满了
+        this.baseSubmitTask(creep, task.id);
+        return TaskExecuteStatusEnum.completed;
+      } else if (transferResult === OK) {
+        return TaskExecuteStatusEnum.inProgress;
+      } else {
+        console.log(`${creep.name}: Task(${task.id}) failed, return ${transferResult}`);
+        return TaskExecuteStatusEnum.failed;
+      }
+    }
+
+    this.baseSubmitTask(creep, task.id);
+    return TaskExecuteStatusEnum.completed;
+  };
+
   // TODO: 做寻路优化
   baseMoveTo(
     creep: Creep,
@@ -114,7 +203,7 @@ export abstract class BaseRole {
   }
 
   baseSubmitTask = (creep: Creep, taskId: string) => {
-    const task = global.rooms[creep.room.name]?.taskMap?.[taskId];
+    const task = global.rooms[creep.room.name]?.taskMap?.get(taskId);
     if (!task) {
       delete creep.memory.currentTask;
       return;

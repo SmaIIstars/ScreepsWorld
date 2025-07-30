@@ -25,20 +25,20 @@ const miniBody = [WORK, CARRY, CARRY, MOVE, MOVE];
 const currentRoomTask = () => {
   // 最小组 (采矿和升级)
   const minCreepGroup = ['Room2MinHarvester1'];
-  const minCreepGroup2 = [
-    'Room2MinMiner',
-    'Room2MinMiner2',
-    'Room2MinHarvester2',
-    'Room2MinUpgrader',
-    'Room2MinRepairer',
+  const minCreepGroup2: string[] = [
+    // 'Room2MinMiner',
+    // 'Room2MinMiner2',
+    // 'Room2MinHarvester2',
+    // 'Room2MinUpgrader',
+    // 'Room2MinRepairer',
     // 'Room2MinRepairer2',
-    'Room2MinBuilder',
+    // 'Room2MinBuilder',
     // 'Room2MinBuilder2',
     // 'Room2MinBuilder3',
     // 'Room2MinBuilder4',
-    'Room2MinUpgrader2',
-    'Room2MinUpgrader3',
-    'Room2MinUpgrader4',
+    // 'Room2MinUpgrader2',
+    // 'Room2MinUpgrader3',
+    // 'Room2MinUpgrader4',
     // 'Room2MinHarvester3',
     // 'Room2MinUpgrader5',
     // 'Room2MinUpgrader6',
@@ -169,7 +169,7 @@ const currentRoomTask = () => {
 
 const harvestTask = (creep: Creep) => {
   // 2. 如果身上能量满了，且正在执行采集任务，则切换到存储任务
-  if (creep.store.getFreeCapacity() === 0 && creep.memory.task === 'harvesting') {
+  if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0 && creep.memory.task === 'harvesting') {
     switch (creep.memory.role) {
       case 'harvester':
         creep.memory.task = 'transferring';
@@ -196,7 +196,7 @@ const harvestTask = (creep: Creep) => {
     if (creep.memory.role === 'builder' || creep.memory.role === 'repairer') {
       // 优先捡地上的能量
       const dropped = creep.pos.findClosestByPath(FIND_DROPPED_RESOURCES, {
-        filter: (r) => r.resourceType === RESOURCE_ENERGY && r.amount > creep.store.getFreeCapacity(),
+        filter: (r) => r.resourceType === RESOURCE_ENERGY && r.amount > creep.store.getFreeCapacity(RESOURCE_ENERGY),
       });
       if (dropped) {
         if (creep.pickup(dropped) === ERR_NOT_IN_RANGE) {
@@ -221,7 +221,7 @@ const harvestTask = (creep: Creep) => {
       const containerList = creep.room.find(FIND_STRUCTURES, {
         filter: (structure) =>
           structure.structureType === STRUCTURE_CONTAINER &&
-          structure.store[RESOURCE_ENERGY] > creep.store.getFreeCapacity(),
+          structure.store[RESOURCE_ENERGY] > creep.store.getFreeCapacity(RESOURCE_ENERGY),
       });
       if (containerList && containerList.length > 0) {
         const targetContainer = containerList[0];
@@ -249,7 +249,8 @@ const harvestTask = (creep: Creep) => {
         const resource = creep.room
           .find(FIND_DROPPED_RESOURCES, {
             filter: (resource) =>
-              resource.resourceType === RESOURCE_ENERGY && resource.amount > creep.store.getFreeCapacity(),
+              resource.resourceType === RESOURCE_ENERGY &&
+              resource.amount > creep.store.getFreeCapacity(RESOURCE_ENERGY),
           })
           .sort((a, b) => a.pos.getRangeTo(creep.pos) - b.pos.getRangeTo(creep.pos));
         if (resource.length > 0 && creep.pickup(resource[0]) === ERR_NOT_IN_RANGE) {

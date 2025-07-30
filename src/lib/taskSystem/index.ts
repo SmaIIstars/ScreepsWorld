@@ -2,6 +2,7 @@ import { TaskMap } from '../utils/taskMap';
 import { TaskExecutor } from './executor';
 import { TaskMonitor } from './monitor';
 import { TaskPublisher } from './publisher';
+// import { RemoteTaskGenerator } from './remoteTaskGenerator';
 
 export type TaskSystemType = {
   taskMap: TaskMap;
@@ -16,12 +17,15 @@ export class TaskSystem {
   private publisher: TaskPublisher;
   private executor: TaskExecutor;
   private monitor: TaskMonitor;
+  // private remoteTaskGenerator: RemoteTaskGenerator;
 
   constructor(roomName: string) {
     this.taskMap = new TaskMap(roomName);
     this.monitor = new TaskMonitor(this.taskMap);
     this.publisher = new TaskPublisher(this.taskMap);
     this.executor = new TaskExecutor(this.taskMap);
+
+    // this.remoteTaskGenerator = new RemoteTaskGenerator();
   }
 
   /**
@@ -39,6 +43,10 @@ export class TaskSystem {
     this.executor.executeTasks(room);
     // 5. 清理任务
     this.cleanupTasks();
+    // 6. 保存任务Map到Memory
+    if (Game.time % 10 === 0) {
+      this.taskMap.saveToMemory();
+    }
   }
 
   /**
@@ -71,9 +79,17 @@ export class TaskSystem {
    * @param room 房间对象
    */
   private claimTasks(room: Room): void {
-    const availableCreeps = Object.values(Game.creeps).filter(
-      (creep) => creep.room.name === room.name && !creep.memory.currentTask && !creep.name.includes('Min')
-    );
+    const availableCreeps = Object.values(Game.creeps).filter((creep) => {
+      // Current Room Creeps
+      if (creep.room.name !== room.name) return false;
+      // Specify Min Group
+      if (creep.name.includes('Min')) return false;
+      // Idle creeps
+      if (creep.memory.currentTask) return false;
+      // in spawning
+      if (creep.spawning) return false;
+      return true;
+    });
 
     for (const creep of availableCreeps) {
       if (!creep.memory.role) continue;

@@ -15,7 +15,7 @@ class Upgrader extends BaseRole {
   }
 
   run(creep: Creep, taskId: string) {
-    const task = global.rooms[creep.room.name]?.taskMap?.[taskId];
+    const task = global.rooms[creep.room.name]?.taskMap?.get(taskId);
     if (!task) return TaskExecuteStatusEnum.failed;
     if (task.type === 'harvesting') {
       return this.baseHarvestTask(creep, task as Task<'harvesting'>);
@@ -44,28 +44,41 @@ class Upgrader extends BaseRole {
     } else if (upgradeResult === OK) {
       return TaskExecuteStatusEnum.inProgress;
     } else {
+      console.log(`${creep.name}: Task(${task.id}) failed, return ${upgradeResult}`);
       return TaskExecuteStatusEnum.failed;
     }
   }
 
   claimTask(creep: Creep, taskMap: TaskMap) {
     // 1. 如果没有能量，先认领获取能量的任务
-    if (creep.store.energy === 0) {
-      const harvestingTasks = taskMap.taskPriorityQueue('harvesting', [
-        LOOK_RESOURCES,
-        LOOK_RUINS,
-        LOOK_TOMBSTONES,
-        STRUCTURE_CONTAINER,
-        STRUCTURE_TERMINAL,
-        STRUCTURE_STORAGE,
-        LOOK_SOURCES,
-      ]);
+    if (creep.store.getFreeCapacity(RESOURCE_ENERGY)) {
+      const harvestingTasks = taskMap.taskPriorityQueue('harvesting', {
+        filter: (task) => {
+          if (task.type === 'harvesting') {
+            if (task.publisherType === LOOK_SOURCES) return true;
+            const energy = (task as Task<'harvesting'>).payload?.[RESOURCE_ENERGY] ?? 0;
+            return energy > creep.store.getCapacity() >> 1;
+          }
+          return false;
+        },
+        targetPriorityList: [
+          LOOK_RESOURCES,
+          LOOK_RUINS,
+          LOOK_TOMBSTONES,
+          STRUCTURE_CONTAINER,
+          STRUCTURE_TERMINAL,
+          STRUCTURE_STORAGE,
+          LOOK_SOURCES,
+        ],
+      });
       return harvestingTasks[0]?.id;
     }
 
     // 2. 有能量则认领升级任务
     else {
-      const upgradingTasks = taskMap.taskPriorityQueue('upgrading');
+      const upgradingTasks = taskMap.taskPriorityQueue('upgrading', {
+        filter: (task) => task.type === 'upgrading',
+      });
       return upgradingTasks[0]?.id;
     }
   }

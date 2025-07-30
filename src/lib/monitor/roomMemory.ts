@@ -27,10 +27,12 @@ const creepsCount = (room: Room) => {
     repairer: 0,
     pioneer: 0,
     claimer: 0,
+    remoteHarvester: 0,
+    remoteHauler: 0,
   };
   for (const creep of Object.values(Game.creeps)) {
     // 最小组不参与计数
-    if (creep.name.startsWith('Min') || creep.room.name !== room.name) continue;
+    if (creep.name.includes('Min') || creep.room.name !== room.name) continue;
     if (creep.memory.role) {
       creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
     }
@@ -42,15 +44,11 @@ const creepsCount = (room: Room) => {
 // 资源监控
 export const resources = (room: Room) => {
   // 获取所有资源
-  const sources = room.find(FIND_SOURCES, { filter: (source) => source.energy > 0 });
-  const minerals = room.find(FIND_MINERALS, { filter: (mineral) => mineral.mineralAmount > 0 });
-  const droppedResources = room.find(FIND_DROPPED_RESOURCES, { filter: (resource) => resource.amount > 0 });
-  const ruins = room.find(FIND_RUINS, {
-    filter: (ruin) => Object.values(ruin.store).some((amount) => amount > 0),
-  });
-  const tombstones = room.find(FIND_TOMBSTONES, {
-    filter: (tombstone) => Object.values(tombstone.store).some((amount) => amount > 0),
-  });
+  const sources = room.find(FIND_SOURCES);
+  const minerals = room.find(FIND_MINERALS);
+  const droppedResources = room.find(FIND_DROPPED_RESOURCES);
+  const ruins = room.find(FIND_RUINS);
+  const tombstones = room.find(FIND_TOMBSTONES);
 
   // 更新房间记忆中的资源信息
   Memory.rooms[room.name].sources = {

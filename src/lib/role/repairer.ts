@@ -16,7 +16,7 @@ class Repairer extends BaseRole {
   }
 
   run(creep: Creep, taskId: string) {
-    const task = global.rooms[creep.room.name]?.taskMap?.[taskId];
+    const task = global.rooms[creep.room.name]?.taskMap?.get(taskId);
     if (!task) return TaskExecuteStatusEnum.failed;
     if (task.type === 'harvesting') {
       return this.baseHarvestTask(creep, task as Task<'harvesting'>);
@@ -29,47 +29,34 @@ class Repairer extends BaseRole {
 
   // 维修任务
   roleTask(creep: Creep, task: Task<'repairing'>): TaskExecuteStatusEnum {
-    if (creep.store.energy === 0) {
-      this.baseSubmitTask(creep, task.id);
-      return TaskExecuteStatusEnum.completed;
-    }
-
-    const targetStructure = Game.getObjectById<Structure>(task.toId);
-    if (!targetStructure) return TaskExecuteStatusEnum.failed;
-
-    const repairResult = creep.repair(targetStructure);
-    if (repairResult === ERR_NOT_IN_RANGE) {
-      this.baseMoveTo(creep, targetStructure);
-      return TaskExecuteStatusEnum.inProgress;
-    } else if (repairResult === OK) {
-      if (targetStructure.hits >= targetStructure.hitsMax) {
-        this.baseSubmitTask(creep, task.id);
-        return TaskExecuteStatusEnum.completed;
-      }
-      return TaskExecuteStatusEnum.inProgress;
-    } else {
-      return TaskExecuteStatusEnum.failed;
-    }
+    return this.baseRepairTask(creep, task);
   }
 
   claimTask(creep: Creep, taskMap: TaskMap) {
     // 1. 如果没有能量，先认领获取能量的任务
     if (creep.store.energy === 0) {
-      const harvestingTasks = taskMap.taskPriorityQueue('harvesting', [
-        LOOK_RESOURCES,
-        LOOK_RUINS,
-        LOOK_TOMBSTONES,
-        STRUCTURE_CONTAINER,
-        STRUCTURE_TERMINAL,
-        STRUCTURE_STORAGE,
-        LOOK_SOURCES,
-      ]);
+      const harvestingTasks = taskMap.taskPriorityQueue('harvesting', {
+        filter: (task) => task.type === 'harvesting',
+        targetPriorityList: [
+          LOOK_RESOURCES,
+          LOOK_RUINS,
+          LOOK_TOMBSTONES,
+          STRUCTURE_CONTAINER,
+          STRUCTURE_TERMINAL,
+          STRUCTURE_STORAGE,
+          LOOK_SOURCES,
+        ],
+      });
       return harvestingTasks[0]?.id;
     }
 
     // 2. 有能量则认领修复任务
     else {
-      const repairingTasks = taskMap.taskPriorityQueue('repairing');
+      let repairingTasks = taskMap.taskPriorityQueue('repairing', {
+        targetPriorityList: [STRUCTURE_RAMPART, STRUCTURE_ROAD, STRUCTURE_CONTAINER, STRUCTURE_WALL],
+        filter: (task) => task.type === 'repairing',
+      });
+
       return repairingTasks[0]?.id;
     }
   }

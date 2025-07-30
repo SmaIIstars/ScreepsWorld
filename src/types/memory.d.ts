@@ -25,7 +25,8 @@ interface CreepMemory {
 // Room Memory
 type RoomSourceType = LOOK_SOURCES | LOOK_MINERALS | LOOK_RESOURCES | LOOK_RUINS | LOOK_TOMBSTONES;
 interface RoomMemory {
-  taskMap?: Record<string, import('@/lib/utils/taskMap').Task>; // New Map-based structure
+  taskMap?: Map<string, import('@/lib/utils/taskMap').Task>;
+  taskMapObj?: Record<string, import('@/lib/utils/taskMap').Task>;
   taskMapVersion?: number; // New Map-based version
   creepsCount?: Record<CustomRoleType, number>;
   sources?: Partial<Record<RoomSourceType, string[]>>;
@@ -34,8 +35,22 @@ interface RoomMemory {
 }
 
 // flag Memory
-type FlagType = 'sourceRoom';
-interface FlagMemory {
-  type: FlagType;
-  mainRooms?: string[];
+type FlagType = 'remoteRoom' | 'sourceRoom';
+type remoteRoomPayload = {
+  baseRoom: string; // 主基地房间
+  // priority: number; // 优先级
+  // maxHarvesters: number; // 最大挖矿者数量
+  // maxHaulers: number; // 最大运输者数量
+  // autoDefense: boolean; // 是否自动防御
+  status: 'active' | 'paused' | 'abandoned';
+};
+
+type flagPayloadMap = {
+  remoteRoom: remoteRoomPayload;
+  sourceRoom: { a: 1 };
+};
+
+interface FlagMemory<T extends FlagType = 'remoteRoom'> {
+  type: T;
+  payload: flagPayloadMap[T];
 }

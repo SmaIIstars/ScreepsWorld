@@ -3,19 +3,35 @@ import { StrategyType } from '.';
 
 const strategy: StrategyType = {
   roleMonitor: {
+    miner: {
+      count: 2,
+      body: generatorRoleBody([
+        { body: WORK, count: 6 },
+        { body: CARRY, count: 1 },
+        { body: MOVE, count: 4 },
+      ]),
+    },
     harvester: {
       count: 1,
       body: generatorRoleBody([
-        { body: CARRY, count: 23 },
-        { body: MOVE, count: 12 },
+        { body: CARRY, count: 20 },
+        { body: MOVE, count: 10 },
       ]),
     },
-    pioneer: {
-      count: 0,
+    repairer: {
+      count: 1,
       body: generatorRoleBody([
-        { body: WORK, count: 6 },
-        { body: CARRY, count: 7 },
-        { body: MOVE, count: 7 },
+        { body: WORK, count: 5 },
+        { body: CARRY, count: 10 },
+        { body: MOVE, count: 5 },
+      ]),
+    },
+    upgrader: {
+      count: 4,
+      body: generatorRoleBody([
+        { body: WORK, count: 8 },
+        { body: CARRY, count: 10 },
+        { body: MOVE, count: 9 },
       ]),
     },
     builder: {
@@ -26,28 +42,12 @@ const strategy: StrategyType = {
         { body: MOVE, count: 7 },
       ]),
     },
-    miner: {
-      count: 2,
+    pioneer: {
+      count: 0,
       body: generatorRoleBody([
         { body: WORK, count: 6 },
-        { body: CARRY, count: 1 },
-        { body: MOVE, count: 4 },
-      ]),
-    },
-    upgrader: {
-      count: 2,
-      body: generatorRoleBody([
-        { body: WORK, count: 10 },
         { body: CARRY, count: 7 },
-        { body: MOVE, count: 9 },
-      ]),
-    },
-    repairer: {
-      count: 1,
-      body: generatorRoleBody([
-        { body: WORK, count: 1 },
-        { body: CARRY, count: 15 },
-        { body: MOVE, count: 4 },
+        { body: MOVE, count: 7 },
       ]),
     },
   },

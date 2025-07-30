@@ -35,7 +35,7 @@ class Repairer extends BaseRole {
     }
 
     // 2. 如果身上能量满了，且正在执行采集任务，则切换到维修任务
-    if (creep.store.getFreeCapacity() === 0 && creep.memory.task === 'harvesting') {
+    if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0 && creep.memory.task === 'harvesting') {
       creep.memory.task = 'repairing';
     }
 

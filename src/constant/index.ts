@@ -35,7 +35,7 @@ export type EnergyStoreType =
   | 'terminal';
 
 export type EnergyStoreTargetType =
-  | Creep
+  // | Creep
   | StructureStorage
   | StructureContainer
   | Mineral

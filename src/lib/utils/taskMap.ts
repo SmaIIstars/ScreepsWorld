@@ -1,3 +1,5 @@
+import { defaults } from 'lodash';
+
 export enum TaskStatusEnum {
   'inProgress',
   'completed',
@@ -91,7 +93,7 @@ export type Task<P extends TaskType = TaskType> = {
 };
 
 const defaultRoomMemory: RoomMemory = {
-  taskMap: {},
+  taskMap: new Map(),
   taskMapVersion: 0,
 };
 
@@ -102,47 +104,51 @@ export class TaskMap {
   constructor(roomName: string) {
     this.roomName = roomName;
 
-    if (!global.rooms?.[roomName]) {
-      global.rooms[roomName] = Memory.rooms?.[roomName] ? { ...Memory.rooms[roomName] } : { ...defaultRoomMemory };
+    if (!global.rooms?.[roomName]?.taskMap) {
+      global.rooms[roomName] = defaults(Memory.rooms[roomName] ?? {}, defaultRoomMemory);
     }
 
     // 从内存加载任务到 Map
-    const taskMapData = global.rooms?.[roomName]?.taskMap ?? {};
-    for (const [taskId, task] of Object.entries(taskMapData)) {
-      this.taskMap.set(taskId, task as Task);
-    }
+    this.taskMap = new Map(Object.entries(global.rooms[roomName].taskMap ?? {}));
+  }
 
-    if (Game.time % 10 === 0) {
-      this.saveToMemory();
-    }
+  get _taskMapObj() {
+    const obj: Record<string, Task> = {};
+    this.entries().forEach(([key, value]) => {
+      obj[key] = value;
+    });
+
+    return obj;
   }
 
   /**
    * 保存任务Map
    */
   private save(): void {
-    const taskMapObj: Record<string, Task> = {};
-    for (const [key, value] of this.taskMap) {
-      taskMapObj[key] = value;
-    }
-    global.rooms[this.roomName].taskMap = taskMapObj;
+    global.rooms[this.roomName].taskMap = this.taskMap;
     global.rooms[this.roomName].taskMapVersion = Game.time;
   }
 
   /**
    * 缓存任务Map到Memory
    */
-  private saveToMemory = () => {
+  public saveToMemory = () => {
     console.log(`${Game.time}: Save TaskMap To Memory`);
-    Memory.rooms[this.roomName].taskMap = global.rooms[this.roomName].taskMap;
+    Memory.rooms[this.roomName].taskMapObj = this._taskMapObj;
     Memory.rooms[this.roomName].taskMapVersion = Game.time;
   };
 
   /**
    * 任务优先级队列
    */
-  taskPriorityQueue(targetTaskType: TaskType, targetPriorityList?: TaskPublisherType[]): Task[] {
+  taskPriorityQueue(
+    targetTaskType: TaskType,
+    opt?: { targetPriorityList?: TaskPublisherType[]; filter?: (task: Task) => boolean }
+  ): Task[] {
+    const { filter, targetPriorityList } = opt ?? {};
+
     const availableTaskList = Array.from(this.taskMap.values()).filter((task) => {
+      if (filter) return filter(task);
       if (task.status === TaskStatusEnum.completed) return false;
       if (task.status === TaskStatusEnum.failed) return false;
       if (task.assignedTo?.length && task.needCreepCount && task.assignedTo.length === task.needCreepCount)
@@ -174,6 +180,12 @@ export class TaskMap {
         // 然后按发布者类型优先级排序
         const idxA = targetPriorityList.indexOf(a.publisherType);
         const idxB = targetPriorityList.indexOf(b.publisherType);
+        if (idxA === -1 && idxB !== -1) {
+          return 1;
+        } else if (idxA !== -1 && idxB === -1) {
+          return -1;
+        }
+
         if (idxA !== idxB) {
           return idxA - idxB; // 升序
         }

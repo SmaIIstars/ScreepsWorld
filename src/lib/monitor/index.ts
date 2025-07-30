@@ -1,3 +1,4 @@
+import { generatorRole } from './generatorRole';
 import { roomMemory } from './roomMemory';
 import { tempScriptTask } from './tempTask';
 
@@ -8,6 +9,7 @@ export const gameMonitor = () => {
 
 export const roomMonitor = (room: Room) => {
   roomMemory(room);
+  generatorRole(room);
 };
 
 // pixel

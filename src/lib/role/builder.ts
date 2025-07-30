@@ -14,7 +14,7 @@ class Builder extends BaseRole {
   }
 
   run(creep: Creep, taskId: string) {
-    const task = global.rooms[creep.room.name]?.taskMap?.[taskId];
+    const task = global.rooms[creep.room.name]?.taskMap?.get(taskId);
     if (!task) return TaskExecuteStatusEnum.failed;
 
     if (task.type === 'harvesting') {
@@ -22,6 +22,7 @@ class Builder extends BaseRole {
     } else if (task.type === 'building') {
       return this.roleTask(creep, task as Task<'building'>);
     }
+
     return TaskExecuteStatusEnum.failed;
   }
 
@@ -35,37 +36,45 @@ class Builder extends BaseRole {
     const targetStructure = Game.getObjectById<ConstructionSite>(task.toId);
     if (!targetStructure) return TaskExecuteStatusEnum.failed;
 
-    const repairResult = creep.build(targetStructure);
-    if (repairResult === ERR_NOT_IN_RANGE) {
+    const buildResult = creep.build(targetStructure);
+    if (buildResult === ERR_NOT_IN_RANGE) {
       this.baseMoveTo(creep, targetStructure);
-    } else if (repairResult === OK) {
+      return TaskExecuteStatusEnum.inProgress;
+    } else if (buildResult === OK) {
       if (targetStructure.progress >= targetStructure.progressTotal) {
         this.baseSubmitTask(creep, task.id);
         return TaskExecuteStatusEnum.completed;
       }
       return TaskExecuteStatusEnum.inProgress;
     }
+
+    console.log(`${creep.name}: Task(${task.id}) failed, return ${buildResult}`);
     return TaskExecuteStatusEnum.failed;
   }
 
   claimTask(creep: Creep, taskMap: TaskMap) {
     // 1. 如果没有能量，先认领获取能量的任务
     if (creep.store.energy === 0) {
-      const harvestingTasks = taskMap.taskPriorityQueue('harvesting', [
-        LOOK_RESOURCES,
-        LOOK_RUINS,
-        LOOK_TOMBSTONES,
-        STRUCTURE_CONTAINER,
-        STRUCTURE_TERMINAL,
-        STRUCTURE_STORAGE,
-        LOOK_SOURCES,
-      ]);
+      const harvestingTasks = taskMap.taskPriorityQueue('harvesting', {
+        filter: (task) => task.type === 'harvesting',
+        targetPriorityList: [
+          LOOK_RESOURCES,
+          LOOK_RUINS,
+          LOOK_TOMBSTONES,
+          STRUCTURE_CONTAINER,
+          STRUCTURE_TERMINAL,
+          STRUCTURE_STORAGE,
+          LOOK_SOURCES,
+        ],
+      });
       return harvestingTasks[0]?.id;
     }
 
     // 2. 有能量则认领建造任务
     else {
-      const buildingTasks = taskMap.taskPriorityQueue('building');
+      const buildingTasks = taskMap.taskPriorityQueue('building', {
+        filter: (task) => task.type === 'building',
+      });
       return buildingTasks[0]?.id;
     }
   }
