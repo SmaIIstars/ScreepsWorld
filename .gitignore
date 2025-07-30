@@ -4,3 +4,6 @@ main.js
 .env
 .DS_Store
 *.log
+
+.augment
+.vscode
