@@ -12,10 +12,10 @@ const strategy: StrategyType = {
       ]),
     },
     harvester: {
-      count: 1,
+      count: 3,
       body: generatorRoleBody([
-        { body: CARRY, count: 20 },
-        { body: MOVE, count: 10 },
+        { body: CARRY, count: 10 },
+        { body: MOVE, count: 5 },
       ]),
     },
     repairer: {
@@ -42,14 +42,29 @@ const strategy: StrategyType = {
         { body: MOVE, count: 7 },
       ]),
     },
-    pioneer: {
-      count: 0,
+    remoteMiner: {
+      count: 1,
       body: generatorRoleBody([
         { body: WORK, count: 6 },
-        { body: CARRY, count: 7 },
-        { body: MOVE, count: 7 },
+        { body: CARRY, count: 1 },
+        { body: MOVE, count: 4 },
       ]),
     },
+    remoteHarvester: {
+      count: 0,
+      body: generatorRoleBody([
+        { body: CARRY, count: 6 },
+        { body: MOVE, count: 3 },
+      ]),
+    },
+    // pioneer: {
+    //   count: 0,
+    //   body: generatorRoleBody([
+    //     { body: WORK, count: 6 },
+    //     { body: CARRY, count: 7 },
+    //     { body: MOVE, count: 7 },
+    //   ]),
+    // },
   },
 };
 

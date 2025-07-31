@@ -1,9 +1,10 @@
-import { ROOM_ID_ENUM } from '@/constant';
+import { BASE_ID_ENUM, ROOM_ID_ENUM } from '@/constant';
+import Pioneer from '../role/pioneer';
 import { generatorRoleBody } from '@/utils';
 
 // 临时脚本任务
 export const tempScriptTask = () => {
-  // const targetCreepList = [
+  combatGroupTask();
   //   Game.creeps['MinPioneer3'],
   //   Game.creeps['MinPioneer7'],
   //   Game.creeps['MinPioneer8'],
@@ -15,37 +16,127 @@ export const tempScriptTask = () => {
   // 本房间自己的临时任务
   currentRoomTask();
   autoAttackWithTowers(Game.rooms[ROOM_ID_ENUM.MainRoom]);
+  pioneeringTask();
   return true;
 };
 
+const pioneeringTask = () => {
+  const minMinerGroup: Record<string, string[]> = {};
+  const minHarvesterGroupMap: Record<string, string[]> = {};
+  const minClaimerGroupMap: Record<string, string[]> = {};
+
+  for (const flag of Object.keys(Game.flags)) {
+    // if (!Game.rooms[flag]) continue;
+    if (Game.flags[flag]?.memory?.type !== 'sourceRoom') continue;
+    if (Game.flags[flag].memory.payload.status !== 'active') continue;
+
+    const payload = Game.flags[flag].memory.payload as RemoteSourceRoomPayload;
+    minMinerGroup[flag] = new Array(payload.remoteMiners).fill('').map((_, index) => `${flag}Miner${index}`);
+    minHarvesterGroupMap[flag] = new Array(payload.remoteHarvesters)
+      .fill('')
+      .map((_, index) => `${flag}Pioneer${index}`);
+    minClaimerGroupMap[flag] = new Array(payload.remoteClaimers).fill('').map((_, index) => `${flag}Claimer${index}`);
+  }
+
+  for (const roomName of Object.keys(minMinerGroup)) {
+    for (const creepName of minMinerGroup[roomName]) {
+      const creep = Game.creeps[creepName];
+      if (!creep) {
+        const spawn = Game.spawns[BASE_ID_ENUM.MainBase];
+        if (!spawn.spawning) {
+          spawn.spawnCreep(
+            generatorRoleBody([
+              { body: WORK, count: 6 },
+              { body: CARRY, count: 1 },
+              { body: MOVE, count: 4 },
+            ]),
+            creepName,
+            { memory: { role: 'remoteMiner', targetRoom: roomName } }
+          );
+        }
+        return;
+      } else {
+        if (creep.store.energy) {
+          const buildTarget = creep.pos.findInRange(FIND_CONSTRUCTION_SITES, 1, {
+            filter: (structure) => structure instanceof ConstructionSite,
+          });
+
+          if (buildTarget.length) {
+            creep.build(buildTarget[0]);
+          }
+          const repairTarget = creep.pos.findInRange(FIND_STRUCTURES, 1, {
+            filter: (structure) => structure.hits < structure.hitsMax,
+          });
+          if (repairTarget.length) {
+            creep.repair(repairTarget[0]);
+          }
+        }
+
+        if (creep.room.name !== roomName) {
+          creep.moveTo(Game.flags[roomName]);
+        } else {
+          const sources = creep.room.find(FIND_SOURCES);
+          const targetSource = sources.find((source) => {
+            const miners = source.pos.findInRange(FIND_MY_CREEPS, 1, {
+              filter: (creep) => creep.memory.role === 'remoteMiner' && creep.name !== creepName,
+            });
+            return miners.length === 0;
+          });
+          if (targetSource) {
+            if (creep.harvest(targetSource) === ERR_NOT_IN_RANGE) {
+              creep.moveTo(targetSource);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  for (const roomName of Object.keys(minClaimerGroupMap)) {
+    for (const creepName of minClaimerGroupMap[roomName]) {
+      const creep = Game.creeps[creepName];
+      if (!creep) {
+        const spawn = Game.spawns[BASE_ID_ENUM.MainBase];
+        if (!spawn.spawning) {
+          spawn.spawnCreep(
+            generatorRoleBody([
+              { body: MOVE, count: 2 },
+              { body: CLAIM, count: 2 },
+            ]),
+            creepName,
+            { memory: { role: 'claimer', task: 'moving', targetRoom: roomName } }
+          );
+        }
+        return;
+      } else {
+        const target = Game.rooms[roomName].controller;
+        if (target) {
+          if (creep.reserveController(target) === ERR_NOT_IN_RANGE) {
+            creep.moveTo(target);
+          }
+        }
+      }
+    }
+  }
+
+  for (const roomName of Object.keys(minHarvesterGroupMap)) {
+    for (const creepName of minHarvesterGroupMap[roomName]) {
+      const creep = Game.creeps[creepName];
+      if (!creep) {
+        Pioneer.create(roomName, creepName);
+        return;
+      } else {
+        Pioneer.run(creep);
+      }
+    }
+  }
+};
+
 const SourceIds = ['5bbcad8e9099fc012e63770b', '5bbcad8e9099fc012e63770a'];
-
 const miniBody = [WORK, CARRY, CARRY, MOVE, MOVE];
-
 const currentRoomTask = () => {
   // 最小组 (采矿和升级)
   const minCreepGroup = ['Room2MinHarvester1'];
-  const minCreepGroup2: string[] = [
-    // 'Room2MinMiner',
-    // 'Room2MinMiner2',
-    // 'Room2MinHarvester2',
-    // 'Room2MinUpgrader',
-    // 'Room2MinRepairer',
-    // 'Room2MinRepairer2',
-    // 'Room2MinBuilder',
-    // 'Room2MinBuilder2',
-    // 'Room2MinBuilder3',
-    // 'Room2MinBuilder4',
-    // 'Room2MinUpgrader2',
-    // 'Room2MinUpgrader3',
-    // 'Room2MinUpgrader4',
-    // 'Room2MinHarvester3',
-    // 'Room2MinUpgrader5',
-    // 'Room2MinUpgrader6',
-    // 'Room2MinUpgrader7',
-    // 'Room2MinUpgrader8',
-    // 'Room2MinUpgrader9',
-  ];
 
   minCreepGroup.forEach((creepName) => {
     const creep = Game.creeps[creepName];
@@ -61,79 +152,8 @@ const currentRoomTask = () => {
     }
   });
 
-  for (const creepName of minCreepGroup2) {
-    const creep = Game.creeps[creepName];
-    if (!creep) {
-      // 如果creep不存在，则尝试在Spawn1基地造
-      const spawn = Game.spawns['Spawn1'];
-      if (spawn && spawn.spawning == null) {
-        // 判断能否造出Harvester或Upgrader
-        let role: string;
-        if (creepName.includes('Harvester')) {
-          role = 'harvester';
-        } else if (creepName.includes('Upgrader')) {
-          role = 'upgrader';
-        } else if (creepName.includes('Builder')) {
-          role = 'builder';
-        } else if (creepName.includes('Miner')) {
-          role = 'miner';
-        } else if (creepName.includes('Repairer')) {
-          role = 'repairer';
-        } else {
-          continue;
-        }
-        // TODO: 替换，造一个基础body
-        let body: BodyPartConstant[] = generatorRoleBody([
-          { body: WORK, count: 6 },
-          { body: CARRY, count: 7 },
-          { body: MOVE, count: 7 },
-        ]);
-        if (creepName.includes('MinMiner')) {
-          body = generatorRoleBody([
-            { body: WORK, count: 6 },
-            { body: MOVE, count: 3 },
-          ]);
-        }
-
-        if (creepName.includes('MinHarvester')) {
-          body = generatorRoleBody([
-            { body: WORK, count: 0 },
-            { body: CARRY, count: 16 },
-            { body: MOVE, count: 8 },
-          ]);
-        }
-        // if (creepName.includes('MinRepairer')) {
-        //   body = generatorRoleBody([
-        //     { body: WORK, count: 2 },
-        //     { body: CARRY, count: 10 },
-        //     { body: MOVE, count: 6 },
-        //   ]);
-        // }
-
-        const memoryOpts: any = {};
-        if (role === 'harvester') {
-          memoryOpts.task = 'harvesting';
-        } else if (role === 'upgrader') {
-          memoryOpts.task = 'upgrading';
-        } else if (role === 'builder') {
-          memoryOpts.task = 'building';
-        } else if (role === 'miner') {
-          memoryOpts.task = 'mining';
-        } else if (role === 'repairing') {
-          memoryOpts.task = 'repairing';
-        }
-        memoryOpts.role = role as CustomRoleType;
-        const result = spawn.spawnCreep(body, creepName, { memory: memoryOpts });
-        if (result === OK) {
-          console.log(`[临时任务] 在Spawn1造出 ${creepName} (${role})`);
-        }
-      }
-      break;
-    }
-  }
-
   const allCreepInRoom = Object.values(Game.creeps).filter(
-    (creep) => creep.room.name === ROOM_ID_ENUM.MainRoom && creep.name.includes('Min')
+    (creep) => creep.room.name === ROOM_ID_ENUM.MainRoom && creep.name.includes('Room2Min')
   );
   for (const creep of allCreepInRoom) {
     // 1. 如果身上没有能量，且正在没有执行采集任务，则切换到采集任务
@@ -258,10 +278,13 @@ const harvestTask = (creep: Creep) => {
           return;
         }
         // 再检查周围Container是否已满，如果已满则直接采集
-        const container = creep.room.find(FIND_STRUCTURES, {
-          filter: (structure) =>
-            structure.structureType === STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] > 50,
-        });
+        const container = creep.room
+          .find(FIND_STRUCTURES, {
+            filter: (structure) =>
+              structure.structureType === STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] > 50,
+          })
+          .sort((a, b) => a.pos.getRangeTo(creep.pos) - b.pos.getRangeTo(creep.pos));
+
         if (container.length > 0 && creep.withdraw(container[0], RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
           creep.moveTo(container[0]);
           return;
@@ -499,5 +522,65 @@ const autoAttackWithTowers = (room: Room) => {
     for (const tower of towers) {
       tower.attack(hostile);
     }
+    return;
   }
+
+  // 治疗队友
+  for (const tower of towers) {
+    if (tower.store[RESOURCE_ENERGY] > tower.store.getCapacity(RESOURCE_ENERGY) * 0.3) {
+      const damagedCreeps = room.find(FIND_MY_CREEPS, {
+        filter: (creep) => creep.hits < creep.hitsMax,
+      });
+      if (damagedCreeps.length > 0) {
+        for (const tower of towers) {
+          tower.heal(damagedCreeps[0]);
+        }
+      }
+    }
+    return;
+  }
+};
+
+const COMBAT_GROUP = [
+  { name: 'CombatAttacker1', role: 'attacker' },
+  { name: 'CombatAttacker2', role: 'attacker' },
+];
+
+const combatGroupTask = () => {
+  for (const creepConfig of COMBAT_GROUP) {
+    const creep = Game.creeps[creepConfig.name];
+    if (!creep) {
+      const body = generatorRoleBody([
+        { body: MOVE, count: 1 },
+        { body: ATTACK, count: 2 },
+        { body: RANGED_ATTACK, count: 2 },
+      ]);
+      // 生成creep
+      const spawn = Game.spawns[BASE_ID_ENUM.MainBase];
+      if (spawn && !spawn.spawning) {
+        const result = spawn.spawnCreep(body, creepConfig.name);
+        if (result === OK) {
+          console.log(`战斗小组正在孵化: ${creepConfig.name}`);
+          break;
+        }
+      }
+    }
+  }
+  const attackers = [Game.creeps['CombatAttacker1'], Game.creeps['CombatAttacker2']];
+  const fixPos: { x: number; y: number }[] = [
+    { x: 32, y: 0 },
+    { x: 49, y: 16 },
+  ];
+
+  attackers.forEach((attacker, index) => {
+    if (!attacker) return;
+    // 如果attacker不在边界则向边界移动
+    if (attacker.pos.x !== 0 && attacker.pos.x !== 49 && attacker.pos.y !== 0 && attacker.pos.y !== 49) {
+      attacker.moveTo(fixPos[index].x, fixPos[index].y);
+    }
+    const hostile = attacker.pos.findInRange(FIND_HOSTILE_CREEPS, 1);
+    if (hostile.length > 0) {
+      attacker.attack(hostile[0]);
+    }
+  });
 };

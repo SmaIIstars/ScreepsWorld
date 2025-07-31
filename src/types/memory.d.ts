@@ -15,6 +15,7 @@ interface CreepMemory {
   role: CustomRoleType;
   currentTask?: string; // 当前执行的任务ID
   targetId?: string;
+  targetRoom?: string;
 
   /**
    * @deprecated 仅在 tempTask 中 Min 相关用法，后续不推荐使用
@@ -32,25 +33,28 @@ interface RoomMemory {
   sources?: Partial<Record<RoomSourceType, string[]>>;
   visible?: boolean;
   sourceRooms?: string[];
+  mainRooms?: string[];
 }
 
 // flag Memory
-type FlagType = 'remoteRoom' | 'sourceRoom';
-type remoteRoomPayload = {
-  baseRoom: string; // 主基地房间
-  // priority: number; // 优先级
-  // maxHarvesters: number; // 最大挖矿者数量
-  // maxHaulers: number; // 最大运输者数量
-  // autoDefense: boolean; // 是否自动防御
+type FlagType = 'sourceRoom';
+type RemoteSourceRoomPayload = {
+  mainRoom: string; // 主基地房间
+  remoteMiners: number; // 需要挖矿者数量
+  remoteHarvesters: number; // 需要运输者数量
+  remoteClaimers: number; // 需要claimer数量
   status: 'active' | 'paused' | 'abandoned';
 };
 
-type flagPayloadMap = {
-  remoteRoom: remoteRoomPayload;
-  sourceRoom: { a: 1 };
+type FlagPayloadMap = {
+  sourceRoom: RemoteSourceRoomPayload;
 };
 
-interface FlagMemory<T extends FlagType = 'remoteRoom'> {
+interface CustomFlag<T extends FlagType = FlagType> extends Flag {
+  memory: FlagMemory<T>;
+}
+
+interface FlagMemory<T extends FlagType = FlagType> {
   type: T;
-  payload: flagPayloadMap[T];
+  payload: Partial<FlagPayloadMap[T]>;
 }

@@ -5,5 +5,5 @@ main.js
 .DS_Store
 *.log
 
-.augment
-.vscode
+.augment/
+.vscode/

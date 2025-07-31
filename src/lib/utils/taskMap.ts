@@ -33,7 +33,8 @@ export type TaskPublisherType =
   | LOOK_RUINS
   | LOOK_TOMBSTONES
   | LOOK_MINERALS
-  | LOOK_RESOURCES;
+  | LOOK_RESOURCES
+  | LOOK_FLAGS;
 
 export type HarvestingPayload = Partial<Record<ResourceConstant, number>>;
 
@@ -61,6 +62,10 @@ export type TransferringPayload = {
   freeCapacity: number;
 };
 
+export type ScoutingPayload = {
+  taskType: 'source';
+};
+
 export type TaskPayloadMap = {
   [K in TaskType]: K extends 'harvesting'
     ? HarvestingPayload
@@ -72,7 +77,9 @@ export type TaskPayloadMap = {
     ? RepairingPayload
     : K extends 'transferring'
     ? TransferringPayload
-    : never;
+    : K extends 'scouting'
+    ? ScoutingPayload
+    : Record<string, any>;
 };
 
 export type Task<P extends TaskType = TaskType> = {
@@ -83,12 +90,12 @@ export type Task<P extends TaskType = TaskType> = {
   type: P; // 任务类型
   toId: string; // 目标对象的ID
   toRoomName?: string; // 目标房间名称（跨房间任务时使用）
-  allowedCreepRoles: string[]; // 哪些类型的creep可以做
+  allowedCreepRoles: CustomRoleType[]; // 哪些类型的creep可以做
   payload?: TaskPayloadMap[P]; // 额外信息
   timestamp?: number; // 任务创建时间
   priority?: number; // 任务优先级
   needCreepCount?: number; // 需要几人
-  assignedTo?: string[]; // 已被哪些creep领取
+  assignedTo: string[]; // 已被哪些creep领取
   status?: TaskStatusEnum; // 任务状态
 };
 
@@ -141,9 +148,14 @@ export class TaskMap {
   /**
    * 任务优先级队列
    */
+  // TODO: 优化为多任务多目标排序
   taskPriorityQueue(
     targetTaskType: TaskType,
-    opt?: { targetPriorityList?: TaskPublisherType[]; filter?: (task: Task) => boolean }
+    opt?: {
+      // taskPriorityList?: TaskType[];
+      targetPriorityList?: TaskPublisherType[];
+      filter?: (task: Task) => boolean;
+    }
   ): Task[] {
     const { filter, targetPriorityList } = opt ?? {};
 

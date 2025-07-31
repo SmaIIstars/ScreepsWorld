@@ -1,13 +1,28 @@
+import { ROOM_ID_ENUM } from '@/constant';
 import { getStrategy } from '@/strategy';
 import { intervalSleep } from '@/utils';
 
 export const generatorRole = (room: Room) => {
+  if (room.name !== ROOM_ID_ENUM.MainRoom) return;
   const strategy = getStrategy(room.controller?.level ?? 0);
   const creepCounter = room.memory?.creepsCount;
   if (!creepCounter) return;
 
   const roles = Object.keys(strategy.roleMonitor) as CustomRoleType[];
   for (const role of roles) {
+    // 写死
+    if (role === 'remoteMiner') {
+      const flagCount = Object.values(Game.flags).filter((flag) => flag.memory.type === 'sourceRoom').length;
+      if (creepCounter[role] < flagCount) {
+        const bodyArr = strategy.roleMonitor[role]?.body || [];
+        const bodyCount: Record<string, number> = {};
+        for (const part of bodyArr) {
+          bodyCount[part] = (bodyCount[part] || 0) + 1;
+        }
+      }
+      continue;
+    }
+
     if (!strategy.roleMonitor[role]) continue;
     if (creepCounter[role] < strategy.roleMonitor[role].count) {
       intervalSleep(10, () => {

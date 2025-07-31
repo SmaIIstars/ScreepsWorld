@@ -1,4 +1,3 @@
-import { EnergyStoreTargetType } from '@/constant';
 import { HarvestingPayload, Task, TaskMap, TaskPublisherType, TaskStatusEnum } from '@/lib/utils/taskMap';
 import { AllStoreStructure } from '@/types';
 
@@ -23,6 +22,7 @@ export class TaskPublisher {
     this.publishBuildTasks(room);
     this.publishRepairTasks(room);
     this.publishTransferTasks(room);
+    this.publishScoutRoomTasks(room);
   }
 
   /**
@@ -41,7 +41,9 @@ export class TaskPublisher {
         // Mineral 暂不可采集
         if (target instanceof Mineral) return;
         if (!target) return;
-        const roles = ['source', 'mineral'].includes(type) ? ['miner', 'harvester'] : ['harvester'];
+        const roles: CustomRoleType[] = ['source', 'mineral'].includes(type)
+          ? ['miner', 'harvester', 'remoteMiner']
+          : ['harvester', 'remoteHarvester'];
         this.createHarvestTask(target, room, roles);
       });
     });
@@ -56,7 +58,7 @@ export class TaskPublisher {
       },
     });
     sourceStores.forEach((structure) => {
-      this.createHarvestTask(structure, room, ['harvester']);
+      this.createHarvestTask(structure, room, ['harvester', 'remoteHarvester']);
     });
   }
 
@@ -75,7 +77,7 @@ export class TaskPublisher {
       | StructureTerminal
       | StructureLink,
     room: Room,
-    allowedRoles: string[]
+    allowedRoles: CustomRoleType[]
   ): void {
     const taskId = `harvest_${target.id}`;
     if (this.taskMap.hasTask(taskId)) return;
@@ -140,6 +142,7 @@ export class TaskPublisher {
           status: TaskStatusEnum.published,
           room: room.name,
           needCreepCount: 1,
+          assignedTo: [],
         };
 
         this.taskMap.publish(task);
@@ -168,6 +171,7 @@ export class TaskPublisher {
             level: room.controller.level,
           },
           room: room.name,
+          assignedTo: [],
         };
 
         this.taskMap.publish(task);
@@ -198,6 +202,7 @@ export class TaskPublisher {
             progressTotal: site.progressTotal,
           },
           room: room.name,
+          assignedTo: [],
         };
 
         this.taskMap.publish(task);
@@ -217,7 +222,7 @@ export class TaskPublisher {
         //   structure.structureType !== STRUCTURE_RAMPART
         // );
         if (structure.structureType === STRUCTURE_WALL || structure.structureType === STRUCTURE_RAMPART) {
-          return structure.hits < 300000;
+          return structure.hits < 200000;
         } else {
           return structure.hits < structure.hitsMax * 0.6;
         }
@@ -241,6 +246,8 @@ export class TaskPublisher {
             hitsMax: structure.hitsMax,
           },
           room: room.name,
+          needCreepCount: 1,
+          assignedTo: [],
         };
 
         this.taskMap.publish(task);
@@ -305,10 +312,39 @@ export class TaskPublisher {
           timestamp: Game.time,
           status: TaskStatusEnum.published,
           room: room.name,
+          assignedTo: [],
+          needCreepCount: structure.structureType === 'extension' ? 1 : undefined,
         };
 
         this.taskMap.publish(task);
       }
     }
+  }
+
+  /**
+   * 发布插旗任务
+   */
+  private publishScoutRoomTasks(room: Room): void {
+    const sourceRooms = room.memory.sourceRooms ?? [];
+    sourceRooms.forEach((roomName) => {
+      // 发布一个RemoteMiner任务进行侦察
+      const taskId = `scout_${roomName}`;
+      if (this.taskMap.hasTask(taskId)) return;
+
+      const task: Task<'scouting'> = {
+        id: taskId,
+        type: 'scouting',
+        publisherType: LOOK_FLAGS,
+        publisher: room.controller?.id ?? '',
+        toId: roomName,
+        allowedCreepRoles: ['remoteMiner'],
+        payload: { taskType: 'source' },
+        status: TaskStatusEnum.published,
+        room: room.name,
+        assignedTo: [],
+      };
+
+      this.taskMap.publish(task);
+    });
   }
 }

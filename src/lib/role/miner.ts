@@ -3,11 +3,11 @@ import { Task, TaskMap, TaskStatusEnum } from '../utils/taskMap';
 import { BaseRole, BaseRoleCreateParams } from './base';
 import { TaskExecuteStatusEnum } from '../taskSystem/executor';
 
-class Miner extends BaseRole {
-  static readonly role: Extract<CustomRoleType, 'miner'> = 'miner';
+export class Miner extends BaseRole {
+  static readonly role: CustomRoleType = 'miner';
 
-  constructor() {
-    super(Miner.role);
+  constructor(role: CustomRoleType = Miner.role) {
+    super(role);
   }
 
   create(spawn: StructureSpawn, params: BaseRoleCreateParams): ScreepsReturnCode {

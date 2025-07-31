@@ -27,12 +27,12 @@ const creepsCount = (room: Room) => {
     repairer: 0,
     pioneer: 0,
     claimer: 0,
+    remoteMiner: 0,
     remoteHarvester: 0,
-    remoteHauler: 0,
   };
   for (const creep of Object.values(Game.creeps)) {
     // 最小组不参与计数
-    if (creep.name.includes('Min') || creep.room.name !== room.name) continue;
+    if (creep.name.includes('Room2Min')) continue;
     if (creep.memory.role) {
       creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
     }

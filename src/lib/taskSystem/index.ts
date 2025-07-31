@@ -2,7 +2,6 @@ import { TaskMap } from '../utils/taskMap';
 import { TaskExecutor } from './executor';
 import { TaskMonitor } from './monitor';
 import { TaskPublisher } from './publisher';
-// import { RemoteTaskGenerator } from './remoteTaskGenerator';
 
 export type TaskSystemType = {
   taskMap: TaskMap;
@@ -24,8 +23,6 @@ export class TaskSystem {
     this.monitor = new TaskMonitor(this.taskMap);
     this.publisher = new TaskPublisher(this.taskMap);
     this.executor = new TaskExecutor(this.taskMap);
-
-    // this.remoteTaskGenerator = new RemoteTaskGenerator();
   }
 
   /**
@@ -83,7 +80,7 @@ export class TaskSystem {
       // Current Room Creeps
       if (creep.room.name !== room.name) return false;
       // Specify Min Group
-      if (creep.name.includes('Min')) return false;
+      if (creep.name.includes('Room2Min')) return false;
       // Idle creeps
       if (creep.memory.currentTask) return false;
       // in spawning

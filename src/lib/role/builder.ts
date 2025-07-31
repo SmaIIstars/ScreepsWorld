@@ -21,6 +21,8 @@ class Builder extends BaseRole {
       return this.baseHarvestTask(creep, task as Task<'harvesting'>);
     } else if (task.type === 'building') {
       return this.roleTask(creep, task as Task<'building'>);
+    } else if (task.type === 'repairing') {
+      return this.baseRepairTask(creep, task as Task<'repairing'>);
     }
 
     return TaskExecuteStatusEnum.failed;
@@ -56,7 +58,19 @@ class Builder extends BaseRole {
     // 1. 如果没有能量，先认领获取能量的任务
     if (creep.store.energy === 0) {
       const harvestingTasks = taskMap.taskPriorityQueue('harvesting', {
-        filter: (task) => task.type === 'harvesting',
+        filter: (task) => {
+          if (task.type !== 'harvesting') return false;
+          if (task.toRoomName !== creep.room.name) return false;
+          if (task.publisherType === STRUCTURE_STORAGE && !(task as Task<'harvesting'>).payload?.[RESOURCE_ENERGY])
+            return false;
+          if (
+            task.publisherType === LOOK_RESOURCES &&
+            ((task as Task<'harvesting'>).payload?.[RESOURCE_ENERGY] ?? 0) <
+              creep.store.getFreeCapacity(RESOURCE_ENERGY) >> 1
+          )
+            return false;
+          return true;
+        },
         targetPriorityList: [
           LOOK_RESOURCES,
           LOOK_RUINS,
@@ -73,9 +87,15 @@ class Builder extends BaseRole {
     // 2. 有能量则认领建造任务
     else {
       const buildingTasks = taskMap.taskPriorityQueue('building', {
-        filter: (task) => task.type === 'building',
+        filter: (task) => ['building', 'repairing'].includes(task.type) && task.toRoomName === creep.room.name,
       });
-      return buildingTasks[0]?.id;
+      if (buildingTasks[0]) return buildingTasks[0]?.id;
+
+      // 维修任务
+      const repairingTasks = taskMap.taskPriorityQueue('repairing', {
+        filter: (task) => task.type === 'repairing' && task.toRoomName === creep.room.name,
+      });
+      return repairingTasks[0]?.id;
     }
   }
 }

@@ -1,9 +1,11 @@
 import { generatorRole } from './generatorRole';
 import { roomMemory } from './roomMemory';
 import { tempScriptTask } from './tempTask';
+import { flagMonitor } from './flagMemory';
 
 export const gameMonitor = () => {
   tempScriptTask();
+  flagMonitor();
   generatePixel();
 };
 

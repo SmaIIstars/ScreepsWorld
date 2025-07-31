@@ -22,6 +22,8 @@ class Repairer extends BaseRole {
       return this.baseHarvestTask(creep, task as Task<'harvesting'>);
     } else if (task.type === 'repairing') {
       return this.roleTask(creep, task as Task<'repairing'>);
+    } else if (task.type === 'transferring') {
+      return this.baseTransferTask(creep, task as Task<'transferring'>);
     }
 
     return TaskExecuteStatusEnum.failed;
@@ -36,7 +38,19 @@ class Repairer extends BaseRole {
     // 1. 如果没有能量，先认领获取能量的任务
     if (creep.store.energy === 0) {
       const harvestingTasks = taskMap.taskPriorityQueue('harvesting', {
-        filter: (task) => task.type === 'harvesting',
+        filter: (task) => {
+          if (task.type !== 'harvesting') return false;
+          if (task.toRoomName !== creep.room.name) return false;
+          if (task.publisherType === STRUCTURE_STORAGE && !(task as Task<'harvesting'>).payload?.[RESOURCE_ENERGY])
+            return false;
+          if (
+            task.publisherType === LOOK_RESOURCES &&
+            ((task as Task<'harvesting'>).payload?.[RESOURCE_ENERGY] ?? 0) <
+              creep.store.getFreeCapacity(RESOURCE_ENERGY) >> 1
+          )
+            return false;
+          return true;
+        },
         targetPriorityList: [
           LOOK_RESOURCES,
           LOOK_RUINS,
@@ -52,9 +66,22 @@ class Repairer extends BaseRole {
 
     // 2. 有能量则认领修复任务
     else {
+      // 优先接塔的transferring任务
+      const transferringTasks = taskMap.taskPriorityQueue('transferring', {
+        filter: (task) => task.type === 'transferring' && task.publisherType === STRUCTURE_TOWER,
+        targetPriorityList: [STRUCTURE_TOWER],
+      });
+      if (transferringTasks[0]) return transferringTasks[0]?.id;
+
       let repairingTasks = taskMap.taskPriorityQueue('repairing', {
         targetPriorityList: [STRUCTURE_RAMPART, STRUCTURE_ROAD, STRUCTURE_CONTAINER, STRUCTURE_WALL],
-        filter: (task) => task.type === 'repairing',
+        filter: (task) => {
+          if (task.type !== 'repairing') return false;
+          if (task.toRoomName !== creep.room.name) return false;
+          if (task.assignedTo?.length && task.needCreepCount && task.assignedTo?.length >= task.needCreepCount)
+            return false;
+          return true;
+        },
       });
 
       return repairingTasks[0]?.id;

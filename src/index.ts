@@ -4,7 +4,7 @@ import { runTaskSystem } from './lib/taskSystem';
 const loop = () => {
   gameMonitor();
 
-  for (let roomName in Game.rooms) {
+  for (const roomName in Game.rooms) {
     const room = Game.rooms[roomName];
     roomMonitor(room);
     runTaskSystem(room);

@@ -5,8 +5,7 @@ import Miner from './miner';
 import Repairer from './repairer';
 import Upgrader from './upgrader';
 // import RemoteHarvester from './remoteHarvester';
-// import RemoteHauler from './remoteHauler';
-
+// import RemoteMiner from './remoteMiner';
 export type GlobalRolesType = Partial<Record<CustomRoleType, BaseRole>>;
 
 export const roles: GlobalRolesType = {
@@ -16,5 +15,5 @@ export const roles: GlobalRolesType = {
   builder: Builder,
   repairer: Repairer,
   // remoteHarvester: RemoteHarvester,
-  // remoteHauler: RemoteHauler,
+  // remoteMiner: RemoteMiner,
 };
