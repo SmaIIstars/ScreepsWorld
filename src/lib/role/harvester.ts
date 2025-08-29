@@ -41,11 +41,12 @@ export class Harvester extends BaseRole {
               ([STRUCTURE_STORAGE, STRUCTURE_CONTAINER, STRUCTURE_TERMINAL] as TaskPublisherType[]).includes(
                 task.publisherType
               )
-            )
+            ) {
               return (
                 ((task as Task<'harvesting'>)?.payload?.[RESOURCE_ENERGY] ?? 0) >
                 creep.store.getFreeCapacity(RESOURCE_ENERGY) >> 1
               );
+            }
 
             let allSourceAmount = 0;
             for (const amount of Object.values(task.payload)) {
@@ -64,7 +65,7 @@ export class Harvester extends BaseRole {
           STRUCTURE_TERMINAL,
           STRUCTURE_STORAGE,
         ],
-      });
+      }) as Task<'harvesting'>[];
 
       // 如果没有WORK组件，则不能认领Source或者Mineral任务
       if (!creep.body.some((part) => part.type === WORK)) {
@@ -72,6 +73,12 @@ export class Harvester extends BaseRole {
         harvestingTasks = harvestingTasks.filter((task) => task.publisherType !== LOOK_MINERALS);
       }
 
+      harvestingTasks = harvestingTasks.filter((task) => {
+        if (task?.payload?.[RESOURCE_ENERGY]) {
+          if (task.payload[RESOURCE_ENERGY] > creep.store.getFreeCapacity(RESOURCE_ENERGY) >> 1) return true;
+        }
+        return false;
+      });
       const targetType = harvestingTasks[0]?.publisherType;
       // 按距离排序
       harvestingTasks
@@ -97,9 +104,24 @@ export class Harvester extends BaseRole {
             return false;
           return true;
         },
-        targetPriorityList: [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_CONTAINER, STRUCTURE_STORAGE],
+        targetPriorityList: [
+          STRUCTURE_EXTENSION,
+          STRUCTURE_SPAWN,
+          STRUCTURE_LAB,
+          STRUCTURE_STORAGE,
+          STRUCTURE_CONTAINER,
+        ],
       });
-      return transferringTasks[0]?.id;
+
+      const currentTargetType = transferringTasks[0]?.publisherType;
+      return transferringTasks
+        .filter((task) => task.publisherType === currentTargetType)
+        .sort((a, b) => {
+          const targetA = Game.getObjectById<Structure>(a.toId);
+          const targetB = Game.getObjectById<Structure>(b.toId);
+          if (!targetA || !targetB) return 0;
+          return creep.pos.getRangeTo(targetA) - creep.pos.getRangeTo(targetB);
+        })[0]?.id;
     }
   }
 }

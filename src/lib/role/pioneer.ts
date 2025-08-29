@@ -9,8 +9,8 @@ class Pioneer {
     return Game.spawns[BASE_ID_ENUM.MainBase].spawnCreep(
       generatorRoleBody([
         { body: WORK, count: 2 },
-        { body: CARRY, count: 16 },
-        { body: MOVE, count: 9 },
+        { body: CARRY, count: 30 },
+        { body: MOVE, count: 16 },
       ]),
       curName,
       {
@@ -96,12 +96,12 @@ class Pioneer {
               structure instanceof StructureFactory
             ) {
               if (!structure.store) return false;
-
-              let totalAmount = 0;
-              for (const resourceType of Object.keys(structure.store)) {
-                totalAmount += structure.store[resourceType as ResourceConstant];
-              }
-              return totalAmount > 0;
+              return structure.store[RESOURCE_ENERGY] > 0;
+              // let totalAmount = 0;
+              // for (const resourceType of Object.keys(structure.store)) {
+              //   totalAmount += structure.store[resourceType as ResourceConstant];
+              // }
+              // return totalAmount > 0;
             }
             return false;
           },

@@ -1,6 +1,6 @@
-import { BaseRole, BaseRoleCreateParams } from './base';
-import type { Task, TaskMap } from '../utils/taskMap';
 import { TaskExecuteStatusEnum } from '../taskSystem/executor';
+import type { Task, TaskMap } from '../utils/taskMap';
+import { BaseRole, BaseRoleCreateParams } from './base';
 
 class Upgrader extends BaseRole {
   static readonly role: Extract<CustomRoleType, 'upgrader'> = 'upgrader';
@@ -56,12 +56,9 @@ class Upgrader extends BaseRole {
         filter: (task) => {
           if (task.type !== 'harvesting') return false;
           if (task.toRoomName !== creep.room.name) return false;
-          if (task.publisherType === STRUCTURE_STORAGE && !(task as Task<'harvesting'>).payload?.[RESOURCE_ENERGY])
-            return false;
           if (
-            task.publisherType === LOOK_RESOURCES &&
             ((task as Task<'harvesting'>).payload?.[RESOURCE_ENERGY] ?? 0) <
-              creep.store.getFreeCapacity(RESOURCE_ENERGY) >> 1
+            creep.store.getFreeCapacity(RESOURCE_ENERGY) >> 1
           )
             return false;
           return true;

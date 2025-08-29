@@ -1,18 +1,10 @@
 import { BASE_ID_ENUM, ROOM_ID_ENUM } from '@/constant';
-import Pioneer from '../role/pioneer';
 import { generatorRoleBody } from '@/utils';
+import Pioneer from '../role/pioneer';
 
 // 临时脚本任务
 export const tempScriptTask = () => {
   combatGroupTask();
-  //   Game.creeps['MinPioneer3'],
-  //   Game.creeps['MinPioneer7'],
-  //   Game.creeps['MinPioneer8'],
-  //   Game.creeps['MinPioneer9'],
-  // ];
-  // targetCreepList.forEach((creep) => {
-  //   if (creep) mainRoomTask(creep);
-  // });
   // 本房间自己的临时任务
   currentRoomTask();
   autoAttackWithTowers(Game.rooms[ROOM_ID_ENUM.MainRoom]);
@@ -42,19 +34,21 @@ const pioneeringTask = () => {
     for (const creepName of minMinerGroup[roomName]) {
       const creep = Game.creeps[creepName];
       if (!creep) {
-        const spawn = Game.spawns[BASE_ID_ENUM.MainBase];
+        const spawn = Game.spawns[BASE_ID_ENUM.MainBase].spawning
+          ? Game.spawns[BASE_ID_ENUM.MainBase]
+          : Game.spawns['Spawn2'];
         if (!spawn.spawning) {
           spawn.spawnCreep(
             generatorRoleBody([
-              { body: WORK, count: 6 },
-              { body: CARRY, count: 1 },
-              { body: MOVE, count: 4 },
+              { body: WORK, count: 10 },
+              { body: CARRY, count: 2 },
+              { body: MOVE, count: 6 },
             ]),
             creepName,
             { memory: { role: 'remoteMiner', targetRoom: roomName } }
           );
         }
-        return;
+        continue;
       } else {
         if (creep.store.energy) {
           const buildTarget = creep.pos.findInRange(FIND_CONSTRUCTION_SITES, 1, {
@@ -107,9 +101,9 @@ const pioneeringTask = () => {
             { memory: { role: 'claimer', task: 'moving', targetRoom: roomName } }
           );
         }
-        return;
+        continue;
       } else {
-        const target = Game.rooms[roomName].controller;
+        const target = Game.rooms[roomName]?.controller;
         if (target) {
           if (creep.reserveController(target) === ERR_NOT_IN_RANGE) {
             creep.moveTo(target);
@@ -124,7 +118,7 @@ const pioneeringTask = () => {
       const creep = Game.creeps[creepName];
       if (!creep) {
         Pioneer.create(roomName, creepName);
-        return;
+        continue;
       } else {
         Pioneer.run(creep);
       }
@@ -578,7 +572,8 @@ const combatGroupTask = () => {
     if (attacker.pos.x !== 0 && attacker.pos.x !== 49 && attacker.pos.y !== 0 && attacker.pos.y !== 49) {
       attacker.moveTo(fixPos[index].x, fixPos[index].y);
     }
-    const hostile = attacker.pos.findInRange(FIND_HOSTILE_CREEPS, 1);
+    const hostile = attacker.pos.findInRange(FIND_HOSTILE_CREEPS, 3);
+    console.log('hostile', hostile);
     if (hostile.length > 0) {
       attacker.attack(hostile[0]);
     }

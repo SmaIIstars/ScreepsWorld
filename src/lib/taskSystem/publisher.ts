@@ -80,7 +80,6 @@ export class TaskPublisher {
     allowedRoles: CustomRoleType[]
   ): void {
     const taskId = `harvest_${target.id}`;
-    if (this.taskMap.hasTask(taskId)) return;
 
     const payload: HarvestingPayload = {};
     let publisherType: TaskPublisherType = LOOK_SOURCES;
@@ -121,7 +120,6 @@ export class TaskPublisher {
     }
 
     const hasSource = Object.values(payload).reduce((a, b) => a + b, 0) > 0;
-
     if (this.taskMap.hasTask(taskId)) {
       if (hasSource) {
         this.taskMap.updateTask(taskId, { status: TaskStatusEnum.completed });
@@ -269,10 +267,10 @@ export class TaskPublisher {
         ) {
           return true;
         }
+        if (structure instanceof StructureLab) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
 
         // if (structure instanceof StructureLink) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
         // if (structure instanceof StructureTerminal) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
-        // if (structure instanceof StructureLab) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
         // if (structure instanceof StructureNuker) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
         return false;
       },

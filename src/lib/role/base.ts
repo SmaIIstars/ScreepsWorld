@@ -1,9 +1,10 @@
 import { EnergyStoreTargetType } from '@/constant';
-import type { Task, TaskMap } from '../utils/taskMap';
 import { TaskExecuteStatusEnum } from '../taskSystem/executor';
+import type { Task, TaskMap } from '../utils/taskMap';
 
 export type BaseRoleType = {
   role: CustomRoleType;
+  targetRoom: string;
 };
 
 export type BaseRoleCreateParams = {
