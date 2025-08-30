@@ -49,14 +49,21 @@ export class TaskPublisher {
     });
 
     // 存储容器获取类
-    const sourceStores: (StructureContainer | StructureStorage | StructureTerminal)[] = room.find(FIND_STRUCTURES, {
-      filter: (structure) => {
-        if (structure.structureType === STRUCTURE_CONTAINER) return true;
-        if (structure.structureType === STRUCTURE_STORAGE) return true;
-        if (structure.structureType === STRUCTURE_TERMINAL) return true;
-        return false;
-      },
-    });
+    const sourceStores: (StructureContainer | StructureStorage | StructureTerminal | StructureLink)[] = room.find(
+      FIND_STRUCTURES,
+      {
+        filter: (structure) => {
+          if (structure.structureType === STRUCTURE_CONTAINER) return true;
+          if (structure.structureType === STRUCTURE_STORAGE) return true;
+          if (structure.structureType === STRUCTURE_TERMINAL) return structure.store[RESOURCE_ENERGY] > 15000;
+          if (structure.structureType === STRUCTURE_LINK && structure.my) {
+            // return void if target isn't the sourceLink
+            return room.memory.structure?.link?.find((l) => l.id === structure.id)?.type === 'spawn';
+          }
+          return false;
+        },
+      }
+    );
     sourceStores.forEach((structure) => {
       this.createHarvestTask(structure, room, ['harvester', 'remoteHarvester']);
     });
@@ -121,7 +128,7 @@ export class TaskPublisher {
 
     const hasSource = Object.values(payload).reduce((a, b) => a + b, 0) > 0;
     if (this.taskMap.hasTask(taskId)) {
-      if (hasSource) {
+      if (!hasSource) {
         this.taskMap.updateTask(taskId, { status: TaskStatusEnum.completed });
       } else {
         this.taskMap.updateTask(taskId, { payload });
@@ -142,7 +149,6 @@ export class TaskPublisher {
           needCreepCount: 1,
           assignedTo: [],
         };
-
         this.taskMap.publish(task);
       }
     }

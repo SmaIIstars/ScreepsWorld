@@ -1,3 +1,4 @@
+import Attacker from './attacker';
 import { BaseRole } from './base';
 import Builder from './builder';
 import Harvester from './harvester';
@@ -14,6 +15,7 @@ export const roles: GlobalRolesType = {
   harvester: Harvester,
   builder: Builder,
   repairer: Repairer,
+  attacker: Attacker,
   // remoteHarvester: RemoteHarvester,
   // remoteMiner: RemoteMiner,
 };

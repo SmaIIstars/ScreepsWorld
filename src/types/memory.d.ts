@@ -25,12 +25,15 @@ interface CreepMemory {
 
 // Room Memory
 type RoomSourceType = LOOK_SOURCES | LOOK_MINERALS | LOOK_RESOURCES | LOOK_RUINS | LOOK_TOMBSTONES;
+type RoomStructureType = STRUCTURE_LINK;
+
 interface RoomMemory {
   taskMap?: Map<string, import('@/lib/utils/taskMap').Task>;
   taskMapObj?: Record<string, import('@/lib/utils/taskMap').Task>;
   taskMapVersion?: number; // New Map-based version
   creepsCount?: Record<CustomRoleType, number>;
   sources?: Partial<Record<RoomSourceType, string[]>>;
+  structure?: Partial<Record<RoomStructureType, StructureMemory[]>>;
   visible?: boolean;
   sourceRooms?: string[];
   mainRooms?: string[];
@@ -58,3 +61,5 @@ interface FlagMemory<T extends FlagType = FlagType> {
   type: T;
   payload: Partial<FlagPayloadMap[T]>;
 }
+
+type StructureMemory = { id: string; type: 'source' | 'spawn' | 'controller' };

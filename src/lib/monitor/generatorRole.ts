@@ -39,7 +39,13 @@ export const generatorRole = (room: Room) => {
       });
 
       const base = Object.values(Game.spawns).find((spawn) => spawn.room.name === room.name && !spawn.spawning);
-      if (base) utils.roles[role]?.create(base, { body: strategy.roleMonitor[role].body });
+      if (base) {
+        const resp = utils.roles[role]?.create(base, { body: strategy.roleMonitor[role].body });
+        if (resp === OK) {
+          creepCounter[role] += 1;
+          room.memory.creepsCount = creepCounter;
+        }
+      }
       break;
     }
   }

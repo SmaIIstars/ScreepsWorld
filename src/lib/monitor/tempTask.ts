@@ -573,9 +573,9 @@ const combatGroupTask = () => {
       attacker.moveTo(fixPos[index].x, fixPos[index].y);
     }
     const hostile = attacker.pos.findInRange(FIND_HOSTILE_CREEPS, 3);
-    console.log('hostile', hostile);
     if (hostile.length > 0) {
       attacker.attack(hostile[0]);
+      attacker.rangedAttack(hostile[0]);
     }
   });
 };

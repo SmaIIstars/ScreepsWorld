@@ -1,17 +1,20 @@
 import { flagMonitor } from './flagMemory';
 import { generatorRole } from './generatorRole';
+import { linkMonitor } from './link';
 import { roomMemory } from './roomMemory';
 import { tempScriptTask } from './tempTask';
 
 export const gameMonitor = () => {
   tempScriptTask();
   flagMonitor();
+
   generatePixel();
 };
 
 export const roomMonitor = (room: Room) => {
   roomMemory(room);
   generatorRole(room);
+  linkMonitor(room);
 };
 
 // pixel

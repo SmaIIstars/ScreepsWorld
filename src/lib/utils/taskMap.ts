@@ -140,7 +140,7 @@ export class TaskMap {
    * 缓存任务Map到Memory
    */
   public saveToMemory = () => {
-    console.log(`${Game.time}: Save TaskMap To Memory`);
+    console.log(`${this.roomName}(${Game.time}): Save TaskMap To Memory`);
     Memory.rooms[this.roomName].taskMapObj = this._taskMapObj;
     Memory.rooms[this.roomName].taskMapVersion = Game.time;
   };

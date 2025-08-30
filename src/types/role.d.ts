@@ -9,7 +9,7 @@ declare global {
     | 'claimer'
     | 'remoteMiner'
     | 'remoteHarvester'
-    | 'pioneer';
+    | 'attacker';
 
   type TaskType =
     | 'harvesting'
@@ -21,7 +21,9 @@ declare global {
     | 'repairing'
     | 'pioneering'
     | 'claiming'
-    | 'scouting';
+    | 'scouting'
+    | 'attacking'
+    | 'retreating';
 }
 
 export {};

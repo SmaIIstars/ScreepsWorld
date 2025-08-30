@@ -1,10 +1,13 @@
+import { intervalSleep } from '@/utils';
+
 export const roomMemory = (room: Room) => {
   if (!Memory.rooms[room.name]) Memory.rooms[room.name] = {};
   Memory.rooms[room.name].visible = Memory.rooms[room.name] ? true : false;
 
   clearCreepMemory();
-  creepsCount(room);
-  resources(room);
+  intervalSleep(5, () => creepsCount(room));
+  intervalSleep(10, () => resources(room));
+  intervalSleep(50, () => structures(room));
 };
 
 // 清理Memory中不存在的creep
@@ -29,10 +32,13 @@ const creepsCount = (room: Room) => {
     claimer: 0,
     remoteMiner: 0,
     remoteHarvester: 0,
+    attacker: 0,
   };
   for (const creep of Object.values(Game.creeps)) {
     // 最小组不参与计数
     if (creep.name.includes('Room2Min')) continue;
+    // 要死了的不计数
+    if (creep.ticksToLive && creep.ticksToLive < 100) continue;
     if (creep.memory.role) {
       creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
     }
@@ -57,5 +63,45 @@ export const resources = (room: Room) => {
     resource: droppedResources.map((r) => r.id),
     ruin: ruins.map((r) => r.id),
     tombstone: tombstones.map((t) => t.id),
+  };
+};
+
+// 建筑监控
+export const structures = (room: Room) => {
+  const links = room.find(FIND_MY_STRUCTURES, { filter: (s) => s.structureType === STRUCTURE_LINK });
+
+  Memory.rooms[room.name].structure = {
+    link: links.map((cur) => {
+      // 判断 link 离 spawn, controller, source 哪一个更近，type 就是什么
+      const spawn = room.find(FIND_MY_SPAWNS)[0];
+      const controller = room.controller;
+      const sources = room.find(FIND_SOURCES);
+
+      let minDist = Infinity;
+      let closestType: 'source' | 'spawn' | 'controller' = 'source';
+
+      if (spawn) {
+        const dist = cur.pos.getRangeTo(spawn.pos);
+        if (dist < minDist) {
+          minDist = dist;
+          closestType = 'spawn';
+        }
+      }
+      if (controller) {
+        const dist = cur.pos.getRangeTo(controller.pos);
+        if (dist < minDist) {
+          minDist = dist;
+          closestType = 'controller';
+        }
+      }
+      for (const source of sources) {
+        const dist = cur.pos.getRangeTo(source.pos);
+        if (dist < minDist) {
+          minDist = dist;
+          closestType = 'source';
+        }
+      }
+      return { id: cur.id, type: closestType };
+    }),
   };
 };

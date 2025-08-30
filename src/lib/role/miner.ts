@@ -1,7 +1,6 @@
-import { EnergyStoreTargetType } from '@/constant';
-import { Task, TaskMap, TaskStatusEnum } from '../utils/taskMap';
-import { BaseRole, BaseRoleCreateParams } from './base';
 import { TaskExecuteStatusEnum } from '../taskSystem/executor';
+import { Task, TaskMap } from '../utils/taskMap';
+import { BaseRole, BaseRoleCreateParams } from './base';
 
 export class Miner extends BaseRole {
   static readonly role: CustomRoleType = 'miner';
@@ -16,13 +15,21 @@ export class Miner extends BaseRole {
   }
 
   run(creep: Creep, taskId: string) {
-    // 检查周围是否有能量未满的creep
-    const targetCreep = creep.pos.findInRange(FIND_MY_CREEPS, 1, {
-      filter: (creep) => creep.memory.role !== 'miner' && creep.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+    const res = creep.room.lookAtArea(creep.pos.y - 1, creep.pos.x - 1, creep.pos.y + 1, creep.pos.x + 1, true);
+    const targets = res.filter((i) => {
+      if (i.type === LOOK_CREEPS) return creep.memory.role !== 'miner' && creep.store.getFreeCapacity() > 0;
+      if (i.type === LOOK_STRUCTURES && i.structure instanceof StructureLink) {
+        return i.structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
+      }
+      return false;
     });
-    // 如果有则传能量给它
-    if (targetCreep.length) {
-      creep.transfer(targetCreep[0], RESOURCE_ENERGY);
+
+    const target = targets?.[0];
+    if (target) {
+      if (target.creep) creep.transfer(target.creep, RESOURCE_ENERGY);
+      if (target.structure instanceof Structure && target.structure.structureType === STRUCTURE_LINK) {
+        creep.transfer(target.structure, RESOURCE_ENERGY);
+      }
     }
 
     const task = global.rooms[creep.room.name]?.taskMap?.get(taskId);

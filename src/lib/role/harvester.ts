@@ -61,6 +61,7 @@ export class Harvester extends BaseRole {
           LOOK_RESOURCES,
           LOOK_RUINS,
           LOOK_TOMBSTONES,
+          STRUCTURE_LINK,
           STRUCTURE_CONTAINER,
           STRUCTURE_TERMINAL,
           STRUCTURE_STORAGE,
