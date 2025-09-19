@@ -15,26 +15,32 @@ export class Miner extends BaseRole {
   }
 
   run(creep: Creep, taskId: string) {
-    const res = creep.room.lookAtArea(creep.pos.y - 1, creep.pos.x - 1, creep.pos.y + 1, creep.pos.x + 1, true);
-    const targets = res.filter((i) => {
-      if (i.type === LOOK_CREEPS) return creep.memory.role !== 'miner' && creep.store.getFreeCapacity() > 0;
-      if (i.type === LOOK_STRUCTURES && i.structure instanceof StructureLink) {
-        return i.structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
-      }
-      return false;
-    });
-
-    const target = targets?.[0];
-    if (target) {
-      if (target.creep) creep.transfer(target.creep, RESOURCE_ENERGY);
-      if (target.structure instanceof Structure && target.structure.structureType === STRUCTURE_LINK) {
-        creep.transfer(target.structure, RESOURCE_ENERGY);
-      }
-    }
-
     const task = global.rooms[creep.room.name]?.taskMap?.get(taskId);
     if (!task) return TaskExecuteStatusEnum.failed;
-    creep.memory.targetId = task.toId;
+
+    const targetSource = Game.getObjectById<Source>(task.toId);
+    if (!targetSource) return TaskExecuteStatusEnum.failed;
+
+    if (creep.pos.isNearTo(targetSource)) {
+      const res = creep.room.lookAtArea(creep.pos.y - 1, creep.pos.x - 1, creep.pos.y + 1, creep.pos.x + 1, true);
+      const targets = res.filter((i) => {
+        if (i.type === LOOK_CREEPS) return creep.memory.role !== 'miner' && creep.store.getFreeCapacity() > 0;
+        if (i.type === LOOK_STRUCTURES && i.structure instanceof StructureLink) {
+          return i.structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
+        }
+        return false;
+      });
+
+      const target = targets?.[0];
+      if (target) {
+        if (target.creep) creep.transfer(target.creep, RESOURCE_ENERGY);
+        if (target.structure instanceof Structure && target.structure.structureType === STRUCTURE_LINK) {
+          creep.transfer(target.structure, RESOURCE_ENERGY);
+        }
+      }
+
+      creep.memory.targetId = task.toId;
+    }
     return this.roleTask(creep, task as Task<'harvesting'>);
   }
 
@@ -43,7 +49,15 @@ export class Miner extends BaseRole {
     const targetSource = Game.getObjectById<Source>(task.toId);
     if (!targetSource) return TaskExecuteStatusEnum.failed;
 
+    if (targetSource instanceof Mineral) {
+      const executor = creep.room.find<StructureExtractor>(FIND_MY_STRUCTURES, {
+        filter: (s) => s.structureType === STRUCTURE_EXTRACTOR,
+      })?.[0];
+      if (executor?.cooldown) return TaskExecuteStatusEnum.inProgress;
+    }
+
     const harvestResult = creep.harvest(targetSource);
+
     if (harvestResult === ERR_NOT_IN_RANGE) {
       this.baseMoveTo(creep, targetSource);
       return TaskExecuteStatusEnum.inProgress;
@@ -69,7 +83,7 @@ export class Miner extends BaseRole {
 
     // 获取其他矿工的目标ID
     const minerTargetIds = Object.values(Game.creeps)
-      .filter((c) => c.memory.role === 'miner' && c.name !== creep.name)
+      .filter((c) => ['miner', 'remoteMiner'].includes(c.memory.role) && c.name !== creep.name)
       .map((c) => c.memory.targetId)
       .filter((id) => id);
 
@@ -78,8 +92,9 @@ export class Miner extends BaseRole {
       targetPriorityList: [LOOK_SOURCES, LOOK_MINERALS],
       filter: (task) => {
         if (task.type !== 'harvesting') return false;
-        if (task.publisherType !== LOOK_SOURCES && task.publisherType !== LOOK_MINERALS) return false;
         if (minerTargetIds.includes(task.toId)) return false;
+        if (LOOK_MINERALS !== task.publisherType && LOOK_SOURCES !== task.publisherType) return false;
+        if (task.needCreepCount && task.needCreepCount <= task.assignedTo.length) return false;
         return true;
       },
     });
@@ -91,9 +106,12 @@ export class Miner extends BaseRole {
         const creep = Game.creeps[creepName];
         if (creep) {
           delete creep.memory.currentTask;
+          delete creep.memory.targetId;
         }
       }
     }
+    const taskSystem = new TaskMap(creep.room.name);
+    taskSystem.updateTask(task.id, { assignedTo: [creep.name] });
 
     return task?.id;
   }

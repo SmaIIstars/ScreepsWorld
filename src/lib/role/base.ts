@@ -70,8 +70,12 @@ export abstract class BaseRole {
     return spawn.spawnCreep(body, curName, opts);
   };
 
-  baseHarvestTask = (creep: Creep, task: Task<'harvesting'>): TaskExecuteStatusEnum => {
-    if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
+  baseHarvestTask = (
+    creep: Creep,
+    task: Task<'harvesting'>,
+    resourceType: ResourceConstant = RESOURCE_ENERGY
+  ): TaskExecuteStatusEnum => {
+    if (creep.store.getFreeCapacity() === 0) {
       this.baseSubmitTask(creep, task.id);
       return TaskExecuteStatusEnum.completed;
     }
@@ -94,7 +98,7 @@ export abstract class BaseRole {
       // targetStore instanceof StructureContainer ||
       // targetStore instanceof StructureLink ||
       // targetStore instanceof StructureTerminal
-      returnCode = creep.withdraw(targetStore, RESOURCE_ENERGY);
+      returnCode = creep.withdraw(targetStore, resourceType);
     }
 
     if (returnCode === ERR_NOT_IN_RANGE) {
@@ -174,23 +178,22 @@ export abstract class BaseRole {
     return TaskExecuteStatusEnum.completed;
   };
 
-  // TODO: 做寻路优化
   baseMoveTo(
     creep: Creep,
     target: RoomPosition | { pos: RoomPosition },
-    opts?: MoveToOpts
+    opts?: FindPathOpts
   ): CreepMoveReturnCode | ERR_NO_PATH | ERR_INVALID_TARGET | ERR_NOT_FOUND;
   baseMoveTo(
     creep: Creep,
     x: number,
     y: number,
-    opts?: MoveToOpts
+    opts?: FindPathOpts
   ): CreepMoveReturnCode | ERR_NO_PATH | ERR_INVALID_TARGET;
   baseMoveTo(
     creep: Creep,
     target: RoomPosition | { pos: RoomPosition } | number,
-    y?: number | MoveToOpts,
-    opts?: MoveToOpts
+    y?: number | FindPathOpts,
+    opts?: FindPathOpts
   ): CreepMoveReturnCode | ERR_NO_PATH | ERR_INVALID_TARGET | ERR_NOT_FOUND {
     const defaultOpts = { visualizePathStyle: { stroke: '#ffffff' }, ...opts };
     if (typeof target === 'number' && typeof y === 'number') {
@@ -201,6 +204,56 @@ export abstract class BaseRole {
       return creep.moveTo(target, defaultOpts);
     }
     return OK;
+
+    // if (creep.memory.movePath?.length) {
+    //   let movePathArr = Array.isArray(creep.memory.movePath)
+    //     ? creep.memory.movePath
+    //     : safeJsonParse(creep.memory.movePath, []);
+    //   const idx = movePathArr.findIndex((path) => path.x === creep.pos.x && path.y === creep.pos.y);
+    //   movePathArr = movePathArr.slice(idx);
+
+    //   const nextMoveStep = movePathArr.shift();
+    //   if (nextMoveStep) {
+    //     creep.memory.movePath = movePathArr;
+    //     return creep.move(nextMoveStep.direction);
+    //   }
+    // }
+
+    // let defaultOpts: FindPathOpts = { ...opts };
+    // let myRoomOpts: FindPathOpts = {};
+    // if (creep.room.controller?.my) {
+    //   const avoidList: AnyCreep[] = creep.room.find(FIND_MY_CREEPS, {
+    //     filter: (c) => c.memory.role === 'miner',
+    //   });
+    //   myRoomOpts = { ignoreCreeps: true, avoid: avoidList };
+    // }
+
+    // defaultOpts = { ...myRoomOpts, ...defaultOpts };
+
+    // if (typeof target === 'number' && typeof y === 'number') {
+    //   if (creep.pos.isNearTo(target, y)) return OK;
+    //   const movePath = creep.pos.findPathTo(target, y, defaultOpts);
+    //   if (movePath) {
+    //     const nextMoveStep = movePath.shift();
+    //     if (nextMoveStep) {
+    //       creep.memory.movePath = movePath;
+    //       return creep.move(nextMoveStep.direction);
+    //     }
+    //   }
+    //   return creep.moveTo(target, y, defaultOpts);
+    // } else if (target instanceof RoomPosition || (typeof target !== 'number' && target?.pos instanceof RoomPosition)) {
+    //   if (creep.pos.isNearTo(target)) return OK;
+    //   const movePath = creep.pos.findPathTo(target);
+    //   if (movePath) {
+    //     const nextMoveStep = movePath.shift();
+    //     if (nextMoveStep) {
+    //       creep.memory.movePath = movePath;
+    //       return creep.move(nextMoveStep.direction);
+    //     }
+    //   }
+    //   return creep.moveTo(target, defaultOpts);
+    // }
+    // return OK;
   }
 
   baseSubmitTask = (creep: Creep, taskId: string) => {

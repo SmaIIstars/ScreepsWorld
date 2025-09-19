@@ -8,6 +8,7 @@ export const roomMemory = (room: Room) => {
   intervalSleep(5, () => creepsCount(room));
   intervalSleep(10, () => resources(room));
   intervalSleep(50, () => structures(room));
+  intervalSleep(10, () => enemies(room));
 };
 
 // 清理Memory中不存在的creep
@@ -35,6 +36,7 @@ const creepsCount = (room: Room) => {
     attacker: 0,
   };
   for (const creep of Object.values(Game.creeps)) {
+    if (creep.room.name !== room.name) continue;
     // 最小组不参与计数
     if (creep.name.includes('Room2Min')) continue;
     // 要死了的不计数
@@ -104,4 +106,17 @@ export const structures = (room: Room) => {
       return { id: cur.id, type: closestType };
     }),
   };
+};
+
+// 敌人监控
+export const enemies = (room: Room) => {
+  const enemies: Array<AnyCreep | StructureInvaderCore> = [];
+  const creeps = room.find(FIND_HOSTILE_CREEPS, {
+    filter: (e) => e.body.some((part) => part.type === ATTACK || part.type === RANGED_ATTACK || part.type === HEAL),
+  });
+  const structures = room.find(FIND_HOSTILE_STRUCTURES, {
+    filter: (s) => s.structureType === STRUCTURE_INVADER_CORE,
+  });
+  enemies.push(...creeps, ...structures);
+  Memory.rooms[room.name].enemies = enemies.map((e) => e.id);
 };

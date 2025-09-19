@@ -1,8 +1,7 @@
-import { EnergyStoreTargetType } from '@/constant';
-import { Task, TaskMap, TaskStatusEnum } from '../utils/taskMap';
-import { BaseRole, BaseRoleCreateParams } from './base';
-import { Miner } from './miner';
 import { TaskExecuteStatusEnum } from '../taskSystem/executor';
+import { Task, TaskMap } from '../utils/taskMap';
+import { BaseRoleCreateParams } from './base';
+import { Miner } from './miner';
 
 class RemoteMiner extends Miner {
   static readonly role: Extract<CustomRoleType, 'remoteMiner'> = 'remoteMiner';
@@ -17,16 +16,14 @@ class RemoteMiner extends Miner {
   }
 
   run(creep: Creep, taskId: string) {
-    if (creep.memory.targetRoom === creep.room.name && taskId.startsWith('scout_')) {
-      this.baseSubmitTask(creep, taskId);
-      return TaskExecuteStatusEnum.completed;
-    }
+    // if (creep.memory.targetRoom === creep.room.name && taskId.startsWith('scout_')) {
+    //   this.baseSubmitTask(creep, taskId);
+    //   return TaskExecuteStatusEnum.completed;
+    // }
 
     const task = global.rooms[creep.room.name]?.taskMap?.get(taskId);
     if (!task) return TaskExecuteStatusEnum.failed;
-    if (task.type === 'scouting') {
-      return this.scoutTask(creep, task as Task<'scouting'>);
-    }
+    if (task.type === 'scouting') return this.scoutTask(creep, task as Task<'scouting'>);
 
     // 检查周边建筑，有工地则修建
     const targetConstructionSite = creep.pos.findInRange(FIND_CONSTRUCTION_SITES, 1, {
@@ -52,7 +49,7 @@ class RemoteMiner extends Miner {
     if (creep.room.name !== task.toId) {
       const targetRoom = Game.flags[task.toId];
       const moveResult = this.baseMoveTo(creep, targetRoom);
-      return moveResult ? TaskExecuteStatusEnum.inProgress : TaskExecuteStatusEnum.failed;
+      return moveResult === OK ? TaskExecuteStatusEnum.inProgress : TaskExecuteStatusEnum.failed;
     }
 
     creep.memory.targetRoom = task.toId;

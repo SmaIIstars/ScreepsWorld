@@ -1,5 +1,5 @@
 import { TaskExecuteStatusEnum } from '../taskSystem/executor';
-import { Task, TaskMap, TaskStatusEnum } from '../utils/taskMap';
+import { Task, TaskMap } from '../utils/taskMap';
 import { BaseRole, BaseRoleCreateParams } from './base';
 
 class Builder extends BaseRole {
@@ -61,8 +61,7 @@ class Builder extends BaseRole {
         filter: (task) => {
           if (task.type !== 'harvesting') return false;
           if (task.toRoomName !== creep.room.name) return false;
-          if (task.publisherType === STRUCTURE_STORAGE && !(task as Task<'harvesting'>).payload?.[RESOURCE_ENERGY])
-            return false;
+          if (!(task as Task<'harvesting'>).payload?.[RESOURCE_ENERGY]) return false;
           if (
             task.publisherType === LOOK_RESOURCES &&
             ((task as Task<'harvesting'>).payload?.[RESOURCE_ENERGY] ?? 0) <

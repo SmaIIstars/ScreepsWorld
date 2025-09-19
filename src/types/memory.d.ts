@@ -16,6 +16,16 @@ interface CreepMemory {
   currentTask?: string; // 当前执行的任务ID
   targetId?: string;
   targetRoom?: string;
+  taskList?: string[]; // 接下来执行的任务IDs
+  movePath?:
+    | string
+    | Array<{
+        x: number;
+        y: number;
+        dx: number;
+        dy: number;
+        direction: TOP | TOP_RIGHT | RIGHT | BOTTOM_RIGHT | BOTTOM | BOTTOM_LEFT | LEFT | TOP_LEFT;
+      }>;
 
   /**
    * @deprecated 仅在 tempTask 中 Min 相关用法，后续不推荐使用
@@ -34,6 +44,7 @@ interface RoomMemory {
   creepsCount?: Record<CustomRoleType, number>;
   sources?: Partial<Record<RoomSourceType, string[]>>;
   structure?: Partial<Record<RoomStructureType, StructureMemory[]>>;
+  enemies?: string[];
   visible?: boolean;
   sourceRooms?: string[];
   mainRooms?: string[];

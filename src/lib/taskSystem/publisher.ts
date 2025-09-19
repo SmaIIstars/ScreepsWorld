@@ -38,8 +38,6 @@ export class TaskPublisher {
       if (!ids) return;
       ids.forEach((id) => {
         const target = Game.getObjectById<Source | Resource | Ruin | Tombstone | Mineral>(id);
-        // Mineral 暂不可采集
-        if (target instanceof Mineral) return;
         if (!target) return;
         const roles: CustomRoleType[] = ['source', 'mineral'].includes(type)
           ? ['miner', 'harvester', 'remoteMiner']
@@ -334,6 +332,12 @@ export class TaskPublisher {
       // 发布一个RemoteMiner任务进行侦察
       const taskId = `scout_${roomName}`;
       if (this.taskMap.hasTask(taskId)) return;
+
+      const sourceRoom = Game.rooms[roomName];
+      if (!sourceRoom) return;
+      const curCreepsCount = sourceRoom.memory.creepsCount;
+      const flagCreepsCount = Game.flags[roomName].memory.payload;
+      if ((curCreepsCount?.remoteMiner ?? 0) >= (flagCreepsCount.remoteMiners ?? 0)) return;
 
       const task: Task<'scouting'> = {
         id: taskId,

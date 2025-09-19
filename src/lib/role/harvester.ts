@@ -1,5 +1,5 @@
 import { TaskExecuteStatusEnum } from '../taskSystem/executor';
-import { Task, TaskMap, TaskPublisherType } from '../utils/taskMap';
+import { Task, TaskMap } from '../utils/taskMap';
 import { BaseRole, BaseRoleCreateParams } from './base';
 
 export class Harvester extends BaseRole {
@@ -18,7 +18,11 @@ export class Harvester extends BaseRole {
     const task = global.rooms[creep.room.name]?.taskMap?.get(taskId);
     if (!task) return TaskExecuteStatusEnum.failed;
     if (task.type === 'harvesting') {
-      return this.baseHarvestTask(creep, task as Task<'harvesting'>);
+      const resource = Object.entries(task.payload ?? {}).filter(([k, v]) => {
+        return v > 0;
+      })[0][0] as ResourceConstant;
+
+      return this.baseHarvestTask(creep, task as Task<'harvesting'>, resource);
     } else if (task.type === 'transferring') {
       return this.roleTask(creep, task as Task<'transferring'>);
     }
@@ -31,30 +35,39 @@ export class Harvester extends BaseRole {
   }
 
   claimTask(creep: Creep, taskMap: TaskMap): string | undefined {
-    // 1. 如果没有能量，先认领获取能量的任务
-    if (creep.store[RESOURCE_ENERGY] === 0) {
+    const transferringTasks = taskMap.taskPriorityQueue('transferring', {
+      filter: (task) => {
+        if (task.type !== 'transferring') return false;
+        if (task.assignedTo?.length && task.needCreepCount && task.assignedTo.length >= task.needCreepCount)
+          return false;
+        return true;
+      },
+      targetPriorityList: [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_LAB, STRUCTURE_STORAGE, STRUCTURE_CONTAINER],
+    });
+
+    // 先判断是否有地方还可以存储能量
+    if (!transferringTasks.length) return;
+    const isProductEnergyFull = !['spawn', 'extension'].includes(transferringTasks[0].publisherType);
+
+    // 如果现在是空状态则可以认领采集任务
+    if (creep.store.getFreeCapacity() === creep.store.getCapacity()) {
+      // 如果首个传输任务不是Extension或Spawn，则表明可以采集能量之外的资源
       let harvestingTasks = taskMap.taskPriorityQueue('harvesting', {
         filter: (task) => {
           if (task.type !== 'harvesting') return false;
-          if (task.payload) {
-            if (
-              ([STRUCTURE_STORAGE, STRUCTURE_CONTAINER, STRUCTURE_TERMINAL] as TaskPublisherType[]).includes(
-                task.publisherType
-              )
-            ) {
-              return (
-                ((task as Task<'harvesting'>)?.payload?.[RESOURCE_ENERGY] ?? 0) >
-                creep.store.getFreeCapacity(RESOURCE_ENERGY) >> 1
-              );
-            }
-
-            let allSourceAmount = 0;
-            for (const amount of Object.values(task.payload)) {
-              allSourceAmount += amount;
-            }
+          if (task.toRoomName !== creep.room.name) return false;
+          if (!isProductEnergyFull) {
+            return (
+              ((task as Task<'harvesting'>)?.payload?.[RESOURCE_ENERGY] ?? 0) >
+              creep.store.getFreeCapacity(RESOURCE_ENERGY) >> 1
+            );
+          } else {
+            const allSourceAmount = Object.values(task.payload ?? {}).reduce((pre, cur) => {
+              pre += cur;
+              return pre;
+            }, 0);
             if (allSourceAmount > creep.store.getFreeCapacity() >> 1) return true;
           }
-          if (task.toRoomName === creep.room.name) return true;
           return false;
         },
         targetPriorityList: [
@@ -74,12 +87,6 @@ export class Harvester extends BaseRole {
         harvestingTasks = harvestingTasks.filter((task) => task.publisherType !== LOOK_MINERALS);
       }
 
-      harvestingTasks = harvestingTasks.filter((task) => {
-        if (task?.payload?.[RESOURCE_ENERGY]) {
-          if (task.payload[RESOURCE_ENERGY] > creep.store.getFreeCapacity(RESOURCE_ENERGY) >> 1) return true;
-        }
-        return false;
-      });
       const targetType = harvestingTasks[0]?.publisherType;
       // 按距离排序
       harvestingTasks
@@ -94,35 +101,22 @@ export class Harvester extends BaseRole {
           return creep.pos.getRangeTo(targetA) - creep.pos.getRangeTo(targetB);
         });
       return harvestingTasks[0]?.id;
-    }
-
-    // 2. 有能量则认领传输任务
-    else {
-      const transferringTasks = taskMap.taskPriorityQueue('transferring', {
-        filter: (task) => {
-          if (task.type !== 'transferring') return false;
-          if (task.assignedTo?.length && task.needCreepCount && task.assignedTo?.length >= task.needCreepCount)
-            return false;
-          return true;
-        },
-        targetPriorityList: [
-          STRUCTURE_EXTENSION,
-          STRUCTURE_SPAWN,
-          STRUCTURE_LAB,
-          STRUCTURE_STORAGE,
-          STRUCTURE_CONTAINER,
-        ],
-      });
-
-      const currentTargetType = transferringTasks[0]?.publisherType;
-      return transferringTasks
-        .filter((task) => task.publisherType === currentTargetType)
-        .sort((a, b) => {
-          const targetA = Game.getObjectById<Structure>(a.toId);
-          const targetB = Game.getObjectById<Structure>(b.toId);
-          if (!targetA || !targetB) return 0;
-          return creep.pos.getRangeTo(targetA) - creep.pos.getRangeTo(targetB);
-        })[0]?.id;
+    } else {
+      // 如果现在有除能量外的资源，则先存入到store
+      if (creep.store[RESOURCE_ENERGY] === 0) {
+        return transferringTasks.filter((task) => task.publisherType === STRUCTURE_STORAGE)[0]?.id;
+      } else {
+        // 有资源则认领传输任务
+        const currentTargetType = transferringTasks[0]?.publisherType;
+        return transferringTasks
+          .filter((task) => task.publisherType === currentTargetType)
+          .sort((a, b) => {
+            const targetA = Game.getObjectById<Structure>(a.toId);
+            const targetB = Game.getObjectById<Structure>(b.toId);
+            if (!targetA || !targetB) return 0;
+            return creep.pos.getRangeTo(targetA) - creep.pos.getRangeTo(targetB);
+          })[0]?.id;
+      }
     }
   }
 }

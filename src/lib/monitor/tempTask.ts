@@ -9,7 +9,108 @@ export const tempScriptTask = () => {
   currentRoomTask();
   autoAttackWithTowers(Game.rooms[ROOM_ID_ENUM.MainRoom]);
   pioneeringTask();
+
+  // tempTransferTask();
+  tempTask();
   return true;
+};
+
+const tempTask = () => {
+  const spawn = Object.values(Game.spawns).find((spawn) => spawn.room.name === 'E11N14' && !spawn.spawning);
+
+  const controllerAttacker = Game.creeps['OP-CLAIM'];
+  if (!controllerAttacker) {
+    spawn?.spawnCreep(
+      generatorRoleBody([
+        { body: MOVE, count: 3 },
+        { body: CLAIM, count: 9 },
+      ]),
+      'OP-CLAIM'
+    );
+  } else {
+    if (controllerAttacker.room.name !== 'E11N13') {
+      controllerAttacker.moveTo(Game.flags['E11N13']);
+    } else {
+      if (!Game.rooms['E11N13'].controller) return;
+      if (controllerAttacker.attackController(Game.rooms['E11N13'].controller) === ERR_NOT_IN_RANGE) {
+        controllerAttacker.moveTo(Game.rooms['E11N13'].controller);
+      }
+    }
+  }
+};
+
+const tempTransferTask = () => {
+  const storage = Game.getObjectById('6887b391b77cbc0eb36d873c') as StructureStorage;
+  const factory = Game.getObjectById('68b2c8752ef07d053837dc22') as StructureFactory;
+
+  if (!storage || !factory) return;
+  if (factory.store.O > 500 && factory.store.energy > 200 && !factory.cooldown) {
+    if (factory.store.O > 500) factory.produce(RESOURCE_OXIDANT);
+    if (factory.store.H > 500) factory.produce(RESOURCE_REDUCTANT);
+  }
+
+  // for (const resourceType in factory.store) {
+  //   if (factory.store[resourceType as ResourceConstant] > 500 && factory.store.energy > 200 && !factory.cooldown) {
+  //     factory.produce(`${resourceType}_bar` as CommodityConstant);
+  //   }
+  // }
+
+  const creep = Game.creeps['tr-op'];
+  if (!creep) {
+    const spawn = Game.spawns['Spawn2'];
+    if (spawn && !spawn.spawning) {
+      spawn.spawnCreep([MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY], 'tr-op', {
+        directions: [TOP],
+      });
+    }
+    return;
+  }
+
+  if (creep.pos.x !== 16 && creep.pos.y !== 7) {
+    creep.moveTo(16, 7);
+    return;
+  }
+
+  for (const resourceType in creep.store) {
+    if (creep.store[resourceType as ResourceConstant] > 0) {
+      if (resourceType.endsWith('_bar') || resourceType === RESOURCE_OXIDANT || resourceType === RESOURCE_REDUCTANT) {
+        creep.transfer(storage, resourceType as ResourceConstant);
+      } else {
+        creep.transfer(factory, resourceType as ResourceConstant);
+      }
+    }
+  }
+
+  for (const resourceBar in factory.store) {
+    if (
+      (resourceBar === RESOURCE_OXIDANT || resourceBar === RESOURCE_REDUCTANT) &&
+      factory.store[resourceBar as ResourceConstant] > 0 &&
+      creep.store.getFreeCapacity()
+    ) {
+      creep.withdraw(factory, resourceBar as ResourceConstant);
+      return;
+    }
+  }
+
+  if (factory.store.energy < 1000 && creep.store.getFreeCapacity()) {
+    creep.withdraw(storage, 'energy');
+    return;
+  }
+
+  for (const resourceType in storage.store) {
+    if (
+      !resourceType.endsWith('_bar') &&
+      resourceType !== RESOURCE_OXIDANT &&
+      resourceType !== RESOURCE_REDUCTANT &&
+      resourceType !== RESOURCE_ENERGY &&
+      storage.store[resourceType as ResourceConstant] > 5000 &&
+      creep.store.getFreeCapacity()
+    ) {
+      console.log('storage.store', resourceType, creep.store.getFreeCapacity());
+      creep.withdraw(storage, resourceType as ResourceConstant);
+      return;
+    }
+  }
 };
 
 const pioneeringTask = () => {
@@ -45,7 +146,7 @@ const pioneeringTask = () => {
               { body: MOVE, count: 6 },
             ]),
             creepName,
-            { memory: { role: 'remoteMiner', targetRoom: roomName } }
+            { memory: { role: 'pioneer', targetRoom: roomName } }
           );
         }
         continue;
@@ -103,10 +204,14 @@ const pioneeringTask = () => {
         }
         continue;
       } else {
-        const target = Game.rooms[roomName]?.controller;
-        if (target) {
-          if (creep.reserveController(target) === ERR_NOT_IN_RANGE) {
-            creep.moveTo(target);
+        if (creep.room.name !== creep.memory.targetRoom) {
+          creep.moveTo(Game.flags[`${creep.memory.targetRoom}`]);
+        } else {
+          const target = Game.rooms[roomName]?.controller;
+          if (target) {
+            if (creep.reserveController(target) === ERR_NOT_IN_RANGE) {
+              creep.moveTo(target);
+            }
           }
         }
       }
@@ -131,6 +236,7 @@ const miniBody = [WORK, CARRY, CARRY, MOVE, MOVE];
 const currentRoomTask = () => {
   // 最小组 (采矿和升级)
   const minCreepGroup = ['Room2MinHarvester1'];
+  if (Game.rooms['E11N14'].memory.creepsCount?.['harvester']) return;
 
   minCreepGroup.forEach((creepName) => {
     const creep = Game.creeps[creepName];
