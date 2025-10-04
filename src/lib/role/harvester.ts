@@ -42,11 +42,18 @@ export class Harvester extends BaseRole {
           return false;
         return true;
       },
-      targetPriorityList: [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_LAB, STRUCTURE_STORAGE, STRUCTURE_CONTAINER],
+      targetPriorityList: [
+        STRUCTURE_SPAWN,
+        STRUCTURE_EXTENSION,
+        STRUCTURE_POWER_SPAWN,
+        STRUCTURE_LAB,
+        STRUCTURE_STORAGE,
+        STRUCTURE_CONTAINER,
+      ],
     });
-
-    // 先判断是否有地方还可以存储能量
+    // 先判断是否有存储任务认领
     if (!transferringTasks.length) return;
+    // 判断是否已经填满生产需要的能量，优先级最高
     const isProductEnergyFull = !['spawn', 'extension'].includes(transferringTasks[0].publisherType);
 
     // 如果现在是空状态则可以认领采集任务
@@ -57,6 +64,7 @@ export class Harvester extends BaseRole {
           if (task.type !== 'harvesting') return false;
           if (task.toRoomName !== creep.room.name) return false;
           if (!isProductEnergyFull) {
+            // 如果生产能量没满则优先采集能量
             return (
               ((task as Task<'harvesting'>)?.payload?.[RESOURCE_ENERGY] ?? 0) >
               creep.store.getFreeCapacity(RESOURCE_ENERGY) >> 1
@@ -76,8 +84,8 @@ export class Harvester extends BaseRole {
           LOOK_TOMBSTONES,
           STRUCTURE_LINK,
           STRUCTURE_CONTAINER,
-          STRUCTURE_TERMINAL,
           STRUCTURE_STORAGE,
+          STRUCTURE_TERMINAL,
         ],
       }) as Task<'harvesting'>[];
 
@@ -89,7 +97,7 @@ export class Harvester extends BaseRole {
 
       const targetType = harvestingTasks[0]?.publisherType;
       // 按距离排序
-      harvestingTasks
+      const curClaimTask = harvestingTasks
         .filter((task) => {
           if (task.publisherType !== targetType) return false;
           return true;
@@ -99,8 +107,11 @@ export class Harvester extends BaseRole {
           const targetB = Game.getObjectById<Structure>(b.toId);
           if (!targetA || !targetB) return 0;
           return creep.pos.getRangeTo(targetA) - creep.pos.getRangeTo(targetB);
-        });
-      return harvestingTasks[0]?.id;
+        })[0];
+
+      if (!curClaimTask) return;
+      taskMap.updateTask(curClaimTask.id, { assignedTo: [...curClaimTask.assignedTo, creep.name] });
+      return curClaimTask.id;
     } else {
       // 如果现在有除能量外的资源，则先存入到store
       if (creep.store[RESOURCE_ENERGY] === 0) {

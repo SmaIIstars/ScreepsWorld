@@ -10,7 +10,8 @@ export const linkMonitor = (room: Room) => {
 
   // 收集各类型 link
   const sourceLinks: StructureLink[] = [];
-  let spawnLink: StructureLink | undefined = undefined;
+  const spawnLinks: StructureLink[] = [];
+  const controllerLinks: StructureLink[] = [];
 
   for (const linkInfo of linkArr) {
     if (!linkInfo || !linkInfo.id || !linkInfo.type) continue;
@@ -19,19 +20,20 @@ export const linkMonitor = (room: Room) => {
     if (linkInfo.type === 'source') {
       sourceLinks.push(link);
     } else if (linkInfo.type === 'spawn') {
-      spawnLink = link;
+      spawnLinks.push(link);
+    } else if (linkInfo.type === 'controller') {
+      controllerLinks.push(link);
     }
   }
 
-  // 只处理有 spawn link 的情况
-  if (!spawnLink) return;
   for (const sourceLink of sourceLinks) {
     // link 必须冷却为0且能量满
-    if (sourceLink.cooldown === 0 && sourceLink.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
-      // spawn link 必须有空间
-      if (spawnLink.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-        sourceLink.transferEnergy(spawnLink);
-      }
+    if (sourceLink.cooldown === 0 && sourceLink.store[RESOURCE_ENERGY]) {
+      // targetLink 因为有能量损耗，所以不可能满，最高799
+      const targetLink =
+        spawnLinks.find((link) => link.store.getFreeCapacity(RESOURCE_ENERGY) > 1) ||
+        controllerLinks.find((link) => link.store.getFreeCapacity(RESOURCE_ENERGY) > 1);
+      if (targetLink) sourceLink.transferEnergy(targetLink);
     }
   }
 };

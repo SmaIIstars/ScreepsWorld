@@ -1,20 +1,24 @@
 import { flagMonitor } from './flagMemory';
-import { generatorRole, generatorRoleAttacker } from './generatorRole';
+import { generatorRemoteResourceCreeps, generatorRole, generatorRoleAttacker } from './generatorRole';
 import { linkMonitor } from './link';
+import { observerMonitor } from './observer';
 import { roomMemory } from './roomMemory';
 import { tempScriptTask } from './tempTask';
 
-export const gameMonitor = () => {
-  tempScriptTask();
+export const gameMonitor = (baseRoleFlag = true) => {
+  tempScriptTask(baseRoleFlag);
   flagMonitor();
   generatePixel();
 };
 
 export const roomMonitor = (room: Room) => {
   roomMemory(room);
-  generatorRole(room);
+  observerMonitor(room);
+  const hasBaseRole = generatorRole(room);
   linkMonitor(room);
   generatorRoleAttacker(room);
+  generatorRemoteResourceCreeps(room);
+  return hasBaseRole;
 };
 
 // pixel

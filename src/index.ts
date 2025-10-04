@@ -1,4 +1,6 @@
+import { ROOM_ID_ENUM } from './constant';
 import { gameMonitor, roomMonitor } from './lib/monitor';
+import { runTowers } from './lib/monitor/towner';
 import { runTaskSystem } from './lib/taskSystem';
 import { attackTarget } from './lib/utils/attackTask';
 import { generatorRoleBody } from './utils';
@@ -6,8 +8,11 @@ import { generatorRoleBody } from './utils';
 const loop = () => {
   const attackers = Object.keys(Game.creeps).filter((c) => c.startsWith('ATTACK-OP'));
 
+  let flag = false;
+
   for (const roomName in Game.rooms) {
     const room = Game.rooms[roomName];
+    let enemy = undefined;
 
     if (room.memory.enemies?.length) {
       if (!attackers.length) {
@@ -28,19 +33,23 @@ const loop = () => {
           'ATTACK-OP1'
         );
       }
+      enemy = room.memory.enemies[0];
+    }
 
+    if (enemy) {
       for (const attacker of attackers) {
-        attackTarget(attacker, room.memory.enemies[0]);
-      }
-    } else {
-      for (const attacker of attackers) {
-        attackTarget(attacker, '5c8805bccc71565241f3688d');
+        attackTarget(attacker, enemy);
       }
     }
-    roomMonitor(room);
+
+    const flag1 = roomMonitor(room);
+    if (room.name === ROOM_ID_ENUM.MainRoom) {
+      flag = flag1;
+    }
     runTaskSystem(room);
+    runTowers(room);
   }
-  gameMonitor();
+  gameMonitor(flag);
 };
 
 export { loop };

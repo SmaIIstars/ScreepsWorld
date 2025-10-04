@@ -22,7 +22,7 @@ export class TaskPublisher {
     this.publishBuildTasks(room);
     this.publishRepairTasks(room);
     this.publishTransferTasks(room);
-    this.publishScoutRoomTasks(room);
+    // this.publishScoutRoomTasks(room);
   }
 
   /**
@@ -39,6 +39,7 @@ export class TaskPublisher {
       ids.forEach((id) => {
         const target = Game.getObjectById<Source | Resource | Ruin | Tombstone | Mineral>(id);
         if (!target) return;
+        if (!room.controller?.my && target instanceof Mineral) return;
         const roles: CustomRoleType[] = ['source', 'mineral'].includes(type)
           ? ['miner', 'harvester', 'remoteMiner']
           : ['harvester', 'remoteHarvester'];
@@ -132,23 +133,23 @@ export class TaskPublisher {
         this.taskMap.updateTask(taskId, { payload });
       }
     } else {
-      if (hasSource) {
-        const task: Task<'harvesting'> = {
-          id: taskId,
-          publisherType,
-          publisher: target.id,
-          type: 'harvesting',
-          toId: target.id,
-          allowedCreepRoles: allowedRoles,
-          payload,
-          timestamp: Game.time,
-          status: TaskStatusEnum.published,
-          room: room.name,
-          needCreepCount: 1,
-          assignedTo: [],
-        };
-        this.taskMap.publish(task);
-      }
+      if (!hasSource) return;
+
+      const task: Task<'harvesting'> = {
+        id: taskId,
+        publisherType,
+        publisher: target.id,
+        type: 'harvesting',
+        toId: target.id,
+        allowedCreepRoles: allowedRoles,
+        payload,
+        timestamp: Game.time,
+        status: TaskStatusEnum.published,
+        room: room.name,
+        needCreepCount: target instanceof StructureStorage ? 3 : 1,
+        assignedTo: [],
+      };
+      this.taskMap.publish(task);
     }
   }
 
@@ -224,7 +225,7 @@ export class TaskPublisher {
         //   structure.structureType !== STRUCTURE_RAMPART
         // );
         if (structure.structureType === STRUCTURE_WALL || structure.structureType === STRUCTURE_RAMPART) {
-          return structure.hits < 200000;
+          return structure.hits < 500000;
         } else {
           return structure.hits < structure.hitsMax * 0.6;
         }
@@ -265,17 +266,22 @@ export class TaskPublisher {
     const allStoreStructures = room.find<AllStoreStructure>(FIND_MY_STRUCTURES, {
       filter: (structure) => {
         if (
-          [STRUCTURE_TOWER, STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_CONTAINER, STRUCTURE_STORAGE].some(
-            (type) => structure.structureType === type
-          )
+          [
+            STRUCTURE_TOWER,
+            STRUCTURE_SPAWN,
+            STRUCTURE_EXTENSION,
+            STRUCTURE_POWER_SPAWN,
+            STRUCTURE_STORAGE,
+            STRUCTURE_CONTAINER,
+          ].some((type) => structure.structureType === type)
         ) {
           return true;
         }
         if (structure instanceof StructureLab) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
 
         // if (structure instanceof StructureLink) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
-        // if (structure instanceof StructureTerminal) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
-        // if (structure instanceof StructureNuker) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
+        if (structure instanceof StructureTerminal) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
+        if (structure instanceof StructureNuker) return structure.store.getFreeCapacity(RESOURCE_ENERGY);
         return false;
       },
     });
@@ -346,10 +352,13 @@ export class TaskPublisher {
         publisher: room.controller?.id ?? '',
         toId: roomName,
         allowedCreepRoles: ['remoteMiner'],
+        needCreepCount: flagCreepsCount.remoteMiners,
         payload: { taskType: 'source' },
         status: TaskStatusEnum.published,
         room: room.name,
-        assignedTo: [],
+        assignedTo: sourceRoom
+          .find(FIND_MY_CREEPS, { filter: (c) => c.memory.role === 'remoteMiner' && c.memory.targetRoom === roomName })
+          .map((c) => c.name),
       };
 
       this.taskMap.publish(task);

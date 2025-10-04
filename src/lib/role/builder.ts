@@ -88,6 +88,9 @@ class Builder extends BaseRole {
       const buildingTasks = taskMap.taskPriorityQueue('building', {
         filter: (task) => ['building', 'repairing'].includes(task.type) && task.toRoomName === creep.room.name,
       });
+      if (buildingTasks.find((t) => t.toId === '68d80e0cfc6129001293aea1')) {
+        return buildingTasks.find((t) => t.toId === '68d80e0cfc6129001293aea1')?.id;
+      }
       if (buildingTasks[0]) return buildingTasks[0]?.id;
 
       // 维修任务

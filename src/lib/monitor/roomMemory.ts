@@ -35,14 +35,20 @@ const creepsCount = (room: Room) => {
     remoteHarvester: 0,
     attacker: 0,
   };
-  for (const creep of Object.values(Game.creeps)) {
-    if (creep.room.name !== room.name) continue;
+
+  const allCreeps = Object.values(Game.creeps);
+  for (const creep of allCreeps) {
     // 最小组不参与计数
     if (creep.name.includes('Room2Min')) continue;
     // 要死了的不计数
     if (creep.ticksToLive && creep.ticksToLive < 100) continue;
-    if (creep.memory.role) {
-      creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
+
+    if (creep.room.name !== room.name) {
+      if (!creep.memory.role?.startsWith('remote')) continue;
+      if (creep.memory.targetRoom === room.name)
+        creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
+    } else {
+      if (creep.memory.role) creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
     }
   }
 
@@ -105,6 +111,7 @@ export const structures = (room: Room) => {
       }
       return { id: cur.id, type: closestType };
     }),
+    observer: room.find(FIND_MY_STRUCTURES, { filter: (s) => s.structureType === STRUCTURE_OBSERVER }).map((s) => s.id),
   };
 };
 

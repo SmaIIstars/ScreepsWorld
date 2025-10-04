@@ -1,41 +1,34 @@
-import { BASE_ID_ENUM, ROOM_ID_ENUM } from '@/constant';
+import { BASE_ID_ENUM } from '@/constant';
 import { generatorRoleBody } from '@/utils';
 import Pioneer from '../role/pioneer';
 
 // 临时脚本任务
-export const tempScriptTask = () => {
-  combatGroupTask();
+export const tempScriptTask = (baseRoleFlag: boolean) => {
+  Game.creeps['remoteMiner-73743840'].upgradeController(Game.getObjectById('5bbcadae9099fc012e637a12') as any);
+  // combatGroupTask();
   // 本房间自己的临时任务
   currentRoomTask();
-  autoAttackWithTowers(Game.rooms[ROOM_ID_ENUM.MainRoom]);
-  pioneeringTask();
+  // autoAttackWithTowers(Game.rooms[ROOM_ID_ENUM.MainRoom]);
+  if (baseRoleFlag) pioneeringTask();
 
-  // tempTransferTask();
-  tempTask();
+  tempTransferTask();
+  // tempTask();
   return true;
 };
 
 const tempTask = () => {
-  const spawn = Object.values(Game.spawns).find((spawn) => spawn.room.name === 'E11N14' && !spawn.spawning);
-
-  const controllerAttacker = Game.creeps['OP-CLAIM'];
-  if (!controllerAttacker) {
-    spawn?.spawnCreep(
-      generatorRoleBody([
-        { body: MOVE, count: 3 },
-        { body: CLAIM, count: 9 },
-      ]),
-      'OP-CLAIM'
-    );
+  const creep = Game.creeps['ATTACK-OP'];
+  if (!creep) return;
+  const targetRoom = 'E13N15';
+  if (creep.room.name !== targetRoom) {
+    creep.moveTo(Game.flags['E13N15']);
   } else {
-    if (controllerAttacker.room.name !== 'E11N13') {
-      controllerAttacker.moveTo(Game.flags['E11N13']);
-    } else {
-      if (!Game.rooms['E11N13'].controller) return;
-      if (controllerAttacker.attackController(Game.rooms['E11N13'].controller) === ERR_NOT_IN_RANGE) {
-        controllerAttacker.moveTo(Game.rooms['E11N13'].controller);
-      }
+    const wall = Game.getObjectById<StructureWall>('64d57e7517d236d040f65fda');
+    if (!wall) return;
+    if (creep.attack(wall) === ERR_NOT_IN_RANGE) {
+      creep.moveTo(wall);
     }
+    creep.rangedAttack(wall);
   }
 };
 
@@ -44,77 +37,66 @@ const tempTransferTask = () => {
   const factory = Game.getObjectById('68b2c8752ef07d053837dc22') as StructureFactory;
 
   if (!storage || !factory) return;
-  if (factory.store.O > 500 && factory.store.energy > 200 && !factory.cooldown) {
-    if (factory.store.O > 500) factory.produce(RESOURCE_OXIDANT);
-    if (factory.store.H > 500) factory.produce(RESOURCE_REDUCTANT);
+
+  if (storage.store[RESOURCE_ENERGY] >= 200000) return;
+
+  // 解压
+  if (factory.store[RESOURCE_ENERGY] > 200 && !factory.cooldown) {
+    if (factory.store[RESOURCE_BATTERY] > 50) factory.produce(RESOURCE_ENERGY);
   }
 
-  // for (const resourceType in factory.store) {
-  //   if (factory.store[resourceType as ResourceConstant] > 500 && factory.store.energy > 200 && !factory.cooldown) {
-  //     factory.produce(`${resourceType}_bar` as CommodityConstant);
-  //   }
+  // 生产
+  // if (factory.store.energy > 200 && !factory.cooldown) {
+  //   if (factory.store.O > 500) factory.produce(RESOURCE_OXIDANT);
+  //   if (factory.store.H > 500) factory.produce(RESOURCE_REDUCTANT);
+  //   if (factory.store.L > 500) factory.produce(RESOURCE_LEMERGIUM_BAR);
+  //   if (factory.store[RESOURCE_ENERGY] > 5000) factory.produce(RESOURCE_BATTERY);
   // }
 
   const creep = Game.creeps['tr-op'];
   if (!creep) {
-    const spawn = Game.spawns['Spawn2'];
+    const spawn = Object.values(Game.spawns).find((spawn) => spawn.room.name === 'E11N14' && !spawn.spawning);
     if (spawn && !spawn.spawning) {
-      spawn.spawnCreep([MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY], 'tr-op', {
-        directions: [TOP],
-      });
+      spawn.spawnCreep([MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY], 'tr-op');
     }
     return;
   }
 
-  if (creep.pos.x !== 16 && creep.pos.y !== 7) {
-    creep.moveTo(16, 7);
+  if (creep.pos.x !== 15 || creep.pos.y !== 7) {
+    creep.moveTo(15, 7);
     return;
   }
 
-  for (const resourceType in creep.store) {
-    if (creep.store[resourceType as ResourceConstant] > 0) {
-      if (resourceType.endsWith('_bar') || resourceType === RESOURCE_OXIDANT || resourceType === RESOURCE_REDUCTANT) {
-        creep.transfer(storage, resourceType as ResourceConstant);
-      } else {
-        creep.transfer(factory, resourceType as ResourceConstant);
-      }
-    }
+  if (factory.store[RESOURCE_ENERGY] > 2000) {
+    creep.withdraw(factory, RESOURCE_ENERGY);
   }
 
-  for (const resourceBar in factory.store) {
-    if (
-      (resourceBar === RESOURCE_OXIDANT || resourceBar === RESOURCE_REDUCTANT) &&
-      factory.store[resourceBar as ResourceConstant] > 0 &&
-      creep.store.getFreeCapacity()
-    ) {
-      creep.withdraw(factory, resourceBar as ResourceConstant);
-      return;
-    }
+  if (creep.store[RESOURCE_ENERGY]) {
+    creep.transfer(storage, RESOURCE_ENERGY);
   }
 
-  if (factory.store.energy < 1000 && creep.store.getFreeCapacity()) {
-    creep.withdraw(storage, 'energy');
-    return;
+  if (factory.store[RESOURCE_BATTERY] < 100) {
+    creep.withdraw(storage, RESOURCE_BATTERY);
+    creep.transfer(factory, RESOURCE_BATTERY);
   }
 
-  for (const resourceType in storage.store) {
-    if (
-      !resourceType.endsWith('_bar') &&
-      resourceType !== RESOURCE_OXIDANT &&
-      resourceType !== RESOURCE_REDUCTANT &&
-      resourceType !== RESOURCE_ENERGY &&
-      storage.store[resourceType as ResourceConstant] > 5000 &&
-      creep.store.getFreeCapacity()
-    ) {
-      console.log('storage.store', resourceType, creep.store.getFreeCapacity());
-      creep.withdraw(storage, resourceType as ResourceConstant);
-      return;
-    }
-  }
+  // 电池
+  // if (factory.store[RESOURCE_BATTERY]) {
+  //   creep.withdraw(factory, RESOURCE_BATTERY);
+  // }
+
+  // if (creep.store[RESOURCE_BATTERY]) {
+  //   creep.transfer(storage, RESOURCE_BATTERY);
+  // }
+
+  // if (factory.store[RESOURCE_ENERGY] < 5000) {
+  //   creep.withdraw(storage, RESOURCE_ENERGY);
+  //   creep.transfer(factory, RESOURCE_ENERGY);
+  // }
 };
 
 const pioneeringTask = () => {
-  const minMinerGroup: Record<string, string[]> = {};
+  // const minMinerGroup: Record<string, string[]> = {};
   const minHarvesterGroupMap: Record<string, string[]> = {};
   const minClaimerGroupMap: Record<string, string[]> = {};
 
@@ -124,75 +106,73 @@ const pioneeringTask = () => {
     if (Game.flags[flag].memory.payload.status !== 'active') continue;
 
     const payload = Game.flags[flag].memory.payload as RemoteSourceRoomPayload;
-    minMinerGroup[flag] = new Array(payload.remoteMiners).fill('').map((_, index) => `${flag}Miner${index}`);
+    // minMinerGroup[flag] = new Array(payload.remoteMiners).fill('').map((_, index) => `${flag}Miner${index}`);
     minHarvesterGroupMap[flag] = new Array(payload.remoteHarvesters)
       .fill('')
       .map((_, index) => `${flag}Pioneer${index}`);
     minClaimerGroupMap[flag] = new Array(payload.remoteClaimers).fill('').map((_, index) => `${flag}Claimer${index}`);
   }
 
-  for (const roomName of Object.keys(minMinerGroup)) {
-    for (const creepName of minMinerGroup[roomName]) {
-      const creep = Game.creeps[creepName];
-      if (!creep) {
-        const spawn = Game.spawns[BASE_ID_ENUM.MainBase].spawning
-          ? Game.spawns[BASE_ID_ENUM.MainBase]
-          : Game.spawns['Spawn2'];
-        if (!spawn.spawning) {
-          spawn.spawnCreep(
-            generatorRoleBody([
-              { body: WORK, count: 10 },
-              { body: CARRY, count: 2 },
-              { body: MOVE, count: 6 },
-            ]),
-            creepName,
-            { memory: { role: 'pioneer', targetRoom: roomName } }
-          );
-        }
-        continue;
-      } else {
-        if (creep.store.energy) {
-          const buildTarget = creep.pos.findInRange(FIND_CONSTRUCTION_SITES, 1, {
-            filter: (structure) => structure instanceof ConstructionSite,
-          });
+  const spawn = Object.values(Game.spawns).find((s) => s && !s.spawning);
 
-          if (buildTarget.length) {
-            creep.build(buildTarget[0]);
-          }
-          const repairTarget = creep.pos.findInRange(FIND_STRUCTURES, 1, {
-            filter: (structure) => structure.hits < structure.hitsMax,
-          });
-          if (repairTarget.length) {
-            creep.repair(repairTarget[0]);
-          }
-        }
+  // for (const roomName of Object.keys(minMinerGroup)) {
+  //   for (const creepName of minMinerGroup[roomName]) {
+  //     const creep = Game.creeps[creepName];
+  //     if (!creep) {
+  //       if (spawn) {
+  //         spawn.spawnCreep(
+  //           generatorRoleBody([
+  //             { body: WORK, count: 10 },
+  //             { body: CARRY, count: 2 },
+  //             { body: MOVE, count: 6 },
+  //           ]),
+  //           creepName,
+  //           { memory: { role: 'pioneer', targetRoom: roomName } }
+  //         );
+  //         continue;
+  //       }
+  //     } else {
+  //       if (creep.store.energy) {
+  //         const buildTarget = creep.pos.findInRange(FIND_CONSTRUCTION_SITES, 1, {
+  //           filter: (structure) => structure instanceof ConstructionSite,
+  //         });
 
-        if (creep.room.name !== roomName) {
-          creep.moveTo(Game.flags[roomName]);
-        } else {
-          const sources = creep.room.find(FIND_SOURCES);
-          const targetSource = sources.find((source) => {
-            const miners = source.pos.findInRange(FIND_MY_CREEPS, 1, {
-              filter: (creep) => creep.memory.role === 'remoteMiner' && creep.name !== creepName,
-            });
-            return miners.length === 0;
-          });
-          if (targetSource) {
-            if (creep.harvest(targetSource) === ERR_NOT_IN_RANGE) {
-              creep.moveTo(targetSource);
-            }
-          }
-        }
-      }
-    }
-  }
+  //         if (buildTarget.length) {
+  //           creep.build(buildTarget[0]);
+  //         }
+  //         const repairTarget = creep.pos.findInRange(FIND_STRUCTURES, 1, {
+  //           filter: (structure) => structure.hits < structure.hitsMax,
+  //         });
+  //         if (repairTarget.length) {
+  //           creep.repair(repairTarget[0]);
+  //         }
+  //       }
+
+  //       if (creep.room.name !== roomName) {
+  //         creep.moveTo(Game.flags[roomName]);
+  //       } else {
+  //         const sources = creep.room.find(FIND_SOURCES);
+  //         const targetSource = sources.find((source) => {
+  //           const miners = source.pos.findInRange(FIND_MY_CREEPS, 1, {
+  //             filter: (creep) => creep.memory.role === 'remoteMiner' && creep.name !== creepName,
+  //           });
+  //           return miners.length === 0;
+  //         });
+  //         if (targetSource) {
+  //           if (creep.harvest(targetSource) === ERR_NOT_IN_RANGE) {
+  //             creep.moveTo(targetSource);
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
   for (const roomName of Object.keys(minClaimerGroupMap)) {
     for (const creepName of minClaimerGroupMap[roomName]) {
       const creep = Game.creeps[creepName];
       if (!creep) {
-        const spawn = Game.spawns[BASE_ID_ENUM.MainBase];
-        if (!spawn.spawning) {
+        if (spawn) {
           spawn.spawnCreep(
             generatorRoleBody([
               { body: MOVE, count: 2 },
@@ -201,8 +181,8 @@ const pioneeringTask = () => {
             creepName,
             { memory: { role: 'claimer', task: 'moving', targetRoom: roomName } }
           );
+          continue;
         }
-        continue;
       } else {
         if (creep.room.name !== creep.memory.targetRoom) {
           creep.moveTo(Game.flags[`${creep.memory.targetRoom}`]);
@@ -232,59 +212,24 @@ const pioneeringTask = () => {
 };
 
 const SourceIds = ['5bbcad8e9099fc012e63770b', '5bbcad8e9099fc012e63770a'];
-const miniBody = [WORK, CARRY, CARRY, MOVE, MOVE];
+const miniBody = [CARRY, CARRY, MOVE, CARRY, CARRY, MOVE];
 const currentRoomTask = () => {
   // 最小组 (采矿和升级)
-  const minCreepGroup = ['Room2MinHarvester1'];
+  const minCreepGroup = ['Room2MinHarvester1', 'Room2MinHarvester2'];
   if (Game.rooms['E11N14'].memory.creepsCount?.['harvester']) return;
 
   minCreepGroup.forEach((creepName) => {
     const creep = Game.creeps[creepName];
     if (!creep) {
-      const spawn = Game.spawns['Spawn1'];
-      spawn.spawnCreep(miniBody, creepName, {
-        memory: {
-          role: 'harvester',
-          task: 'harvesting',
-        },
-      });
-      return;
+      const spawn = Object.values(Game.spawns).find((s: StructureSpawn) => s && !s.spawning);
+      if (spawn) {
+        spawn.spawnCreep(miniBody, creepName, {
+          memory: { role: 'harvester' },
+        });
+        return;
+      }
     }
   });
-
-  const allCreepInRoom = Object.values(Game.creeps).filter(
-    (creep) => creep.room.name === ROOM_ID_ENUM.MainRoom && creep.name.includes('Room2Min')
-  );
-  for (const creep of allCreepInRoom) {
-    // 1. 如果身上没有能量，且正在没有执行采集任务，则切换到采集任务
-    if (creep.store[RESOURCE_ENERGY] === 0 && creep.memory.task !== 'harvesting') {
-      creep.memory.task = 'harvesting';
-    }
-
-    // 如果creep存在，则执行任务
-    switch (creep.memory.task) {
-      case 'harvesting':
-        harvestTask(creep);
-        break;
-      case 'transferring':
-        transferTask(creep);
-        break;
-      case 'upgrading':
-        upgradeTask(creep);
-        break;
-      case 'building':
-        buildTask(creep);
-        break;
-      case 'mining':
-        miningTask(creep);
-        break;
-      case 'repairing':
-        repairTask(creep);
-        break;
-      default:
-        break;
-    }
-  }
 };
 
 const harvestTask = (creep: Creep) => {

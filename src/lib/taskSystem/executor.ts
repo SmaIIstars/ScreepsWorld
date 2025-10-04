@@ -27,7 +27,13 @@ export class TaskExecutor {
     );
 
     for (const creep of creeps) {
-      const task = this.taskMap.getAll().find((t: Task) => t.id === creep.memory.currentTask);
+      if (!creep.memory.currentTask) continue;
+      let task = undefined;
+      if (creep.memory.currentTaskFromRoom) {
+        task = new TaskMap(creep.memory.currentTaskFromRoom).get(creep.memory.currentTask);
+      } else {
+        task = this.taskMap.getAll().find((t: Task) => t.id === creep.memory.currentTask);
+      }
       if (!task) {
         // 任务不存在，清除creep的任务
         delete creep.memory.currentTask;

@@ -6,7 +6,8 @@ class Pioneer {
 
   create = (targetRoom: string, creepName: string) => {
     const curName = creepName;
-    return Game.spawns[BASE_ID_ENUM.MainBase].spawnCreep(
+    const spawn = Object.values(Game.spawns).find((s) => s && !s.spawning);
+    return spawn?.spawnCreep(
       generatorRoleBody([
         { body: WORK, count: 2 },
         { body: CARRY, count: 30 },
@@ -167,7 +168,17 @@ class Pioneer {
         filter: (structure) => structure.structureType === STRUCTURE_STORAGE,
       })[0];
 
-      if (storage) {
+      const nuker = creep.room.find(FIND_STRUCTURES, {
+        filter: (structure) => structure.structureType === STRUCTURE_NUKER,
+      })[0];
+
+      if (
+        nuker &&
+        nuker.store.getFreeCapacity(RESOURCE_ENERGY) > 0 &&
+        creep.transfer(nuker, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE
+      ) {
+        creep.moveTo(nuker);
+      } else {
         if (!storage.pos.isNearTo(creep)) {
           creep.moveTo(storage);
         } else {
@@ -178,8 +189,6 @@ class Pioneer {
           }
         }
       }
-
-      return;
     } else {
       creep.moveTo(Game.spawns[BASE_ID_ENUM.MainBase]);
     }

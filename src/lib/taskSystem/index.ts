@@ -80,7 +80,7 @@ export class TaskSystem {
       // Current Room Creeps
       if (creep.room.name !== room.name) return false;
       // Specify Min Group
-      if (creep.name.includes('Room2Min')) return false;
+      // if (creep.name.includes('Room2Min')) return false;
       // Idle creeps
       if (creep.memory.currentTask) return false;
       // in spawning
@@ -92,9 +92,7 @@ export class TaskSystem {
       if (!creep.memory.role) continue;
       // 让creep自己选择任务
       const claimedTaskId = utils.roles[creep.memory.role]?.claimTask(creep, this.taskMap);
-      if (claimedTaskId) {
-        creep.memory.currentTask = claimedTaskId;
-      }
+      if (claimedTaskId) creep.memory.currentTask = claimedTaskId;
     }
   }
 }

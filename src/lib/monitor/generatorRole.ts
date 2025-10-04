@@ -3,12 +3,14 @@ import { getStrategy } from '@/strategy';
 import { generatorRoleBody, intervalSleep } from '@/utils';
 
 export const generatorRole = (room: Room) => {
-  if (room.name !== ROOM_ID_ENUM.MainRoom) return;
+  if (room.name !== ROOM_ID_ENUM.MainRoom) return true;
   const strategy = getStrategy(room.controller?.level ?? 0);
   const creepCounter = room.memory?.creepsCount;
-  if (!creepCounter) return;
+  if (!creepCounter) return true;
 
   const roles = Object.keys(strategy.roleMonitor) as CustomRoleType[];
+  const spawn = Object.values(Game.spawns).find((spawn) => spawn.room.name === room.name && !spawn.spawning);
+  if (!spawn) return true;
   for (const role of roles) {
     if (!strategy.roleMonitor[role]) continue;
     if (creepCounter[role] < strategy.roleMonitor[role].count) {
@@ -25,17 +27,15 @@ export const generatorRole = (room: Room) => {
         );
       });
 
-      const spawn = Object.values(Game.spawns).find((spawn) => spawn.room.name === room.name && !spawn.spawning);
-      if (spawn) {
-        const resp = utils.roles[role]?.create(spawn, { body: strategy.roleMonitor[role].body });
-        if (resp === OK) {
-          creepCounter[role] += 1;
-          room.memory.creepsCount = creepCounter;
-        }
+      const resp = utils.roles[role]?.create(spawn, { body: strategy.roleMonitor[role].body });
+      if (resp === OK) {
+        creepCounter[role] += 1;
+        room.memory.creepsCount = creepCounter;
       }
-      break;
+      return false;
     }
   }
+  return true;
 };
 
 export const generatorRoleAttacker = (room: Room) => {
@@ -65,6 +65,57 @@ export const generatorRoleAttacker = (room: Room) => {
         const result = spawn.spawnCreep(body, attackerName);
         if (result === OK) console.log(`攻击者正在孵化: ${attackerName}`);
       }
+    }
+  }
+};
+
+export const generatorRemoteResourceCreeps = (room: Room) => {
+  // 如果不是外矿
+  const flag = Game.flags[room.name];
+  if (flag?.memory.type !== 'sourceRoom' || flag?.memory.payload?.status !== 'active') return;
+  const spawn = Object.values(Game.spawns).find((spawn) => !spawn.spawning);
+  if (!spawn) return;
+
+  const creepCounter = room.memory?.creepsCount;
+  if (!creepCounter) return;
+
+  // for (const role in flag.memory.payload) {
+  for (const role of ['remoteMiner']) {
+    if (!role.startsWith('remote')) continue;
+    if (creepCounter[role as CustomRoleType] >= (flag.memory.payload['remoteMiner'] ?? 0)) continue;
+    const bodyArr: BodyPartConstant[] = [];
+    if (role === 'remoteMiner') {
+      bodyArr.push(
+        ...generatorRoleBody([
+          { body: WORK, count: 10 },
+          { body: CARRY, count: 2 },
+          { body: MOVE, count: 6 },
+        ])
+      );
+    } else if (role === 'remoteClaimer') {
+      bodyArr.push(
+        ...generatorRoleBody([
+          { body: CLAIM, count: 2 },
+          { body: MOVE, count: 2 },
+        ])
+      );
+    } else if (role === 'remoteHarvester') {
+      bodyArr.push(
+        ...generatorRoleBody([
+          { body: WORK, count: 2 },
+          { body: CARRY, count: 30 },
+          { body: MOVE, count: 16 },
+        ])
+      );
+    }
+
+    const resp = utils.roles[role as CustomRoleType]?.create(spawn, {
+      body: bodyArr,
+      memoryRoleOpts: { role: 'remoteMiner', targetRoom: room.name },
+    });
+
+    if (resp === OK) {
+      room.memory.creepsCount = Object.assign(creepCounter, { [role]: creepCounter['remoteMiner']++ });
     }
   }
 };

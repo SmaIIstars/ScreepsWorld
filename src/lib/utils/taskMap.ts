@@ -113,10 +113,11 @@ export class TaskMap {
 
     if (!global.rooms?.[roomName]?.taskMap) {
       global.rooms[roomName] = defaults(Memory.rooms[roomName] ?? {}, defaultRoomMemory);
+      global.rooms[roomName].taskMap = new Map(Object.entries(Memory.rooms[roomName].taskMapObj ?? {}));
     }
 
     // 从内存加载任务到 Map
-    this.taskMap = new Map(Object.entries(global.rooms[roomName].taskMap ?? {}));
+    this.taskMap = global.rooms[roomName].taskMap;
   }
 
   get _taskMapObj() {
@@ -298,6 +299,14 @@ export class TaskMap {
   updateTask(taskId: string, updates: Partial<Task>): boolean {
     const task = this.taskMap.get(taskId);
     if (task) {
+      // if (task.id.startsWith('scout_')) {
+      //   console.log(
+      //     JSON.stringify(task.id),
+      //     JSON.stringify(task.assignedTo),
+      //     JSON.stringify(updates.assignedTo),
+      //     JSON.stringify(Object.assign(task, updates))
+      //   );
+      // }
       Object.assign(task, updates);
       this.save();
       return true;

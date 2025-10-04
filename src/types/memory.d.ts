@@ -14,6 +14,7 @@ interface Memory {
 interface CreepMemory {
   role: CustomRoleType;
   currentTask?: string; // 当前执行的任务ID
+  currentTaskFromRoom?: string; // 当前执行的任务ID发布房间
   targetId?: string;
   targetRoom?: string;
   taskList?: string[]; // 接下来执行的任务IDs
@@ -35,7 +36,10 @@ interface CreepMemory {
 
 // Room Memory
 type RoomSourceType = LOOK_SOURCES | LOOK_MINERALS | LOOK_RESOURCES | LOOK_RUINS | LOOK_TOMBSTONES;
-type RoomStructureType = STRUCTURE_LINK;
+type RoomStructureType = {
+  [STRUCTURE_LINK]: StructureMemory[];
+  [STRUCTURE_OBSERVER]: string[];
+};
 
 interface RoomMemory {
   taskMap?: Map<string, import('@/lib/utils/taskMap').Task>;
@@ -43,7 +47,7 @@ interface RoomMemory {
   taskMapVersion?: number; // New Map-based version
   creepsCount?: Record<CustomRoleType, number>;
   sources?: Partial<Record<RoomSourceType, string[]>>;
-  structure?: Partial<Record<RoomStructureType, StructureMemory[]>>;
+  structure?: Partial<RoomStructureType>;
   enemies?: string[];
   visible?: boolean;
   sourceRooms?: string[];
@@ -54,6 +58,7 @@ interface RoomMemory {
 type FlagType = 'sourceRoom';
 type RemoteSourceRoomPayload = {
   mainRoom: string; // 主基地房间
+  remoteMiner: number; // 需要挖矿者数量
   remoteMiners: number; // 需要挖矿者数量
   remoteHarvesters: number; // 需要运输者数量
   remoteClaimers: number; // 需要claimer数量

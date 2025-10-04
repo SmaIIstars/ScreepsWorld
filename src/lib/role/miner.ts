@@ -17,7 +17,6 @@ export class Miner extends BaseRole {
   run(creep: Creep, taskId: string) {
     const task = global.rooms[creep.room.name]?.taskMap?.get(taskId);
     if (!task) return TaskExecuteStatusEnum.failed;
-
     const targetSource = Game.getObjectById<Source>(task.toId);
     if (!targetSource) return TaskExecuteStatusEnum.failed;
 
@@ -83,7 +82,10 @@ export class Miner extends BaseRole {
 
     // 获取其他矿工的目标ID
     const minerTargetIds = Object.values(Game.creeps)
-      .filter((c) => ['miner', 'remoteMiner'].includes(c.memory.role) && c.name !== creep.name)
+      .filter(
+        (c) =>
+          ['miner', 'remoteMiner'].includes(c.memory.role) && c.name !== creep.name && creep.room.name === c.room.name
+      )
       .map((c) => c.memory.targetId)
       .filter((id) => id);
 
@@ -94,24 +96,18 @@ export class Miner extends BaseRole {
         if (task.type !== 'harvesting') return false;
         if (minerTargetIds.includes(task.toId)) return false;
         if (LOOK_MINERALS !== task.publisherType && LOOK_SOURCES !== task.publisherType) return false;
-        if (task.needCreepCount && task.needCreepCount <= task.assignedTo.length) return false;
+        // if (task.needCreepCount && task.needCreepCount <= task.assignedTo.length) return false;
         return true;
       },
     });
 
     const task = harvestingTasks[0];
-    if (task?.assignedTo?.length) {
-      // 让其他creep取消任务
-      for (const creepName of task.assignedTo) {
-        const creep = Game.creeps[creepName];
-        if (creep) {
-          delete creep.memory.currentTask;
-          delete creep.memory.targetId;
-        }
+    if (task) {
+      const taskSystem = new TaskMap(creep.room.name);
+      if (!task.assignedTo.includes(creep.name)) {
+        taskSystem.updateTask(task.id, { assignedTo: [...task.assignedTo, creep.name] });
       }
     }
-    const taskSystem = new TaskMap(creep.room.name);
-    taskSystem.updateTask(task.id, { assignedTo: [creep.name] });
 
     return task?.id;
   }
