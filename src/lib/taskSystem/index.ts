@@ -76,16 +76,16 @@ export class TaskSystem {
    * @param room 房间对象
    */
   private claimTasks(room: Room): void {
-    const availableCreeps = Object.values(Game.creeps).filter((creep) => {
-      // Current Room Creeps
-      if (creep.room.name !== room.name) return false;
-      // Specify Min Group
-      // if (creep.name.includes('Room2Min')) return false;
-      // Idle creeps
-      if (creep.memory.currentTask) return false;
-      // in spawning
-      if (creep.spawning) return false;
-      return true;
+    const availableCreeps = room.find(FIND_MY_CREEPS, {
+      filter: (creep) => {
+        // Specify Min Group
+        // if (creep.name.includes('Room2Min')) return false;
+        // Idle creeps
+        if (creep.memory.currentTask) return false;
+        // in spawning
+        if (creep.spawning) return false;
+        return true;
+      },
     });
 
     for (const creep of availableCreeps) {

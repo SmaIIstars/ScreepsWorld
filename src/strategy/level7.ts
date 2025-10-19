@@ -12,7 +12,7 @@ const strategy: StrategyType = {
       ]),
     },
     harvester: {
-      count: 3,
+      count: 2,
       body: generatorRoleBody([
         { body: CARRY, count: 32 },
         { body: MOVE, count: 16 },
@@ -22,16 +22,16 @@ const strategy: StrategyType = {
       count: 1,
       body: generatorRoleBody([
         { body: WORK, count: 10 },
-        { body: CARRY, count: 30 },
+        { body: CARRY, count: 20 },
         { body: MOVE, count: 10 },
       ]),
     },
     upgrader: {
       count: 1,
       body: generatorRoleBody([
-        { body: WORK, count: 1 },
+        { body: WORK, count: 10 },
         { body: CARRY, count: 20 },
-        { body: MOVE, count: 7 },
+        { body: MOVE, count: 5 },
       ]),
     },
     builder: {

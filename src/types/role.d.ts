@@ -23,7 +23,8 @@ declare global {
     | 'claiming'
     | 'scouting'
     | 'attacking'
-    | 'retreating';
+    | 'retreating'
+    | 'generating';
 }
 
 export {};

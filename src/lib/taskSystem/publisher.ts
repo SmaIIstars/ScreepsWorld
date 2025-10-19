@@ -1,5 +1,7 @@
 import { HarvestingPayload, Task, TaskMap, TaskPublisherType, TaskStatusEnum } from '@/lib/utils/taskMap';
+import { getStrategy } from '@/strategy';
 import { AllStoreStructure } from '@/types';
+import { isCustomRoleType } from '../utils';
 
 /**
  * 任务发布器
@@ -22,14 +24,14 @@ export class TaskPublisher {
     this.publishBuildTasks(room);
     this.publishRepairTasks(room);
     this.publishTransferTasks(room);
-    // this.publishScoutRoomTasks(room);
+    this.publishGenerateRoomTasks(room);
   }
 
   /**
    * 发布采集任务
    */
   private publishHarvestTasks(room: Room): void {
-    const roomMemory = Memory.rooms[room.name];
+    const roomMemory = global.rooms[room.name];
     if (!roomMemory?.sources) return;
 
     // 资源开采类
@@ -48,21 +50,36 @@ export class TaskPublisher {
     });
 
     // 存储容器获取类
-    const sourceStores: (StructureContainer | StructureStorage | StructureTerminal | StructureLink)[] = room.find(
-      FIND_STRUCTURES,
-      {
-        filter: (structure) => {
-          if (structure.structureType === STRUCTURE_CONTAINER) return true;
-          if (structure.structureType === STRUCTURE_STORAGE) return true;
-          if (structure.structureType === STRUCTURE_TERMINAL) return structure.store[RESOURCE_ENERGY] > 15000;
-          if (structure.structureType === STRUCTURE_LINK && structure.my) {
-            // return void if target isn't the sourceLink
-            return room.memory.structure?.link?.find((l) => l.id === structure.id)?.type === 'spawn';
-          }
-          return false;
-        },
-      }
-    );
+    const sourceStores: (StructureContainer | StructureStorage | StructureTerminal | StructureLink)[] = room.controller
+      ?.my
+      ? room.find(FIND_STRUCTURES, {
+          filter: (structure) => {
+            if (structure.structureType === STRUCTURE_CONTAINER) return true;
+            if (structure.structureType === STRUCTURE_STORAGE) return true;
+            if (structure.structureType === STRUCTURE_TERMINAL) return structure.store[RESOURCE_ENERGY] > 15000;
+            if (structure.structureType === STRUCTURE_LINK) {
+              // return void if target isn't the sourceLink
+              return global.rooms[room.name].structure?.link?.find((l) => l.id === structure.id)?.type === 'spawn';
+            }
+            return false;
+          },
+        })
+      : room.find(FIND_STRUCTURES, {
+          filter: (s) => {
+            if (s.structureType === STRUCTURE_CONTROLLER) return false;
+            if (s.structureType === STRUCTURE_EXTRACTOR) return false;
+            if (s.structureType === STRUCTURE_INVADER_CORE) return false;
+            if (s.structureType === STRUCTURE_KEEPER_LAIR) return false;
+            if (s.structureType === STRUCTURE_OBSERVER) return false;
+            if (s.structureType === STRUCTURE_POWER_BANK) return false;
+            if (s.structureType === STRUCTURE_RAMPART) return false;
+            if (s.structureType === STRUCTURE_PORTAL) return false;
+            if (s.structureType === STRUCTURE_ROAD) return false;
+            if (s.structureType === STRUCTURE_WALL) return false;
+            return Object.values(s.store).some((v) => v);
+          },
+        });
+
     sourceStores.forEach((structure) => {
       this.createHarvestTask(structure, room, ['harvester', 'remoteHarvester']);
     });
@@ -81,7 +98,10 @@ export class TaskPublisher {
       | StructureContainer
       | StructureStorage
       | StructureTerminal
-      | StructureLink,
+      | StructureLink
+      | StructureNuker
+      | StructureExtension
+      | StructureSpawn,
     room: Room,
     allowedRoles: CustomRoleType[]
   ): void {
@@ -104,7 +124,10 @@ export class TaskPublisher {
       target instanceof StructureContainer ||
       target instanceof StructureStorage ||
       target instanceof StructureTerminal ||
-      target instanceof StructureLink
+      target instanceof StructureLink ||
+      target instanceof StructureNuker ||
+      target instanceof StructureExtension ||
+      target instanceof StructureSpawn
     ) {
       if (target instanceof Ruin) {
         publisherType = LOOK_RUINS;
@@ -118,6 +141,12 @@ export class TaskPublisher {
         publisherType = STRUCTURE_TERMINAL;
       } else if (target instanceof StructureLink) {
         publisherType = STRUCTURE_LINK;
+      } else if (target instanceof StructureNuker) {
+        publisherType = STRUCTURE_NUKER;
+      } else if (target instanceof StructureExtension) {
+        publisherType = STRUCTURE_EXTENSION;
+      } else if (target instanceof StructureSpawn) {
+        publisherType = STRUCTURE_SPAWN;
       }
 
       for (const resourceType in target.store) {
@@ -217,6 +246,9 @@ export class TaskPublisher {
    * 发布维修任务
    */
   private publishRepairTasks(room: Room): void {
+    // 主房之外的建筑不需要维修
+    if (!room.controller?.my) return;
+
     const structures = room.find(FIND_STRUCTURES, {
       filter: (structure) => {
         //  return (
@@ -332,36 +364,84 @@ export class TaskPublisher {
   /**
    * 发布插旗任务
    */
-  private publishScoutRoomTasks(room: Room): void {
-    const sourceRooms = room.memory.sourceRooms ?? [];
-    sourceRooms.forEach((roomName) => {
-      // 发布一个RemoteMiner任务进行侦察
-      const taskId = `scout_${roomName}`;
-      if (this.taskMap.hasTask(taskId)) return;
+  // private publishScoutRoomTasks(room: Room): void {
+  //   const sourceRooms = room.memory.sourceRooms ?? [];
+  //   sourceRooms.forEach((roomName) => {
+  //     // 发布一个RemoteMiner任务进行侦察
+  //     const taskId = `scout_${roomName}`;
+  //     if (this.taskMap.hasTask(taskId)) return;
 
-      const sourceRoom = Game.rooms[roomName];
-      if (!sourceRoom) return;
-      const curCreepsCount = sourceRoom.memory.creepsCount;
-      const flagCreepsCount = Game.flags[roomName].memory.payload;
-      if ((curCreepsCount?.remoteMiner ?? 0) >= (flagCreepsCount.remoteMiners ?? 0)) return;
+  //     const sourceRoom = Game.rooms[roomName];
+  //     if (!sourceRoom) return;
+  //     const curCreepsCount = sourceRoom.memory.creepsCount;
+  //     const flagCreepsCount = Game.flags[roomName].memory.payload;
+  //     if ((curCreepsCount?.remoteMiner ?? 0) >= (flagCreepsCount.remoteMiners ?? 0)) return;
 
-      const task: Task<'scouting'> = {
-        id: taskId,
-        type: 'scouting',
-        publisherType: LOOK_FLAGS,
-        publisher: room.controller?.id ?? '',
-        toId: roomName,
-        allowedCreepRoles: ['remoteMiner'],
-        needCreepCount: flagCreepsCount.remoteMiners,
-        payload: { taskType: 'source' },
-        status: TaskStatusEnum.published,
-        room: room.name,
-        assignedTo: sourceRoom
-          .find(FIND_MY_CREEPS, { filter: (c) => c.memory.role === 'remoteMiner' && c.memory.targetRoom === roomName })
-          .map((c) => c.name),
-      };
+  //     const task: Task<'scouting'> = {
+  //       id: taskId,
+  //       type: 'scouting',
+  //       publisherType: LOOK_FLAGS,
+  //       publisher: room.controller?.id ?? '',
+  //       toId: roomName,
+  //       allowedCreepRoles: ['remoteMiner'],
+  //       needCreepCount: flagCreepsCount.remoteMiners,
+  //       payload: { taskType: 'source' },
+  //       status: TaskStatusEnum.published,
+  //       room: room.name,
+  //       assignedTo: sourceRoom
+  //         .find(FIND_MY_CREEPS, { filter: (c) => c.memory.role === 'remoteMiner' && c.memory.targetRoom === roomName })
+  //         .map((c) => c.name),
+  //     };
 
-      this.taskMap.publish(task);
-    });
+  //     this.taskMap.publish(task);
+  //   });
+  // }
+
+  private publishGenerateRoomTasks(room: Room): void {
+    if (!room.controller?.my) return;
+    const roomMemory = global.rooms[room.name];
+    const roomFlag = Game.flags[room.name];
+    if (!roomMemory || !roomFlag) return;
+    const flagCreeps = roomFlag.memory.payload.creeps;
+    const spawn = room.find<StructureSpawn>(FIND_MY_STRUCTURES, {
+      filter: (s) => s.structureType === STRUCTURE_SPAWN && !s.spawning,
+    })[0];
+    if (!spawn || !flagCreeps) return;
+    const curRoomCreeps = room.find(FIND_MY_CREEPS);
+
+    for (const role in flagCreeps) {
+      const curRoleCreepNum = curRoomCreeps.filter((c) => c.memory.role === role).length;
+      if (!isCustomRoleType(role)) continue;
+      if (!flagCreeps[role]) continue;
+      if ((roomMemory.creeps?.[role].length ?? 0) >= flagCreeps[role]) continue;
+      const taskId = `generate_${role}`;
+      if (this.taskMap.hasTask(taskId) || curRoleCreepNum >= flagCreeps?.[role]) {
+        const curTask = this.taskMap.get(taskId);
+        console.log(123, role, flagCreeps[role], curRoleCreepNum);
+
+        this.taskMap.updateTask(taskId, {
+          payload: { ...curTask?.payload, number: flagCreeps[role] - curRoleCreepNum },
+        });
+      } else {
+        const strategy = getStrategy(room.controller?.level ?? 0);
+        const bodyArr = strategy.roleMonitor[role]?.body || [];
+
+        // 发布任务
+        const task: Task<'generating'> = {
+          id: taskId,
+          type: 'generating',
+          publisherType: room.controller.structureType,
+          publisher: room.controller.id,
+          toId: room.controller.id,
+          allowedCreepRoles: [],
+          payload: { body: bodyArr, number: flagCreeps[role], role },
+          timestamp: Game.time,
+          status: TaskStatusEnum.published,
+          room: room.name,
+          assignedTo: [],
+        };
+        this.taskMap.publish(task);
+      }
+    }
   }
 }

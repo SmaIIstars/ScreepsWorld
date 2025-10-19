@@ -11,35 +11,26 @@ export const flagMonitor = () => {
 
 const sourceRoomMonitor = (flag: CustomFlag<'sourceRoom'>) => {
   const { payload } = flag.memory;
-  if (!payload) {
-    const defaultPayload: Partial<RemoteSourceRoomPayload> = {
-      remoteHarvesters: 1,
-      remoteMiners: 1,
-      remoteClaimers: 1,
-      status: 'active',
-    };
-    flag.memory.payload = defaultPayload;
-  } else {
-    const { mainRoom } = payload;
-    if (!mainRoom) return;
-    const room = Game.rooms[mainRoom];
-    if (!room) return;
+  const { mainRoom: mainRoomName } = payload;
+  if (!mainRoomName) return;
+  const mainRoom = global.rooms[mainRoomName];
+  if (!mainRoom) return;
+  const sourceRoom = global.rooms[flag.name];
+  if (!sourceRoom) return;
 
-    if (Game.rooms[flag.pos.roomName]) {
-      if (!Game.rooms[flag.pos.roomName].memory.mainRooms?.length) {
-        Game.rooms[flag.pos.roomName].memory.mainRooms = [mainRoom];
-      } else {
-        if (!Game.rooms[flag.pos.roomName].memory.mainRooms?.includes(mainRoom)) {
-          Game.rooms[flag.pos.roomName].memory.mainRooms?.push(mainRoom);
-        }
-      }
-    }
+  // TODO: source monitor
+  // if (sourceRoom.mainRooms?.length) {
+  //   global.rooms[flag.name].mainRooms = [mainRoom];
+  // } else {
+  //   if (!global.rooms[flag.name].mainRooms?.includes(mainRoom)) {
+  //     global.rooms[flag.name].mainRooms?.push(mainRoom);
+  //   }
+  // }
 
-    if (room.memory?.sourceRooms) {
-      if (room.memory.sourceRooms.includes(flag.pos.roomName)) return;
-      room.memory.sourceRooms.push(flag.pos.roomName);
-    } else {
-      room.memory.sourceRooms = [flag.pos.roomName];
-    }
-  }
+  // if (roomMemory?.sourceRooms) {
+  //   if (roomMemory.sourceRooms.includes(flag.name)) return;
+  //   roomMemory.sourceRooms.push(flag.name);
+  // } else {
+  //   roomMemory.sourceRooms = [flag.name];
+  // }
 };

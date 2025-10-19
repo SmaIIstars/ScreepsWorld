@@ -58,7 +58,7 @@ export class Miner extends BaseRole {
     const harvestResult = creep.harvest(targetSource);
 
     if (harvestResult === ERR_NOT_IN_RANGE) {
-      this.baseMoveTo(creep, targetSource);
+      this.baseMoveTo(creep, targetSource.pos);
       return TaskExecuteStatusEnum.inProgress;
     } else if (harvestResult === ERR_NOT_ENOUGH_RESOURCES) {
       this.baseSubmitTask(creep, task.id);

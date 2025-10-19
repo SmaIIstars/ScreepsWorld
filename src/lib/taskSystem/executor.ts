@@ -22,15 +22,13 @@ export class TaskExecutor {
    * @param room 房间对象
    */
   executeTasks(room: Room): void {
-    const creeps = Object.values(Game.creeps).filter(
-      (creep) => creep.room.name === room.name && creep.memory.currentTask
-    );
+    const creeps = room.find(FIND_MY_CREEPS, { filter: (c) => c.memory.currentTask });
 
     for (const creep of creeps) {
       if (!creep.memory.currentTask) continue;
       let task = undefined;
-      if (creep.memory.currentTaskFromRoom) {
-        task = new TaskMap(creep.memory.currentTaskFromRoom).get(creep.memory.currentTask);
+      if (creep.memory.targetRoom) {
+        task = new TaskMap(creep.memory.targetRoom).get(creep.memory.currentTask);
       } else {
         task = this.taskMap.getAll().find((t: Task) => t.id === creep.memory.currentTask);
       }
@@ -39,7 +37,6 @@ export class TaskExecutor {
         delete creep.memory.currentTask;
         continue;
       }
-
       // 执行任务
       const result = this.executeTask(creep, task.id);
 
@@ -47,7 +44,7 @@ export class TaskExecutor {
         // 任务完成
         this.taskMap.updateTask(task.id, { status: TaskStatusEnum.completed });
         delete creep.memory.currentTask;
-        console.log(`[任务系统] ${creep.name} 的任务 ${task.id} 完成`);
+        // console.log(`[任务系统] ${creep.name} 的任务 ${task.id} 完成`);
       } else if (result === TaskExecuteStatusEnum.failed) {
         // 任务失败，重新分配
         this.taskMap.remove(task.id);

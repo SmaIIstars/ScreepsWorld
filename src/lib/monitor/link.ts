@@ -1,11 +1,6 @@
-/**
- * 管理房间内 link 能量传输：
- * - 从 Memory.rooms[room.name].structure.link 获取所有 link 信息
- * - 当 source link 能量满时，自动传送能量到 spawn link
- */
 export const linkMonitor = (room: Room) => {
   // 新结构: link 结构为 Partial<Record<RoomStructureType, Array<{ id: string; type: 'source' | 'spawn' | 'controller' }>>>
-  const linkArr = Memory.rooms[room.name]?.structure?.link;
+  const linkArr = room.memory?.structure?.link;
   if (!Array.isArray(linkArr)) return;
 
   // 收集各类型 link

@@ -18,15 +18,9 @@ interface CreepMemory {
   targetId?: string;
   targetRoom?: string;
   taskList?: string[]; // 接下来执行的任务IDs
-  movePath?:
-    | string
-    | Array<{
-        x: number;
-        y: number;
-        dx: number;
-        dy: number;
-        direction: TOP | TOP_RIGHT | RIGHT | BOTTOM_RIGHT | BOTTOM | BOTTOM_LEFT | LEFT | TOP_LEFT;
-      }>;
+  prePosition?: string; // 上一步位置
+  movePath?: `${DirectionConstant}`;
+  movePathIdx?: number;
 
   /**
    * @deprecated 仅在 tempTask 中 Min 相关用法，后续不推荐使用
@@ -45,24 +39,23 @@ interface RoomMemory {
   taskMap?: Map<string, import('@/lib/utils/taskMap').Task>;
   taskMapObj?: Record<string, import('@/lib/utils/taskMap').Task>;
   taskMapVersion?: number; // New Map-based version
-  creepsCount?: Record<CustomRoleType, number>;
+
+  creeps?: Record<CustomRoleType, string[]>;
   sources?: Partial<Record<RoomSourceType, string[]>>;
   structure?: Partial<RoomStructureType>;
   enemies?: string[];
   visible?: boolean;
   sourceRooms?: string[];
   mainRooms?: string[];
+  costMatrix?: number[];
+  costMatrixVer?: number;
 }
 
 // flag Memory
 type FlagType = 'sourceRoom';
 type RemoteSourceRoomPayload = {
   mainRoom: string; // 主基地房间
-  remoteMiner: number; // 需要挖矿者数量
-  remoteMiners: number; // 需要挖矿者数量
-  remoteHarvesters: number; // 需要运输者数量
-  remoteClaimers: number; // 需要claimer数量
-  status: 'active' | 'paused' | 'abandoned';
+  creeps: Partial<Record<CustomRoleType, number>>;
 };
 
 type FlagPayloadMap = {
@@ -76,6 +69,7 @@ interface CustomFlag<T extends FlagType = FlagType> extends Flag {
 interface FlagMemory<T extends FlagType = FlagType> {
   type: T;
   payload: Partial<FlagPayloadMap[T]>;
+  status: 'active' | 'paused' | 'abandoned';
 }
 
 type StructureMemory = { id: string; type: 'source' | 'spawn' | 'controller' };

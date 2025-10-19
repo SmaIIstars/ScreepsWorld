@@ -1,5 +1,6 @@
 import { EnergyStoreTargetType } from '@/constant';
 import { TaskExecuteStatusEnum } from '../taskSystem/executor';
+import { pathFinderTo, serializePath } from '../utils/base';
 import type { Task, TaskMap } from '../utils/taskMap';
 
 export type BaseRoleType = {
@@ -37,27 +38,11 @@ export abstract class BaseRole {
   abstract run(creep: Creep, taskId: string): TaskExecuteStatusEnum;
   abstract claimTask(creep: Creep, taskMap: TaskMap): string | undefined;
 
-  // 所有角色都需要执行的内容，可以处理一些紧急或者边界情况
-  baseRun = (creep: Creep) => {
-    // 如果不是harvester但身上有除了energy之外的矿
-    // if (creep.memory.role !== 'harvester') {
-    //   const extralResourceType = Object.keys(creep.store).filter((type) => type !== RESOURCE_ENERGY);
-    //   if(!extralResourceType.length) return
-    //   // 存到storage中
-    //   const storage = creep.room.find(FIND_STRUCTURES, {
-    //     filter: (s) => s.structureType === STRUCTURE_STORAGE,
-    //   })[0];
-    //   if (storage) {
-    //     if (storage.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
-    //       // 如果满了则丢掉
-    //       creep.drop(Object.keys(creep.store)[0] as ResourceConstant);
-    //     }
-    //     const transferResult = creep.transfer(storage, Object.keys(creep.store)[0] as ResourceConstant);
-    //     if (transferResult === ERR_NOT_IN_RANGE) {
-    //       this.baseMoveTo(creep, storage);
-    //     }
-    //   }
-    // }
+  // 所有角色都需要执行的内容，可以处理一些紧急，边界情况，检查
+  baseRun = (creep: Creep): boolean => {
+    // 血量检查
+    if (creep.hits < creep.hitsMax) return false;
+    return true;
   };
 
   baseCreate = (
@@ -102,7 +87,7 @@ export abstract class BaseRole {
     }
 
     if (returnCode === ERR_NOT_IN_RANGE) {
-      this.baseMoveTo(creep, targetStore);
+      this.baseMoveTo(creep, targetStore.pos);
       return TaskExecuteStatusEnum.inProgress;
     } else if (returnCode === OK) {
       return TaskExecuteStatusEnum.inProgress;
@@ -123,7 +108,7 @@ export abstract class BaseRole {
 
     const repairResult = creep.repair(targetStructure);
     if (repairResult === ERR_NOT_IN_RANGE) {
-      this.baseMoveTo(creep, targetStructure);
+      this.baseMoveTo(creep, targetStructure.pos);
       return TaskExecuteStatusEnum.inProgress;
     } else if (repairResult === OK) {
       if (targetStructure.hits >= targetStructure.hitsMax) {
@@ -142,7 +127,7 @@ export abstract class BaseRole {
     if (!target) return TaskExecuteStatusEnum.failed;
     // 先走到附近
     if (!creep.pos.isNearTo(target)) {
-      this.baseMoveTo(creep, target);
+      this.baseMoveTo(creep, target.pos);
       return TaskExecuteStatusEnum.inProgress;
     }
 
@@ -160,7 +145,7 @@ export abstract class BaseRole {
       const transferResult = creep.transfer(target, resourceType);
       // 没在附近
       if (transferResult === ERR_NOT_IN_RANGE) {
-        this.baseMoveTo(creep, target);
+        this.baseMoveTo(creep, target.pos);
         return TaskExecuteStatusEnum.inProgress;
       } else if (transferResult === ERR_FULL) {
         // target 满了
@@ -180,81 +165,78 @@ export abstract class BaseRole {
 
   baseMoveTo(
     creep: Creep,
-    target: RoomPosition | { pos: RoomPosition },
+    target:
+      | RoomPosition
+      | { pos: RoomPosition; range: number }
+      | Array<RoomPosition | { pos: RoomPosition; range: number }>,
     opts?: FindPathOpts
-  ): CreepMoveReturnCode | ERR_NO_PATH | ERR_INVALID_TARGET | ERR_NOT_FOUND;
-  baseMoveTo(
-    creep: Creep,
-    x: number,
-    y: number,
-    opts?: FindPathOpts
-  ): CreepMoveReturnCode | ERR_NO_PATH | ERR_INVALID_TARGET;
-  baseMoveTo(
-    creep: Creep,
-    target: RoomPosition | { pos: RoomPosition } | number,
-    y?: number | FindPathOpts,
-    opts?: FindPathOpts
-  ): CreepMoveReturnCode | ERR_NO_PATH | ERR_INVALID_TARGET | ERR_NOT_FOUND {
-    const defaultOpts = { visualizePathStyle: { stroke: '#ffffff' }, ...opts };
-    if (typeof target === 'number' && typeof y === 'number') {
-      if (creep.pos.isNearTo(target, y)) return OK;
-      return creep.moveTo(target, y, defaultOpts);
-    } else if (target instanceof RoomPosition || (typeof target !== 'number' && target?.pos instanceof RoomPosition)) {
-      if (creep.pos.isNearTo(target)) return OK;
-      return creep.moveTo(target, defaultOpts);
+  ): CreepMoveReturnCode | ERR_NOT_FOUND | ERR_INVALID_ARGS {
+    if (creep.memory.movePathIdx === undefined || !creep.memory.movePath?.[creep.memory.movePathIdx]) {
+      const newMovePath = pathFinderTo(creep.pos, target, opts);
+      creep.memory.movePath = serializePath(newMovePath.path, creep.pos);
+      creep.memory.movePathIdx = 0;
     }
-    return OK;
 
-    // if (creep.memory.movePath?.length) {
-    //   let movePathArr = Array.isArray(creep.memory.movePath)
-    //     ? creep.memory.movePath
-    //     : safeJsonParse(creep.memory.movePath, []);
-    //   const idx = movePathArr.findIndex((path) => path.x === creep.pos.x && path.y === creep.pos.y);
-    //   movePathArr = movePathArr.slice(idx);
+    if (creep.memory.movePath?.[creep.memory.movePathIdx]) {
+      const nextStep = Number(creep.memory.movePath[creep.memory.movePathIdx]) as DirectionConstant;
+      const resp = this.baseMove(creep, nextStep);
+      if (resp === OK) creep.memory.movePathIdx += 1;
+      return resp;
+    }
 
-    //   const nextMoveStep = movePathArr.shift();
-    //   if (nextMoveStep) {
-    //     creep.memory.movePath = movePathArr;
-    //     return creep.move(nextMoveStep.direction);
-    //   }
-    // }
-
-    // let defaultOpts: FindPathOpts = { ...opts };
-    // let myRoomOpts: FindPathOpts = {};
-    // if (creep.room.controller?.my) {
-    //   const avoidList: AnyCreep[] = creep.room.find(FIND_MY_CREEPS, {
-    //     filter: (c) => c.memory.role === 'miner',
-    //   });
-    //   myRoomOpts = { ignoreCreeps: true, avoid: avoidList };
-    // }
-
-    // defaultOpts = { ...myRoomOpts, ...defaultOpts };
-
-    // if (typeof target === 'number' && typeof y === 'number') {
-    //   if (creep.pos.isNearTo(target, y)) return OK;
-    //   const movePath = creep.pos.findPathTo(target, y, defaultOpts);
-    //   if (movePath) {
-    //     const nextMoveStep = movePath.shift();
-    //     if (nextMoveStep) {
-    //       creep.memory.movePath = movePath;
-    //       return creep.move(nextMoveStep.direction);
-    //     }
-    //   }
-    //   return creep.moveTo(target, y, defaultOpts);
-    // } else if (target instanceof RoomPosition || (typeof target !== 'number' && target?.pos instanceof RoomPosition)) {
-    //   if (creep.pos.isNearTo(target)) return OK;
-    //   const movePath = creep.pos.findPathTo(target);
-    //   if (movePath) {
-    //     const nextMoveStep = movePath.shift();
-    //     if (nextMoveStep) {
-    //       creep.memory.movePath = movePath;
-    //       return creep.move(nextMoveStep.direction);
-    //     }
-    //   }
-    //   return creep.moveTo(target, defaultOpts);
-    // }
-    // return OK;
+    return ERR_NOT_FOUND;
   }
+
+  baseMove(creep: Creep, direction: DirectionConstant): CreepMoveReturnCode | ERR_INVALID_ARGS {
+    const curPos = creep.pos.getPosition();
+    const moveRes = creep.move(direction);
+    if (moveRes !== OK) return moveRes;
+
+    if (creep.memory.prePosition === curPos) {
+      delete creep.memory.movePath;
+      delete creep.memory.movePathIdx;
+      return ERR_INVALID_ARGS;
+    }
+    creep.memory.prePosition = curPos;
+    return moveRes;
+  }
+
+  // baseMoveTo(
+  //   creep: Creep,
+  //   target: RoomPosition | { pos: RoomPosition },
+  //   opts?: FindPathOpts
+  // ): CreepMoveReturnCode | ERR_NO_PATH | ERR_INVALID_TARGET | ERR_NOT_FOUND;
+  // baseMoveTo(
+  //   creep: Creep,
+  //   x: number,
+  //   y: number,
+  //   opts?: FindPathOpts
+  // ): CreepMoveReturnCode | ERR_NO_PATH | ERR_INVALID_TARGET;
+  // baseMoveTo(
+  //   creep: Creep,
+  //   target: RoomPosition | { pos: RoomPosition } | number,
+  //   y?: number | FindPathOpts,
+  //   opts?: FindPathOpts
+  // ): CreepMoveReturnCode | ERR_NO_PATH | ERR_INVALID_TARGET | ERR_NOT_FOUND {
+  //   creep.memory.prePosition = creep.pos.getPosition();
+
+  //   if (creep.name.startsWith('builder-op')) {
+  //     this.baseMoveTo2(creep, target as any);
+  //   } else {
+  //     const defaultOpts = { visualizePathStyle: { stroke: '#ffffff' }, ...opts };
+  //     if (typeof target === 'number' && typeof y === 'number') {
+  //       if (creep.pos.isNearTo(target, y)) return OK;
+  //       return creep.moveTo(target, y, defaultOpts);
+  //     } else if (
+  //       target instanceof RoomPosition ||
+  //       (typeof target !== 'number' && target?.pos instanceof RoomPosition)
+  //     ) {
+  //       if (creep.pos.isNearTo(target)) return OK;
+  //       return creep.moveTo(target, defaultOpts);
+  //     }
+  //   }
+  //   return OK;
+  // }
 
   baseSubmitTask = (creep: Creep, taskId: string) => {
     const task = global.rooms[creep.room.name]?.taskMap?.get(taskId);

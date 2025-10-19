@@ -39,7 +39,7 @@ class Upgrader extends BaseRole {
 
     const upgradeResult = creep.upgradeController(targetController);
     if (upgradeResult === ERR_NOT_IN_RANGE) {
-      this.baseMoveTo(creep, targetController);
+      this.baseMoveTo(creep, targetController.pos);
       return TaskExecuteStatusEnum.inProgress;
     } else if (upgradeResult === OK) {
       return TaskExecuteStatusEnum.inProgress;
@@ -55,12 +55,7 @@ class Upgrader extends BaseRole {
       const harvestingTasks = taskMap.taskPriorityQueue('harvesting', {
         filter: (task) => {
           if (task.type !== 'harvesting') return false;
-          if (task.toRoomName !== creep.room.name) return false;
-          if (
-            ((task as Task<'harvesting'>).payload?.[RESOURCE_ENERGY] ?? 0) <
-            creep.store.getFreeCapacity(RESOURCE_ENERGY) >> 1
-          )
-            return false;
+          if (task.assignedTo.length >= (task.needCreepCount ?? 1)) return false;
           return true;
         },
         targetPriorityList: [
@@ -69,18 +64,22 @@ class Upgrader extends BaseRole {
           LOOK_TOMBSTONES,
           STRUCTURE_LINK,
           STRUCTURE_CONTAINER,
-          STRUCTURE_TERMINAL,
           STRUCTURE_STORAGE,
+          STRUCTURE_TERMINAL,
           LOOK_SOURCES,
         ],
       });
-      return harvestingTasks[0]?.id;
+
+      const controllerLink = global.rooms[creep.room.name].structure?.[STRUCTURE_LINK]?.find(
+        (s) => s.type === 'controller'
+      );
+      return harvestingTasks.filter((t) => !(t.publisher === STRUCTURE_LINK && t.id !== controllerLink?.id))[0]?.id;
     }
 
     // 2. 有能量则认领升级任务
     else {
       const upgradingTasks = taskMap.taskPriorityQueue('upgrading', {
-        filter: (task) => task.type === 'upgrading' && task.toRoomName === creep.room.name,
+        filter: (task) => task.type === 'upgrading',
       });
       return upgradingTasks[0]?.id;
     }

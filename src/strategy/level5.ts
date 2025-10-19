@@ -4,7 +4,7 @@ import { StrategyType } from '.';
 const strategy: StrategyType = {
   roleMonitor: {
     miner: {
-      count: 2,
+      count: 0,
       body: generatorRoleBody([
         { body: WORK, count: 6 },
         { body: CARRY, count: 1 },
@@ -42,29 +42,6 @@ const strategy: StrategyType = {
         { body: MOVE, count: 7 },
       ]),
     },
-    remoteMiner: {
-      count: 1,
-      body: generatorRoleBody([
-        { body: WORK, count: 6 },
-        { body: CARRY, count: 1 },
-        { body: MOVE, count: 4 },
-      ]),
-    },
-    remoteHarvester: {
-      count: 0,
-      body: generatorRoleBody([
-        { body: CARRY, count: 6 },
-        { body: MOVE, count: 3 },
-      ]),
-    },
-    // pioneer: {
-    //   count: 0,
-    //   body: generatorRoleBody([
-    //     { body: WORK, count: 6 },
-    //     { body: CARRY, count: 7 },
-    //     { body: MOVE, count: 7 },
-    //   ]),
-    // },
   },
 };
 

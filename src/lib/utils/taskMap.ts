@@ -1,4 +1,5 @@
 import { defaults } from 'lodash';
+import { BaseRoleType } from '../role/base';
 
 export enum TaskStatusEnum {
   'inProgress',
@@ -66,6 +67,13 @@ export type ScoutingPayload = {
   taskType: 'source';
 };
 
+export type GeneratingPayload = {
+  body: BodyPartConstant[];
+  number?: number;
+  memoryRoleOpts?: BaseRoleType;
+  role: CustomRoleType;
+};
+
 export type TaskPayloadMap = {
   [K in TaskType]: K extends 'harvesting'
     ? HarvestingPayload
@@ -79,6 +87,8 @@ export type TaskPayloadMap = {
     ? TransferringPayload
     : K extends 'scouting'
     ? ScoutingPayload
+    : K extends 'generating'
+    ? GeneratingPayload
     : Record<string, any>;
 };
 
@@ -111,7 +121,7 @@ export class TaskMap {
   constructor(roomName: string) {
     this.roomName = roomName;
 
-    if (!global.rooms?.[roomName]?.taskMap) {
+    if (!global.rooms?.[roomName]?.taskMap || !(global.rooms[roomName].taskMap instanceof Map)) {
       global.rooms[roomName] = defaults(Memory.rooms[roomName] ?? {}, defaultRoomMemory);
       global.rooms[roomName].taskMap = new Map(Object.entries(Memory.rooms[roomName].taskMapObj ?? {}));
     }
@@ -387,7 +397,7 @@ export class TaskMap {
       if (task.status === TaskStatusEnum.completed) {
         completedTasks.push(taskId);
         const source = Game.getObjectById<Structure>(task.publisher);
-        console.log(`${source?.structureType}[${source?.pos.x},${source?.pos.y}]: (${taskId}) has been completed`);
+        // console.log(`${source?.structureType}[${source?.pos.x},${source?.pos.y}]: (${taskId}) has been completed`);
       }
     }
 

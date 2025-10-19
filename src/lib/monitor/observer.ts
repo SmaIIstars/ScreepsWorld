@@ -1,6 +1,6 @@
 export const observerMonitor = (room: Room) => {
   const observers: StructureObserver[] = [];
-  const ids = Memory.rooms[room.name]?.structure?.[STRUCTURE_OBSERVER] || [];
+  const ids = room.memory?.structure?.[STRUCTURE_OBSERVER] || [];
   for (const id of ids) {
     const observer = Game.getObjectById<StructureObserver>(id);
     if (observer) observers.push(observer);

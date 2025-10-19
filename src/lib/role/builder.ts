@@ -40,7 +40,7 @@ class Builder extends BaseRole {
 
     const buildResult = creep.build(targetStructure);
     if (buildResult === ERR_NOT_IN_RANGE) {
-      this.baseMoveTo(creep, targetStructure);
+      this.baseMoveTo(creep, targetStructure.pos);
       return TaskExecuteStatusEnum.inProgress;
     } else if (buildResult === OK) {
       if (targetStructure.progress >= targetStructure.progressTotal) {

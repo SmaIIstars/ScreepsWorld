@@ -55,7 +55,6 @@ export class Harvester extends BaseRole {
     if (!transferringTasks.length) return;
     // 判断是否已经填满生产需要的能量，优先级最高
     const isProductEnergyFull = !['spawn', 'extension'].includes(transferringTasks[0].publisherType);
-
     // 如果现在是空状态则可以认领采集任务
     if (creep.store.getFreeCapacity() === creep.store.getCapacity()) {
       // 如果首个传输任务不是Extension或Spawn，则表明可以采集能量之外的资源

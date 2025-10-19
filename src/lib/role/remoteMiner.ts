@@ -17,6 +17,9 @@ class RemoteMiner extends Miner {
   }
 
   run(creep: Creep, taskId: string) {
+    const runCheck = this.baseRun(creep);
+    if (!runCheck) return TaskExecuteStatusEnum.failed;
+
     if (taskId.startsWith('scout_')) return this.scoutTask(creep, taskId);
 
     // 检查周边建筑，有工地则修建
@@ -41,13 +44,13 @@ class RemoteMiner extends Miner {
   scoutTask(creep: Creep, taskId: string): TaskExecuteStatusEnum {
     if (!creep.memory.targetRoom) {
       delete creep.memory.currentTaskFromRoom;
-      this.baseMoveTo(creep, Game.spawns[BASE_ID_ENUM.MainBase]);
+      this.baseMoveTo(creep, Game.spawns[BASE_ID_ENUM.MainBase].pos);
       return TaskExecuteStatusEnum.failed;
     }
 
     if (creep.room.name !== creep.memory.targetRoom) {
       const targetRoom = Game.flags[creep.memory.targetRoom];
-      this.baseMoveTo(creep, targetRoom);
+      this.baseMoveTo(creep, targetRoom.pos);
       return TaskExecuteStatusEnum.inProgress;
     } else {
       delete creep.memory.currentTaskFromRoom;
@@ -80,7 +83,7 @@ class RemoteMiner extends Miner {
 
     if (creep.memory.targetRoom !== creep.room.name) {
       const targetRoom = Game.flags[creep.memory.targetRoom];
-      this.baseMoveTo(creep, targetRoom);
+      this.baseMoveTo(creep, targetRoom.pos);
       return '';
     }
 

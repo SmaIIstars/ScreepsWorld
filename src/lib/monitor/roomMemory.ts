@@ -1,14 +1,16 @@
 import { intervalSleep } from '@/utils';
 
 export const roomMemory = (room: Room) => {
-  if (!Memory.rooms[room.name]) Memory.rooms[room.name] = {};
-  Memory.rooms[room.name].visible = Memory.rooms[room.name] ? true : false;
+  if (!global.rooms[room.name]) global.rooms[room.name] = Memory.rooms[room.name] ?? {};
+  const roomMemory = global.rooms[room.name];
+  roomMemory.visible = Memory.rooms[room.name] ? true : false;
 
   clearCreepMemory();
-  intervalSleep(5, () => creepsCount(room));
+  // intervalSleep(5, () => creepsCount(room));
   intervalSleep(10, () => resources(room));
   intervalSleep(50, () => structures(room));
   intervalSleep(10, () => enemies(room));
+  intervalSleep(100, () => roomCostMatrix(room));
 };
 
 // 清理Memory中不存在的creep
@@ -22,38 +24,38 @@ const clearCreepMemory = () => {
 };
 
 // Creeps 类型计数
-const creepsCount = (room: Room) => {
-  const creepTypeCount: Record<CustomRoleType, number> = {
-    harvester: 0,
-    builder: 0,
-    upgrader: 0,
-    miner: 0,
-    repairer: 0,
-    pioneer: 0,
-    claimer: 0,
-    remoteMiner: 0,
-    remoteHarvester: 0,
-    attacker: 0,
-  };
+// const creepsCount = (room: Room) => {
+//   const creepTypeCount: Record<CustomRoleType, number> = {
+//     harvester: 0,
+//     builder: 0,
+//     upgrader: 0,
+//     miner: 0,
+//     repairer: 0,
+//     pioneer: 0,
+//     claimer: 0,
+//     remoteMiner: 0,
+//     remoteHarvester: 0,
+//     attacker: 0,
+//   };
 
-  const allCreeps = Object.values(Game.creeps);
-  for (const creep of allCreeps) {
-    // 最小组不参与计数
-    if (creep.name.includes('Room2Min')) continue;
-    // 要死了的不计数
-    if (creep.ticksToLive && creep.ticksToLive < 100) continue;
+//   const allCreeps = Object.values(Game.creeps);
+//   for (const creep of allCreeps) {
+//     if (!creep.memory.role) continue;
+//     // 最小组不参与计数
+//     if (creep.name.includes('Room2Min')) continue;
+//     // 要死了的不计数
+//     if (creep.ticksToLive && creep.ticksToLive < 100) continue;
 
-    if (creep.room.name !== room.name) {
-      if (!creep.memory.role?.startsWith('remote')) continue;
-      if (creep.memory.targetRoom === room.name)
-        creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
-    } else {
-      if (creep.memory.role) creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
-    }
-  }
+//     if (creep.room.name === room.name) {
+//       creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
+//     } else {
+//       if (creep.memory.targetRoom === room.name)
+//         creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
+//     }
+//   }
 
-  Memory.rooms[room.name].creepsCount = creepTypeCount;
-};
+//   global.rooms[room.name].creepsCount = creepTypeCount;
+// };
 
 // 资源监控
 export const resources = (room: Room) => {
@@ -65,7 +67,7 @@ export const resources = (room: Room) => {
   const tombstones = room.find(FIND_TOMBSTONES);
 
   // 更新房间记忆中的资源信息
-  Memory.rooms[room.name].sources = {
+  global.rooms[room.name].sources = {
     source: sources.map((s) => s.id),
     mineral: minerals.map((m) => m.id),
     resource: droppedResources.map((r) => r.id),
@@ -78,7 +80,7 @@ export const resources = (room: Room) => {
 export const structures = (room: Room) => {
   const links = room.find(FIND_MY_STRUCTURES, { filter: (s) => s.structureType === STRUCTURE_LINK });
 
-  Memory.rooms[room.name].structure = {
+  global.rooms[room.name].structure = {
     link: links.map((cur) => {
       // 判断 link 离 spawn, controller, source 哪一个更近，type 就是什么
       const spawn = room.find(FIND_MY_SPAWNS)[0];
@@ -125,5 +127,26 @@ export const enemies = (room: Room) => {
     filter: (s) => s.structureType === STRUCTURE_INVADER_CORE,
   });
   enemies.push(...creeps, ...structures);
+
   Memory.rooms[room.name].enemies = enemies.map((e) => e.id);
+};
+
+export const roomCostMatrix = (room: Room) => {
+  const MAX_COST = 255;
+  let costs = new PathFinder.CostMatrix();
+  room.find(FIND_STRUCTURES).forEach((struct) => {
+    if (struct.structureType === STRUCTURE_ROAD) {
+      costs.set(struct.pos.x, struct.pos.y, 1);
+    } else if (
+      struct.structureType !== STRUCTURE_CONTAINER &&
+      (struct.structureType !== STRUCTURE_RAMPART || !struct.my)
+    ) {
+      costs.set(struct.pos.x, struct.pos.y, MAX_COST);
+    }
+  });
+
+  // console.log(123, room.name, costs);
+  global.rooms[room.name].costMatrixVer = Game.time;
+  global.rooms[room.name].costMatrix = costs.serialize();
+  return costs;
 };
