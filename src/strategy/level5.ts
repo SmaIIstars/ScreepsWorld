@@ -6,9 +6,33 @@ const strategy: StrategyType = {
     miner: {
       count: 0,
       body: generatorRoleBody([
+        { body: WORK, count: 10 },
+        { body: CARRY, count: 2 },
+        { body: MOVE, count: 6 },
+      ]),
+    },
+    attacker: {
+      count: 0,
+      body: generatorRoleBody([
+        { body: ATTACK, count: 10 },
+        { body: HEAL, count: 2 },
+        { body: MOVE, count: 6 },
+      ]),
+    },
+    remoteMiner: {
+      count: 0,
+      body: generatorRoleBody([
         { body: WORK, count: 6 },
-        { body: CARRY, count: 1 },
+        { body: CARRY, count: 2 },
         { body: MOVE, count: 4 },
+      ]),
+    },
+    remoteHarvester: {
+      count: 0,
+      body: generatorRoleBody([
+        { body: WORK, count: 2 },
+        { body: CARRY, count: 16 },
+        { body: MOVE, count: 9 },
       ]),
     },
     harvester: {
@@ -29,9 +53,9 @@ const strategy: StrategyType = {
     upgrader: {
       count: 4,
       body: generatorRoleBody([
-        { body: WORK, count: 8 },
-        { body: CARRY, count: 10 },
-        { body: MOVE, count: 9 },
+        { body: WORK, count: 5 },
+        { body: CARRY, count: 16 },
+        { body: MOVE, count: 7 },
       ]),
     },
     builder: {

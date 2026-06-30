@@ -12,32 +12,34 @@ const loop = () => {
     const room = Game.rooms[roomName];
 
     const roomMemory = global.rooms[roomName];
-    if (roomMemory?.enemies?.length) {
-      if (!attackers.length) {
-        Game.spawns['Spawn1'].spawnCreep(
-          generatorRoleBody([
-            { body: ATTACK, count: 10 },
-            { body: MOVE, count: 10 },
-          ]),
-          'ATTACK-OP',
-          {
-            memory: { role: 'attacker' },
-          }
-        );
-        Game.spawns['Spawn2'].spawnCreep(
-          generatorRoleBody([
-            { body: ATTACK, count: 10 },
-            { body: RANGED_ATTACK, count: 10 },
-            { body: MOVE, count: 10 },
-          ]),
-          'ATTACK-OP1',
-          {
-            memory: { role: 'attacker' },
-          }
-        );
-      }
-      if (!enemy) enemy = roomMemory.enemies[0];
+    const flagMemory = Game.flags[roomName]?.memory;
+
+    if (!Game.creeps['ATTACK-OP']) {
+      Game.spawns['Spawn5'].spawnCreep(
+        generatorRoleBody([
+          { body: ATTACK, count: 10 },
+          { body: MOVE, count: 10 },
+        ]),
+        'ATTACK-OP',
+        {
+          memory: { role: 'attacker' },
+        }
+      );
     }
+    if (!Game.creeps['ATTACK-OP1']) {
+      Game.spawns['Spawn2'].spawnCreep(
+        generatorRoleBody([
+          { body: ATTACK, count: 10 },
+          { body: RANGED_ATTACK, count: 10 },
+          { body: MOVE, count: 10 },
+        ]),
+        'ATTACK-OP1',
+        {
+          memory: { role: 'attacker' },
+        }
+      );
+    }
+    if (!enemy && flagMemory?.type !== 'powerRoom') enemy = roomMemory?.enemies?.[0];
 
     roomMonitor(room);
     runTaskSystem(room);

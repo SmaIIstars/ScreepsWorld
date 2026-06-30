@@ -40,10 +40,10 @@ export class TaskSystem {
     this.executor.executeTasks(room);
     // 5. 清理任务
     this.cleanupTasks();
-    // 6. 保存任务Map到Memory
-    if (Game.time % 10 === 0) {
-      this.taskMap.saveToMemory();
-    }
+    // // 6. 保存任务Map到Memory
+    // if (Game.time % 10 === 0) {
+    //   this.taskMap.saveToMemory();
+    // }
   }
 
   /**

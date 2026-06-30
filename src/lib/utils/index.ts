@@ -32,3 +32,13 @@ export const isCustomRoleType = (role: string): role is CustomRoleType => {
     'attacker',
   ].includes(role);
 };
+
+export const checkNeedMineralMiner = (room: Room): boolean => {
+  const extractor = room.find<StructureExtractor>(FIND_MY_STRUCTURES, {
+    filter: (s) => s.structureType === STRUCTURE_EXTRACTOR,
+  })?.[0];
+  const mineral = Game.getObjectById<Mineral>(global.rooms[room.name].sources?.mineral?.[0] ?? '');
+  if (!extractor || !mineral) return false;
+  if (!mineral.mineralAmount && (mineral.ticksToRegeneration ?? 0) > 100) return false;
+  return true;
+};

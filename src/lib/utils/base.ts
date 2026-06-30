@@ -1,3 +1,5 @@
+import { roomCostMatrix } from '../monitor/roomMemory';
+
 type PathFinderToOpts = {
   range?: number;
 } & PathFinderOpts;
@@ -10,15 +12,12 @@ export const pathFinderTo = (
     | Array<RoomPosition | { pos: RoomPosition; range: number }>,
   opts?: PathFinderToOpts
 ): PathFinderPath => {
-  const MAX_COST = 255;
   const goals: Array<RoomPosition | { pos: RoomPosition; range: number }> = [];
   if (Array.isArray(goal))
     goals.push(...goal.map((i) => (i instanceof RoomPosition ? { pos: i, range: opts?.range ?? 1 } : i)));
   else goals.push({ pos: goal instanceof RoomPosition ? goal : goal.pos, range: opts?.range ?? 1 });
 
   return PathFinder.search(origin, goals, {
-    // 我们需要把默认的移动成本设置的更高一点
-    // 这样我们就可以在 roomCallback 里把道路移动成本设置的更低
     plainCost: 2,
     swampCost: 10,
     maxOps: 6400,
@@ -27,24 +26,10 @@ export const pathFinderTo = (
       if (!room) return false;
       const roomMemory = global.rooms[roomName];
       if (!roomMemory) return false;
-      if (roomMemory?.costMatrix && roomMemory?.costMatrixVer === Game.time)
+      if (roomMemory?.costMatrix && Game.time - roomMemory.time < 5) {
         return PathFinder.CostMatrix.deserialize(roomMemory.costMatrix);
-      let costs = new PathFinder.CostMatrix();
-      room.find(FIND_STRUCTURES).forEach((struct) => {
-        if (struct.structureType === STRUCTURE_ROAD) {
-          costs.set(struct.pos.x, struct.pos.y, 1);
-        } else if (
-          struct.structureType !== STRUCTURE_CONTAINER &&
-          (struct.structureType !== STRUCTURE_RAMPART || !struct.my)
-        ) {
-          costs.set(struct.pos.x, struct.pos.y, MAX_COST);
-        }
-      });
-      room.find(FIND_CREEPS).forEach((creep) => costs.set(creep.pos.x, creep.pos.y, MAX_COST));
-      room.find(FIND_CONSTRUCTION_SITES).forEach((creep) => costs.set(creep.pos.x, creep.pos.y, MAX_COST));
-      roomMemory.costMatrix = costs.serialize();
-      roomMemory.costMatrixVer = Game.time;
-      return costs;
+      }
+      return roomCostMatrix(Game.rooms[roomName]);
     },
     ...opts,
   });

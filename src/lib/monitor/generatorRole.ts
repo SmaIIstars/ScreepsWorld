@@ -61,10 +61,9 @@ export const generatorRoleAttacker = (room: Room) => {
       }
     } else {
       const body = generatorRoleBody([
-        { body: MOVE, count: 13 },
+        { body: MOVE, count: 10 },
         { body: ATTACK, count: 10 },
         { body: RANGED_ATTACK, count: 10 },
-        { body: HEAL, count: 6 },
       ]);
 
       const spawn = Object.values(Game.spawns).find((spawn) => spawn.room.name === room.name && !spawn.spawning);

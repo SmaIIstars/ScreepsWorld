@@ -1,9 +1,30 @@
-node_modules/
 output/
 main.js
-.env
-.DS_Store
-*.log
+
 
 .augment/
 .vscode/
+
+# Common
+node_modules/
+.DS_Store
+*.log
+*.stackdump
+
+
+# Frontend
+dist/
+deploy_versions/
+.temp/
+.rn_temp/
+.swc
+*.local
+.env*
+
+# IDE
+.vscode
+.claude
+temp
+docs
+.superpowers
+.codegraph

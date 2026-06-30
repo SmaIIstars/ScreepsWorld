@@ -1,4 +1,4 @@
-import { TaskMap, TaskStatusEnum } from '../utils/taskMap';
+import { Task, TaskMap, TaskStatusEnum } from '../utils/taskMap';
 
 /**
  * 任务监控器
@@ -35,6 +35,10 @@ export class TaskMonitor {
         this.taskMap.updateTask(task.id, { status: TaskStatusEnum.completed });
       }
 
+      if (task.type === 'generating' && ((task as Task<'generating'>).payload?.number ?? 0) <= 0) {
+        this.taskMap.updateTask(task.id, { status: TaskStatusEnum.completed });
+      }
+
       // 2. 分配者清理
       if (task.assignedTo) {
         this.taskMap.updateTask(task.id, { assignedTo: task.assignedTo.filter((name) => Game.creeps[name]) });
@@ -65,30 +69,6 @@ export class TaskMonitor {
         creepsWithoutTasks.push(creep);
       }
     }
-
-    // intervalSleep(20, () => {
-    //   console.log(`[任务监控][${room.name}] Creep任务状态:`);
-    //   console.log(`  - 总creep数: ${creeps.length}`);
-    //   console.log(`  - 有任务: ${creepsWithTasks.length}`);
-    //   console.log(`  - 空闲: ${creepsWithoutTasks.length}`);
-
-    //   // 按角色统计
-    //   const roleStats: Record<string, { total: number; withTask: number }> = {};
-    //   for (const creep of creeps) {
-    //     const role = creep.memory.role || 'unknown';
-    //     if (!roleStats[role]) {
-    //       roleStats[role] = { total: 0, withTask: 0 };
-    //     }
-    //     roleStats[role].total++;
-    //     if (creep.memory.currentTask) {
-    //       roleStats[role].withTask++;
-    //     }
-    //   }
-
-    //   for (const [role, stats] of Object.entries(roleStats)) {
-    //     console.log(`    ${role}: ${stats.withTask}/${stats.total}`);
-    //   }
-    // });
   }
 
   /**
@@ -131,39 +111,4 @@ export class TaskMonitor {
       taskTypes: stats.byType,
     };
   }
-
-  /**
-   * 获取性能指标
-   */
-  // getPerformanceMetrics(): {
-  //   taskCompletionRate: number;
-  //   averageTaskDuration: number;
-  //   idleCreepRate: number;
-  // } {
-  //   const tasks = this.taskMap.getAll();
-  //   const creeps = Object.values(Game.creeps);
-
-  //   // 计算任务完成率
-  //   const completedTasks = tasks.filter((t) => t.status === TaskStatusEnum.completed).length;
-  //   const totalTasks = tasks.length;
-  //   const taskCompletionRate = totalTasks > 0 ? completedTasks / totalTasks : 0;
-
-  //   // 计算平均任务持续时间
-  //   const completedTasksWithTimestamp = tasks.filter((t) => t.status === TaskStatusEnum.completed && t.timestamp);
-  //   const totalDuration = completedTasksWithTimestamp.reduce((sum, task) => {
-  //     return sum + (Game.time - (task.timestamp || 0));
-  //   }, 0);
-  //   const averageTaskDuration =
-  //     completedTasksWithTimestamp.length > 0 ? totalDuration / completedTasksWithTimestamp.length : 0;
-
-  //   // 计算空闲creep率
-  //   const creepsWithTasks = creeps.filter((creep) => creep.memory.currentTask).length;
-  //   const idleCreepRate = creeps.length > 0 ? (creeps.length - creepsWithTasks) / creeps.length : 0;
-
-  //   return {
-  //     taskCompletionRate,
-  //     averageTaskDuration,
-  //     idleCreepRate,
-  //   };
-  // }
 }

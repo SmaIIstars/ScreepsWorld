@@ -1,61 +1,45 @@
 import { intervalSleep } from '@/utils';
+import { TaskMap } from '../utils/taskMap';
 
 export const roomMemory = (room: Room) => {
   if (!global.rooms[room.name]) global.rooms[room.name] = Memory.rooms[room.name] ?? {};
   const roomMemory = global.rooms[room.name];
-  roomMemory.visible = Memory.rooms[room.name] ? true : false;
+  roomMemory.visible = Game.rooms[room.name] ? true : false;
 
+  // clearMemoryKeys(room);
   clearCreepMemory();
-  // intervalSleep(5, () => creepsCount(room));
   intervalSleep(10, () => resources(room));
   intervalSleep(50, () => structures(room));
   intervalSleep(10, () => enemies(room));
-  intervalSleep(100, () => roomCostMatrix(room));
+  intervalSleep(5, () => {
+    if (room.find(FIND_MY_CREEPS).length) roomCostMatrix(room);
+  });
+  roomMemory.time = Game.time;
+  intervalSleep(10, () => {
+    Memory.rooms[room.name] = {
+      taskMapObj: new TaskMap(room.name).getTaskMapObj(),
+      ...global.rooms[room.name],
+    };
+  });
+};
+
+// 清理Memory中废弃的字段
+const clearMemoryKeys = (room: Room) => {
+  const abandonKeys = ['creepsCount', 'taskMapVersion', 'costMatrixVer'];
+  for (const key of abandonKeys) {
+    if (key in global.rooms[room.name]) {
+      Reflect.set(global.rooms[room.name], key, undefined);
+    }
+  }
 };
 
 // 清理Memory中不存在的creep
 const clearCreepMemory = () => {
   for (let name in Memory.creeps) {
-    if (!Game.creeps[name]) {
-      delete Memory.creeps[name];
-      console.log('Clearing non-existing creep memory:', name);
-    }
+    if (Game.creeps[name]) continue;
+    delete Memory.creeps[name];
   }
 };
-
-// Creeps 类型计数
-// const creepsCount = (room: Room) => {
-//   const creepTypeCount: Record<CustomRoleType, number> = {
-//     harvester: 0,
-//     builder: 0,
-//     upgrader: 0,
-//     miner: 0,
-//     repairer: 0,
-//     pioneer: 0,
-//     claimer: 0,
-//     remoteMiner: 0,
-//     remoteHarvester: 0,
-//     attacker: 0,
-//   };
-
-//   const allCreeps = Object.values(Game.creeps);
-//   for (const creep of allCreeps) {
-//     if (!creep.memory.role) continue;
-//     // 最小组不参与计数
-//     if (creep.name.includes('Room2Min')) continue;
-//     // 要死了的不计数
-//     if (creep.ticksToLive && creep.ticksToLive < 100) continue;
-
-//     if (creep.room.name === room.name) {
-//       creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
-//     } else {
-//       if (creep.memory.targetRoom === room.name)
-//         creepTypeCount[creep.memory.role] = (creepTypeCount[creep.memory.role] ?? 0) + 1;
-//     }
-//   }
-
-//   global.rooms[room.name].creepsCount = creepTypeCount;
-// };
 
 // 资源监控
 export const resources = (room: Room) => {
@@ -78,42 +62,47 @@ export const resources = (room: Room) => {
 
 // 建筑监控
 export const structures = (room: Room) => {
-  const links = room.find(FIND_MY_STRUCTURES, { filter: (s) => s.structureType === STRUCTURE_LINK });
-
+  const myStructures = room.find(FIND_MY_STRUCTURES);
   global.rooms[room.name].structure = {
-    link: links.map((cur) => {
-      // 判断 link 离 spawn, controller, source 哪一个更近，type 就是什么
-      const spawn = room.find(FIND_MY_SPAWNS)[0];
-      const controller = room.controller;
-      const sources = room.find(FIND_SOURCES);
+    [STRUCTURE_LINK]: myStructures
+      .filter((s) => s.structureType === STRUCTURE_LINK)
+      .map((cur) => {
+        // 判断 link 离 spawn, controller, source 哪一个更近，type 就是什么
+        const spawn = room.find(FIND_MY_SPAWNS)[0];
+        const controller = room.controller;
+        const sources = room.find(FIND_SOURCES);
 
-      let minDist = Infinity;
-      let closestType: 'source' | 'spawn' | 'controller' = 'source';
+        let minDist = Infinity;
+        let closestType: 'source' | 'spawn' | 'controller' = 'source';
 
-      if (spawn) {
-        const dist = cur.pos.getRangeTo(spawn.pos);
-        if (dist < minDist) {
-          minDist = dist;
-          closestType = 'spawn';
+        if (spawn) {
+          const dist = cur.pos.getRangeTo(spawn.pos);
+          if (dist < minDist) {
+            minDist = dist;
+            closestType = 'spawn';
+          }
         }
-      }
-      if (controller) {
-        const dist = cur.pos.getRangeTo(controller.pos);
-        if (dist < minDist) {
-          minDist = dist;
-          closestType = 'controller';
+        if (controller) {
+          const dist = cur.pos.getRangeTo(controller.pos);
+          if (dist < minDist) {
+            minDist = dist;
+            closestType = 'controller';
+          }
         }
-      }
-      for (const source of sources) {
-        const dist = cur.pos.getRangeTo(source.pos);
-        if (dist < minDist) {
-          minDist = dist;
-          closestType = 'source';
+        for (const source of sources) {
+          const dist = cur.pos.getRangeTo(source.pos);
+          if (dist < minDist) {
+            minDist = dist;
+            closestType = 'source';
+          }
         }
-      }
-      return { id: cur.id, type: closestType };
-    }),
-    observer: room.find(FIND_MY_STRUCTURES, { filter: (s) => s.structureType === STRUCTURE_OBSERVER }).map((s) => s.id),
+        return { id: cur.id, type: closestType };
+      }),
+    [STRUCTURE_OBSERVER]: myStructures.filter((s) => s.structureType === STRUCTURE_OBSERVER).map((s) => s.id),
+    [STRUCTURE_STORAGE]: myStructures.filter((s) => s.structureType === STRUCTURE_STORAGE)[0]?.id ?? '',
+    [STRUCTURE_FACTORY]: myStructures.filter((s) => s.structureType === STRUCTURE_FACTORY)[0]?.id ?? '',
+    [STRUCTURE_TERMINAL]: myStructures.filter((s) => s.structureType === STRUCTURE_TERMINAL)[0]?.id ?? '',
+    [STRUCTURE_NUKER]: myStructures.filter((s) => s.structureType === STRUCTURE_NUKER)[0]?.id ?? '',
   };
 };
 
@@ -128,7 +117,7 @@ export const enemies = (room: Room) => {
   });
   enemies.push(...creeps, ...structures);
 
-  Memory.rooms[room.name].enemies = enemies.map((e) => e.id);
+  global.rooms[room.name].enemies = enemies.map((e) => e.id);
 };
 
 export const roomCostMatrix = (room: Room) => {
@@ -144,9 +133,9 @@ export const roomCostMatrix = (room: Room) => {
       costs.set(struct.pos.x, struct.pos.y, MAX_COST);
     }
   });
-
-  // console.log(123, room.name, costs);
-  global.rooms[room.name].costMatrixVer = Game.time;
+  room.find(FIND_CREEPS).forEach((creep) => costs.set(creep.pos.x, creep.pos.y, MAX_COST));
+  room.find(FIND_CONSTRUCTION_SITES).forEach((creep) => costs.set(creep.pos.x, creep.pos.y, MAX_COST));
   global.rooms[room.name].costMatrix = costs.serialize();
+  global.rooms[room.name].time = Game.time;
   return costs;
 };

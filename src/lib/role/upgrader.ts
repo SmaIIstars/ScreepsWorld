@@ -55,7 +55,8 @@ class Upgrader extends BaseRole {
       const harvestingTasks = taskMap.taskPriorityQueue('harvesting', {
         filter: (task) => {
           if (task.type !== 'harvesting') return false;
-          if (task.assignedTo.length >= (task.needCreepCount ?? 1)) return false;
+          if (task.needCreepCount >= 0 && task.assignedTo.length >= task.needCreepCount) return false;
+          if (!(task as Task<'harvesting'>).payload?.[RESOURCE_ENERGY]) return false;
           return true;
         },
         targetPriorityList: [
@@ -73,7 +74,16 @@ class Upgrader extends BaseRole {
       const controllerLink = global.rooms[creep.room.name].structure?.[STRUCTURE_LINK]?.find(
         (s) => s.type === 'controller'
       );
-      return harvestingTasks.filter((t) => !(t.publisher === STRUCTURE_LINK && t.id !== controllerLink?.id))[0]?.id;
+
+      if (
+        creep.room.controller?.level === 8 &&
+        controllerLink?.id &&
+        Game.getObjectById<StructureLink>(controllerLink?.id)?.store[RESOURCE_ENERGY]
+      ) {
+        return harvestingTasks.filter((t) => t.id === `harvest_${controllerLink.id}`)[0]?.id;
+      } else {
+        return harvestingTasks[0]?.id;
+      }
     }
 
     // 2. 有能量则认领升级任务

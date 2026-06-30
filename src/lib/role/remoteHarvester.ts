@@ -29,15 +29,15 @@ class RemoteHarvester extends Harvester {
     }
     // 检查周边建筑，有损坏则维修
     const targetStructure = creep.pos.findInRange(FIND_STRUCTURES, 1, {
-      filter: (structure) => structure.hits < structure.hitsMax,
+      filter: (structure) => structure.structureType === STRUCTURE_ROAD && structure.hits < structure.hitsMax,
     })[0];
     if (targetStructure) {
       creep.repair(targetStructure);
     }
 
     if (task.room !== creep.room.name) {
-      const targetPos = Game.rooms[task.room]?.controller ?? Game.flags[task.room];
-      if (!targetPos) return TaskExecuteStatusEnum.failed;
+      const targetPos = Game.getObjectById<AnyStructure>(task.publisher) ?? Game.flags[task.room];
+      if (!targetPos?.pos) return TaskExecuteStatusEnum.failed;
       this.baseMoveTo(creep, targetPos.pos);
       return TaskExecuteStatusEnum.inProgress;
     }
@@ -56,52 +56,27 @@ class RemoteHarvester extends Harvester {
   }
 
   claimTask(creep: Creep) {
-    const allRooms = Object.values(Game.rooms).reduce<{ mainRoom: Room[]; sourceRoom: Room[] }>(
-      (pre, cur) => {
-        if (cur.controller?.my) pre.mainRoom.push(cur);
-        else pre.sourceRoom.push(cur);
-        return pre;
-      },
-      { mainRoom: [], sourceRoom: [] }
-    );
-
     // 接外矿的采集任务
-    if (creep.store.getFreeCapacity() > creep.store.getCapacity() * 0.8) {
-      let harvestingTasks: Task<'harvesting'>[] = [];
-      let taskRoomTaskMap: TaskMap | undefined;
-
-      // 找到可接任务的房间
-      const taskRoom = allRooms.sourceRoom.find((room) => {
-        const roomMemory = global.rooms[room.name];
-        const flagMemory = Memory.flags[room.name];
-        if (!roomMemory || !flagMemory) return false;
-        // const curRemoteHarvesterInRoom = roomMemory.creepsCount?.[this.role] ?? 0;
-        // const flagRemoteHarvesterInRoom = flagMemory.payload['remoteHarvester'] ?? 0;
-        // if (curRemoteHarvesterInRoom >= flagRemoteHarvesterInRoom) return false;
-        taskRoomTaskMap = new TaskMap(room.name);
-        const curRoomHarvestingTasks = taskRoomTaskMap.taskPriorityQueue('harvesting', {
-          filter: (task) => {
-            if (task.type !== 'harvesting') return false;
-            if (!task.payload) return false;
-            if (!Object.values(task.payload).some((resource) => resource > 100)) return false;
-            if (task?.assignedTo?.length > 1) return false;
-            return true;
-          },
-          targetPriorityList: [LOOK_RESOURCES, LOOK_RUINS, LOOK_TOMBSTONES, STRUCTURE_CONTAINER, STRUCTURE_STORAGE],
-        }) as Task<'harvesting'>[];
-
-        if (!curRoomHarvestingTasks.length) return false;
-        harvestingTasks = curRoomHarvestingTasks;
-        return true;
-      });
-
-      if (!taskRoom || !taskRoomTaskMap) return;
+    if (creep.store.getFreeCapacity() > creep.store.getCapacity() * 0.2) {
+      if (!creep.memory.bornRoom) return;
+      const taskRoomTaskMap = new TaskMap(creep.memory.bornRoom);
+      if (!taskRoomTaskMap) return;
+      const harvestingTasks = taskRoomTaskMap.taskPriorityQueue('harvesting', {
+        filter: (task) => {
+          if (task.type !== 'harvesting') return false;
+          if (!task.payload) return false;
+          if (!Object.values(task.payload).some((resource) => resource > 100)) return false;
+          if (task?.assignedTo?.length > 1) return false;
+          return true;
+        },
+        targetPriorityList: [LOOK_RESOURCES, LOOK_RUINS, LOOK_TOMBSTONES, STRUCTURE_CONTAINER, STRUCTURE_STORAGE],
+      }) as Task<'harvesting'>[];
 
       // 有采集任务
       const claimTask = harvestingTasks?.[0];
       if (!claimTask) return;
       taskRoomTaskMap.updateTask(claimTask.id, { assignedTo: [...new Set([...claimTask.assignedTo, creep.name])] });
-      creep.memory.targetRoom = taskRoom.name;
+      creep.memory.targetRoom = creep.memory.bornRoom;
       return claimTask.id;
     } else {
       const curRoomMemory = global.rooms[creep.room.name];
@@ -113,8 +88,7 @@ class RemoteHarvester extends Harvester {
       const transferringTasks = curRoomTaskMap.taskPriorityQueue('transferring', {
         filter: (task) => {
           if (task.type !== 'transferring') return false;
-          if (task.assignedTo?.length && task.needCreepCount && task.assignedTo.length >= task.needCreepCount)
-            return false;
+          if (task.needCreepCount >= 0 && task.assignedTo.length >= task.needCreepCount) return false;
           return true;
         },
         targetPriorityList: [
@@ -130,6 +104,7 @@ class RemoteHarvester extends Harvester {
           STRUCTURE_TERMINAL,
         ],
       });
+
       let claimTask: Task<TaskType> | undefined = undefined;
       // 有 energy 之外的资源
       if (Object.entries(creep.store).some(([k, v]) => k !== RESOURCE_ENERGY && v > 0)) {

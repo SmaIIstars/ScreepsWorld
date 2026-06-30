@@ -19,11 +19,27 @@ const strategy: StrategyType = {
       ]),
     },
     miner: {
+      count: 1,
+      body: generatorRoleBody([
+        { body: WORK, count: 10 },
+        { body: CARRY, count: 2 },
+        { body: MOVE, count: 4 },
+      ]),
+    },
+    remoteMiner: {
       count: 0,
       body: generatorRoleBody([
         { body: WORK, count: 6 },
-        { body: CARRY, count: 1 },
+        { body: CARRY, count: 2 },
         { body: MOVE, count: 4 },
+      ]),
+    },
+    remoteHarvester: {
+      count: 0,
+      body: generatorRoleBody([
+        { body: WORK, count: 2 },
+        { body: CARRY, count: 14 },
+        { body: MOVE, count: 8 },
       ]),
     },
     upgrader: {

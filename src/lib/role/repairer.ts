@@ -76,8 +76,7 @@ class Repairer extends BaseRole {
         filter: (task) => {
           if (task.type !== 'repairing') return false;
           if (task.toRoomName !== creep.room.name) return false;
-          if (task.assignedTo?.length && task.needCreepCount && task.assignedTo?.length >= task.needCreepCount)
-            return false;
+          if (task.needCreepCount >= 0 && task.assignedTo.length >= task.needCreepCount) return false;
           return true;
         },
       });

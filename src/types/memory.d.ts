@@ -17,9 +17,11 @@ interface CreepMemory {
   currentTaskFromRoom?: string; // 当前执行的任务ID发布房间
   targetId?: string;
   targetRoom?: string;
+  bornRoom?: string;
   taskList?: string[]; // 接下来执行的任务IDs
   prePosition?: string; // 上一步位置
-  movePath?: `${DirectionConstant}`;
+  // movePath?: `${DirectionConstant}`;
+  movePath?: string;
   movePathIdx?: number;
 
   /**
@@ -33,6 +35,10 @@ type RoomSourceType = LOOK_SOURCES | LOOK_MINERALS | LOOK_RESOURCES | LOOK_RUINS
 type RoomStructureType = {
   [STRUCTURE_LINK]: StructureMemory[];
   [STRUCTURE_OBSERVER]: string[];
+  [STRUCTURE_STORAGE]: string;
+  [STRUCTURE_FACTORY]: string;
+  [STRUCTURE_TERMINAL]: string;
+  [STRUCTURE_NUKER]: string;
 };
 
 interface RoomMemory {
@@ -48,18 +54,36 @@ interface RoomMemory {
   sourceRooms?: string[];
   mainRooms?: string[];
   costMatrix?: number[];
-  costMatrixVer?: number;
+  time: number;
 }
 
 // flag Memory
-type FlagType = 'sourceRoom';
-type RemoteSourceRoomPayload = {
-  mainRoom: string; // 主基地房间
+type FlagType = 'sourceRoom' | 'mainRoom' | 'powerRoom';
+
+type RoomPayload = {
   creeps: Partial<Record<CustomRoleType, number>>;
 };
+type RemoteSourceRoomPayload = {
+  mainRoom: string; // 主基地房间
+} & RoomPayload;
+
+type MainRoomPayload = {
+  factory: {
+    run?: boolean;
+    creepPosition: `${number},${number}`;
+    sourceStructureType: STRUCTURE_TERMINAL | STRUCTURE_STORAGE;
+    targetStructureType: STRUCTURE_TERMINAL | STRUCTURE_STORAGE;
+    energyThreshold?: number;
+    sourceType?: CommodityConstant | MineralConstant | RESOURCE_ENERGY | RESOURCE_GHODIUM;
+    sourceThreshold?: number;
+    targetType?: CommodityConstant | MineralConstant | RESOURCE_ENERGY | RESOURCE_GHODIUM;
+  };
+} & RoomPayload;
 
 type FlagPayloadMap = {
   sourceRoom: RemoteSourceRoomPayload;
+  mainRoom: MainRoomPayload;
+  powerRoom: MainRoomPayload;
 };
 
 interface CustomFlag<T extends FlagType = FlagType> extends Flag {
@@ -70,6 +94,7 @@ interface FlagMemory<T extends FlagType = FlagType> {
   type: T;
   payload: Partial<FlagPayloadMap[T]>;
   status: 'active' | 'paused' | 'abandoned';
+  time: number;
 }
 
 type StructureMemory = { id: string; type: 'source' | 'spawn' | 'controller' };

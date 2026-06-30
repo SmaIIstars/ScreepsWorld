@@ -37,9 +37,7 @@ export class Harvester extends BaseRole {
   claimTask(creep: Creep, taskMap: TaskMap): string | undefined {
     const transferringTasks = taskMap.taskPriorityQueue('transferring', {
       filter: (task) => {
-        if (task.type !== 'transferring') return false;
-        if (task.assignedTo?.length && task.needCreepCount && task.assignedTo.length >= task.needCreepCount)
-          return false;
+        if (task.needCreepCount >= 0 && task.assignedTo.length >= task.needCreepCount) return false;
         return true;
       },
       targetPriorityList: [
@@ -75,6 +73,12 @@ export class Harvester extends BaseRole {
             }, 0);
             if (allSourceAmount > creep.store.getFreeCapacity() >> 1) return true;
           }
+
+          // const target = Game.getObjectById(task.publisher);
+          // if (target instanceof Source) return !!target.energy;
+          // if (target instanceof Mineral) return !!target.mineralAmount && isProductEnergyFull;
+          // if (!target || !('store' in target)) return false;
+          // if ((target.store as StoreDefinition).getUsedCapacity() > creep.store.getFreeCapacity() >> 1) return true;
           return false;
         },
         targetPriorityList: [
@@ -85,8 +89,13 @@ export class Harvester extends BaseRole {
           STRUCTURE_CONTAINER,
           STRUCTURE_STORAGE,
           STRUCTURE_TERMINAL,
+          STRUCTURE_LAB,
         ],
       }) as Task<'harvesting'>[];
+
+      // if (creep.room.name === 'E13N15') {
+      //   console.log(JSON.stringify(harvestingTasks.length));
+      // }
 
       // 如果没有WORK组件，则不能认领Source或者Mineral任务
       if (!creep.body.some((part) => part.type === WORK)) {

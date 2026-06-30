@@ -77,6 +77,8 @@ export class Miner extends BaseRole {
       const task = taskMap.taskPriorityQueue('harvesting', {
         filter: (task) => task.type === 'harvesting' && task.publisher === creep.memory.targetId,
       });
+
+      // if (!task[0]) delete creep.memory.targetId;
       return task[0]?.id;
     }
 
@@ -96,7 +98,7 @@ export class Miner extends BaseRole {
         if (task.type !== 'harvesting') return false;
         if (minerTargetIds.includes(task.toId)) return false;
         if (LOOK_MINERALS !== task.publisherType && LOOK_SOURCES !== task.publisherType) return false;
-        // if (task.needCreepCount && task.needCreepCount <= task.assignedTo.length) return false;
+        // if (task.needCreepCount >= 0 && task.assignedTo.length >= task.needCreepCount) return false;
         return true;
       },
     });

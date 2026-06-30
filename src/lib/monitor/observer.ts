@@ -9,7 +9,8 @@ export const observerMonitor = (room: Room) => {
 
   // 收集所有 flags 指向的房间名
   const targetRoomNames: string[] = [];
-  for (const flag of Object.values(Game.flags)) {
+  const activeFlags = Object.values(Game.flags).filter((f) => f.memory.status === 'active');
+  for (const flag of activeFlags) {
     const roomName = flag.pos.roomName;
     // 仅对不可见房间进行观察
     if (!Game.rooms[roomName]) targetRoomNames.push(roomName);
@@ -21,6 +22,9 @@ export const observerMonitor = (room: Room) => {
     if (!targetRoomNames[i]) return;
     const observer = observers[i];
     const roomName = targetRoomNames[i];
-    observer?.observeRoom(roomName);
+    const observerRes = observer?.observeRoom(roomName);
+    if (observerRes === OK) {
+      console.log(`Observer[${observer.id}]: ${roomName}`);
+    }
   }
 };
