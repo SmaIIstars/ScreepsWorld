@@ -164,6 +164,7 @@ export function createWorkerMetaFromCreep(creep: Creep, rolePref: string): Worke
     currentEventId: null,
     rolePref,
     createdAt: Game.time,
-    spawnBody: creep.body,
+    spawnBody: creep.body.map(part => ({ type: part.type, hits: part.hits })) as BodyPartDefinition[],
   };
 }
+

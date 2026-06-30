@@ -183,6 +183,7 @@ export const EventBus = {
     const event = this.findById(eventId);
     if (!event) return;
     event.status = 'completed';
+    event.completedAt = Game.time;
   },
 
   /**
@@ -225,7 +226,7 @@ export const EventBus = {
         continue;
       }
 
-      if (event.status === 'completed' && Game.time - event.createdAt > 3) {
+      if (event.status === 'completed' && event.completedAt && Game.time - event.completedAt > 3) {
         delete this._dedupIndex[event.dedupKey];
         continue;
       }
