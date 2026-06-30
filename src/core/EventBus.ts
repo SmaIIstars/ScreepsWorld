@@ -21,7 +21,7 @@ import { canWorkerTakeEvent } from './tagSystem';
 // Types
 // ---------------------------------------------------------------------------
 
-interface EventPublishData {
+export interface EventPublishData {
   type: string;
   room: string;
   targetId: string;
@@ -161,17 +161,19 @@ export const EventBus = {
     const event = this.findById(eventId);
     if (!event) return false;
 
-    if (event.status !== 'pending') return false;
+    if (event.status !== 'pending' && event.status !== 'claimed') return false;
     if (Game.time - event.createdAt >= event.ttl) {
       event.status = 'expired';
       return false;
     }
     if (event.currentWorkers >= event.maxWorkers) return false;
 
-    event.status = 'claimed';
+    event.currentWorkers++;
     event.claimerId = workerId;
     event.claimedAt = Game.time;
-    event.currentWorkers++;
+    if (event.currentWorkers >= event.maxWorkers) {
+      event.status = 'claimed';
+    }
 
     return true;
   },
@@ -222,6 +224,7 @@ export const EventBus = {
 
     for (const event of events) {
       if (event.status === 'expired' || Game.time - event.createdAt >= event.ttl) {
+        event.status = 'expired';
         delete this._dedupIndex[event.dedupKey];
         continue;
       }
@@ -300,3 +303,4 @@ export function loadEventBus(): void {
 export function saveEventBus(): void {
   Memory.events = EventBus._events;
 }
+
