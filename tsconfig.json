@@ -5,6 +5,7 @@
     "outDir": "output",
     "rootDir": "src",
     "strict": true,
+    "skipLibCheck": true,
     "esModuleInterop": true,
     "paths": {
       "@/*": [
