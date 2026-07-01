@@ -3,30 +3,34 @@ import { ControllerLifecycle } from './controller';
 import { SiteLifecycle } from './site';
 import { SpawnLifecycle } from './spawn';
 import { runWorkforceLifecycle } from './workforce';
-import { runEnergyLifecycle } from './energy';
+import { runStoreLifecycle } from './store';
 
 interface RoomCache {
   sourceIds: Id<Source>[];
   spawnIds: Id<StructureSpawn>[];
-  fillTargetIds: Id<AnyStoreStructure>[];
+  extensionIds: Id<StructureExtension>[];
+  towerIds: Id<StructureTower>[];
+  storageIds: Id<StructureStorage>[];
   controllerId: Id<StructureController> | null;
   siteIds: Id<ConstructionSite>[];
   lastScan: number;
   lastSiteScan: number;
 }
 
-const STRUCTURE_INTERVAL = 20; // owned structures + sources + controller
-const SITE_INTERVAL = 5;       // construction sites
+const STRUCTURE_INTERVAL = 20;
+const SITE_INTERVAL = 5;
 
 function getCache(room: Room): RoomCache {
   if (!Memory.rooms) Memory.rooms = {};
   const cached = Memory.rooms[room.name] as RoomCache | undefined;
-  if (cached && cached.sourceIds && cached.fillTargetIds) return cached;
+  if (cached && cached.spawnIds && cached.sourceIds) return cached;
 
   const fresh: RoomCache = {
     sourceIds: [],
     spawnIds: [],
-    fillTargetIds: [],
+    extensionIds: [],
+    towerIds: [],
+    storageIds: [],
     controllerId: null,
     siteIds: [],
     lastScan: 0,
@@ -41,31 +45,27 @@ function getCache(room: Room): RoomCache {
 function refreshStructures(room: Room, cache: RoomCache): void {
   const sources: Id<Source>[] = [];
   const spawns: Id<StructureSpawn>[] = [];
-  const fills: Id<AnyStoreStructure>[] = [];
+  const extensions: Id<StructureExtension>[] = [];
+  const towers: Id<StructureTower>[] = [];
+  const storages: Id<StructureStorage>[] = [];
 
-  // Sources (not owned structures, separate API)
   for (const s of room.find(FIND_SOURCES)) sources.push(s.id);
 
-  // One pass over all owned structures — dispatch by type
   for (const s of room.find(FIND_MY_STRUCTURES)) {
     switch (s.structureType) {
-      case STRUCTURE_SPAWN: {
-        const sp = s as StructureSpawn;
-        spawns.push(sp.id);
-        fills.push(sp.id as Id<AnyStoreStructure>);
-        break;
-      }
-      case STRUCTURE_EXTENSION:
-      case STRUCTURE_TOWER:
-        fills.push(s.id as Id<AnyStoreStructure>);
-        break;
-      // future: STRUCTURE_STORAGE, STRUCTURE_TERMINAL, etc.
+      case STRUCTURE_SPAWN:     spawns.push(s.id); break;
+      case STRUCTURE_EXTENSION: extensions.push(s.id); break;
+      case STRUCTURE_TOWER:     towers.push(s.id); break;
+      case STRUCTURE_STORAGE:   storages.push(s.id); break;
+      default: break; // container, link, terminal, etc. — skip for now
     }
   }
 
   cache.sourceIds = sources;
   cache.spawnIds = spawns;
-  cache.fillTargetIds = fills;
+  cache.extensionIds = extensions;
+  cache.towerIds = towers;
+  cache.storageIds = storages;
   cache.controllerId = room.controller?.id ?? null;
   cache.lastScan = Game.time;
 }
@@ -78,44 +78,51 @@ function refreshSites(room: Room, cache: RoomCache): void {
 export function runStructureLifecycles(room: Room): void {
   const cache = getCache(room);
 
-  // ── Refresh ──
-  if (Game.time - cache.lastScan >= STRUCTURE_INTERVAL) {
-    refreshStructures(room, cache);
-  }
-  if (Game.time - cache.lastSiteScan >= SITE_INTERVAL) {
-    refreshSites(room, cache);
-  }
+  if (Game.time - cache.lastScan >= STRUCTURE_INTERVAL) refreshStructures(room, cache);
+  if (Game.time - cache.lastSiteScan >= SITE_INTERVAL) refreshSites(room, cache);
 
-  // ── Sources → harvest ──
+  // Sources → harvest
   for (const id of cache.sourceIds) {
     const obj = Game.getObjectById(id);
     if (obj) new SourceLifecycle(obj).runLifecycle();
   }
 
-  // ── Controller → upgrade ──
+  // Controller → upgrade
   if (cache.controllerId) {
-    const ctrl = Game.getObjectById(cache.controllerId);
-    if (ctrl) new ControllerLifecycle(ctrl).runLifecycle();
+    const obj = Game.getObjectById(cache.controllerId);
+    if (obj) new ControllerLifecycle(obj).runLifecycle();
   }
 
-  // ── Fill targets (spawn/extension/tower) → fill ──
-  for (const id of cache.fillTargetIds) {
-    const obj = Game.getObjectById(id);
-    if (obj) runEnergyLifecycle(obj);
-  }
-
-  // ── Spawns → creep production ──
+  // Spawns → fill + spawn
   for (const id of cache.spawnIds) {
     const obj = Game.getObjectById(id);
     if (obj) new SpawnLifecycle(obj).runLifecycle();
   }
 
-  // ── Construction sites → build ──
+  // Extensions → fill
+  for (const id of cache.extensionIds) {
+    const obj = Game.getObjectById(id);
+    if (obj) runStoreLifecycle(obj);
+  }
+
+  // Towers → fill
+  for (const id of cache.towerIds) {
+    const obj = Game.getObjectById(id);
+    if (obj) runStoreLifecycle(obj);
+  }
+
+  // Storage → fill (future: resource balancing)
+  for (const id of cache.storageIds) {
+    const obj = Game.getObjectById(id);
+    if (obj) runStoreLifecycle(obj);
+  }
+
+  // Sites → build
   for (const id of cache.siteIds) {
     const obj = Game.getObjectById(id);
     if (obj) new SiteLifecycle(obj).runLifecycle();
   }
 
-  // ── Workforce → spawn_req ──
+  // Workforce → spawn_req
   runWorkforceLifecycle(room);
 }
