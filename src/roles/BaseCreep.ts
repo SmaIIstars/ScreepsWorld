@@ -77,7 +77,7 @@ export abstract class BaseCreep {
     console.log(
       '[' + Game.time + '] ' + this.creep.name + ' check event ' + id + ' -> ' + (event ? event.status : 'null')
     );
-    if (!event || event.status !== 'claimed' || !event.claimerIds.includes(this.creep.name)) {
+    if (!event || !event.claimerIds.includes(this.creep.name)) {
       const reason = !event
         ? 'not_found id=' + id
         : event.status !== 'claimed'
