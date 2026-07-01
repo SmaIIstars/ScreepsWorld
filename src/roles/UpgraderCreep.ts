@@ -3,14 +3,19 @@ import { getBehavior } from '../behavior/index';
 
 export class UpgraderCreep extends BaseCreep {
   run(): void {
-    if (this.creep.memory.currentEventId) { this.executeCurrentEvent(); return; }
+    if (this.creep.memory.currentEventId) {
+      this.executeCurrentEvent();
+      if (this.creep.memory.currentEventId) return;
+    }
 
     const events = this.queryEvents();
 
-    // Has energy → upgrade first
+    // Has energy → upgrade first, fallback to build
     if (this.hasEnergy()) {
       const evt = this.findEvent(events, ['upgrade_controller']);
       if (evt) { this.assignEvent(evt); return; }
+      const buildEvt = this.findEvent(events, ['build', 'repair']);
+      if (buildEvt) { this.assignEvent(buildEvt); return; }
     }
 
     // Full but no upgrade needed → fill spawn

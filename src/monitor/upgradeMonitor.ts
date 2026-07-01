@@ -1,4 +1,4 @@
-﻿import { EventBus } from '../core/EventBus';
+﻿import { Guild } from '../core/Guild';
 
 export function upgradeMonitor(room: Room): void {
   if (!room.controller || !room.controller.my) return;
@@ -6,9 +6,9 @@ export function upgradeMonitor(room: Room): void {
 
   const progressRatio = room.controller.progress / room.controller.progressTotal;
   const priority = 30 + Math.floor(progressRatio * 40);
-  const maxWorkers = room.controller.level >= 6 && progressRatio > 0.5 ? 2 : 1;
+  const maxWorkers = 5;
 
-  EventBus.publish({
+  Guild.post({
     type: 'upgrade_controller',
     room: room.name,
     targetId: room.controller.id,
@@ -19,4 +19,3 @@ export function upgradeMonitor(room: Room): void {
     data: { targetId: room.controller.id },
   });
 }
-

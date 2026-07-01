@@ -1,7 +1,7 @@
 // spawnManager.ts
 // Consumes spawn_req events and spawns creeps at available spawns
 
-import { EventBus } from '../core/EventBus';
+import { Guild } from '../core/Guild';
 
 export function runSpawnManager(): void {
   console.log('[' + Game.time + '] spawnManager start, rooms=' + Object.keys(Game.rooms).length);
@@ -15,10 +15,7 @@ export function runSpawnManager(): void {
     if (spawns.length === 0) continue;
 
     // Find spawn_req events for this room
-    const roomEvents = EventBus._events[roomName];
-    if (!roomEvents) { console.log('[' + Game.time + '] spawnManager: no events for ' + roomName); continue; }
-
-    const spawnReqs = roomEvents.filter((e) => e.type === 'spawn_req' && e.status === 'pending');
+    const spawnReqs = Guild.getPendingByType(roomName, 'spawn_req');
     if (spawnReqs.length === 0) continue;
 
     // Sort by priority desc
@@ -36,7 +33,7 @@ export function runSpawnManager(): void {
         }).length + spawns.filter((s) => s.spawning?.name?.includes(role)).length;
 
       if (existing >= count) {
-        EventBus.complete(req.id);
+        Guild.complete(req.id);
         continue;
       }
 
@@ -55,8 +52,12 @@ export function runSpawnManager(): void {
         // Check if we still need more after this one
         const stillNeeded = count - existing - 1;
         if (stillNeeded <= 0) {
-          EventBus.complete(req.id);
+          Guild.complete(req.id);
         }
+      } else if (result === ERR_NOT_ENOUGH_ENERGY) {
+        break; // No point trying other reqs, spawn lacks energy
+      } else {
+        console.log('[' + Game.time + '] spawnManager: spawn ' + role + ' failed (' + result + ')');
       }
     }
   }

@@ -1,18 +1,18 @@
 /**
- * EventBus.ts
+ * Guild.ts
  *
- * Global event management system. Stores events in Memory.events and
- * provides CRUD operations for publishing, querying, claiming, completing,
- * releasing, and expiring events.
+ * Global demand management system. Stores events in Memory.events and
+ * provides CRUD operations for posting, querying, claiming, completing,
+ * releasing, cancelling, and expiring events.
  *
- * loadEventBus() / saveEventBus() are called from main.ts for tick boundaries.
+ * loadGuild() / saveGuild() are called from main.ts for tick boundaries.
  */
 import { buildDedupKey, generateEventId } from './Event';
 import { canWorkerTakeEvent } from './tagSystem';
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-export interface EventPublishData {
+export interface DemandData {
   type: string;
   room: string;
   targetId: string;
@@ -25,28 +25,30 @@ export interface EventPublishData {
   allowFallback?: boolean;
 }
 // ---------------------------------------------------------------------------
-// EventBus
+// Guild
 // ---------------------------------------------------------------------------
-export interface EventBusType {
+export interface GuildType {
   _events: Record<string, Event[]>;
   _dedupIndex: Record<string, Event>;
-  publish(eventData: EventPublishData): Event;
+  post(eventData: DemandData): Event;
   query(workerTags: string[], capacities: Record<string, number>, roomName: string): Event[];
   claim(eventId: string, workerId: string): boolean;
   complete(eventId: string): void;
   release(eventId: string, workerId?: string): void;
   expire(eventId: string): void;
+  cancel(dedupKey: string): void;
   cleanup(roomName: string): void;
   findById(eventId: string): Event | undefined;
+  getPendingByType(roomName: string, type: string): Event[];
 }
 
-export const EventBus: EventBusType = {
+export const Guild: GuildType = {
   _events: {} as Record<string, Event[]>,
   _dedupIndex: {} as Record<string, Event>,
   /**
-   * Publish a new event or merge with an existing pending event.
+   * Post a new event or merge with an existing pending event.
    */
-  publish(eventData: EventPublishData): Event {
+  post(eventData: DemandData): Event {
     const { type, room, targetId } = eventData;
     const dedupKey = buildDedupKey(type, room, targetId);
     // --- Check for existing event with same dedupKey ---
@@ -65,7 +67,7 @@ export const EventBus: EventBusType = {
       }
     }
 
-const id = generateEventId(type, room, targetId);
+    const id = generateEventId(type, room, targetId);
     const event: Event = {
       id,
       type,
@@ -176,6 +178,22 @@ const id = generateEventId(type, room, targetId);
     delete this._dedupIndex[event.dedupKey];
   },
   /**
+   * Cancel a demand by its dedupKey. No-op if not found or already claimed.
+   */
+  cancel(dedupKey: string): void {
+    const event = this._dedupIndex[dedupKey];
+    if (!event) return;
+    if (event.status === 'claimed') return; // Let it finish naturally
+    delete this._dedupIndex[dedupKey];
+    const roomEvents = this._events[event.room];
+    if (roomEvents) {
+      this._events[event.room] = roomEvents.filter((e) => e.id !== event.id);
+      if (this._events[event.room].length === 0) {
+        delete this._events[event.room];
+      }
+    }
+  },
+  /**
    * Clean up stale events for a room (called at end of each tick).
    */
   cleanup(roomName: string): void {
@@ -192,15 +210,18 @@ const id = generateEventId(type, room, targetId);
         delete this._dedupIndex[event.dedupKey];
         continue;
       }
-      if (event.status === 'claimed' && event.claimerId) {
-        if (!Game.creeps[event.claimerId]) {
-          event.currentWorkers = Math.max(0, event.currentWorkers - 1);
+      if (event.status === 'claimed' && event.claimerIds.length > 0) {
+        const aliveClaimers = event.claimerIds.filter((id: string) => Game.creeps[id]);
+        const deadCount = event.claimerIds.length - aliveClaimers.length;
+        if (deadCount > 0) {
+          event.claimerIds = aliveClaimers;
+          event.currentWorkers = aliveClaimers.length;
           if (event.currentWorkers === 0) {
             event.status = 'pending';
             event.claimerId = null;
             event.claimedAt = null;
           } else {
-            event.claimerId = null;
+            event.claimerId = event.claimerIds[event.claimerIds.length - 1];
             event.claimedAt = null;
           }
         }
@@ -224,32 +245,40 @@ const id = generateEventId(type, room, targetId);
     }
     return undefined;
   },
+  /**
+   * Get all pending events of a given type in a room (no tag filtering).
+   */
+  getPendingByType(roomName: string, type: string): Event[] {
+    const events = this._events[roomName];
+    if (!events) return [];
+    return events.filter((e) => e.type === type && e.status === 'pending');
+  },
 };
 // ---------------------------------------------------------------------------
 // Persistence
 // ---------------------------------------------------------------------------
 /**
- * Restore EventBus state from Memory.events.
+ * Restore Guild state from Memory.events.
  */
-export function loadEventBus(): void {
+export function loadGuild(): void {
   const stored = Memory.events;
   if (!stored) {
-    EventBus._events = {};
-    EventBus._dedupIndex = {};
+    Guild._events = {};
+    Guild._dedupIndex = {};
     return;
   }
-  EventBus._events = stored;
+  Guild._events = stored;
   const idx: Record<string, Event> = {};
   for (const roomEvents of Object.values(stored)) {
     for (const event of roomEvents) {
       idx[event.dedupKey] = event;
     }
   }
-  EventBus._dedupIndex = idx;
+  Guild._dedupIndex = idx;
 }
 /**
- * Persist EventBus state to Memory.events.
+ * Persist Guild state to Memory.events.
  */
-export function saveEventBus(): void {
-  Memory.events = EventBus._events;
+export function saveGuild(): void {
+  Memory.events = Guild._events;
 }

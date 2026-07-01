@@ -1,5 +1,5 @@
 ﻿// constructionMonitor.ts
-import { EventBus } from '../core/EventBus';
+import { Guild } from '../core/Guild';
 
 export function constructionMonitor(room: Room): void {
   const sites = room.find(FIND_MY_CONSTRUCTION_SITES);
@@ -12,7 +12,7 @@ export function constructionMonitor(room: Room): void {
     const progressRatio = site.progress / site.progressTotal;
     const priority = basePrio + Math.floor(progressRatio * 20);
 
-    EventBus.publish({
+    Guild.post({
       type: 'build',
       room: room.name,
       targetId: site.id,

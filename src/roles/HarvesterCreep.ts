@@ -3,7 +3,10 @@ import { getBehavior } from '../behavior/index';
 
 export class HarvesterCreep extends BaseCreep {
   run(): void {
-    if (this.creep.memory.currentEventId) { this.executeCurrentEvent(); return; }
+    if (this.creep.memory.currentEventId) {
+      this.executeCurrentEvent();
+      if (this.creep.memory.currentEventId) return;
+    }
 
     const events = this.queryEvents();
 

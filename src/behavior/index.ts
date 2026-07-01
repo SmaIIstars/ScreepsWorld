@@ -1,6 +1,7 @@
 import { harvestEnergyBehavior } from './harvestEnergy';
 import { fillSpawnBehavior } from './fillSpawn';
 import { upgradeControllerBehavior } from './upgradeController';
+import buildBehavior from './build';
 
 export interface Behavior {
   type: string;
@@ -23,4 +24,5 @@ export function registerBehavior(behavior: Behavior): void {
 registerBehavior(harvestEnergyBehavior);
 registerBehavior(fillSpawnBehavior);
 registerBehavior(upgradeControllerBehavior);
+registerBehavior(buildBehavior);
 

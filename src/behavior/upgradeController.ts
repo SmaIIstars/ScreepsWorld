@@ -4,6 +4,7 @@ export const upgradeControllerBehavior: Behavior = {
   type: 'upgrade_controller',
 
   validate(creep: Creep, event: Event): boolean {
+    if (creep.store[RESOURCE_ENERGY] === 0) return false;
     const controller = Game.getObjectById<StructureController>(event.data.targetId);
     if (!controller) return false;
     return controller.my;
@@ -23,8 +24,7 @@ export const upgradeControllerBehavior: Behavior = {
 
   isComplete(creep: Creep, event: Event): boolean {
     const controller = Game.getObjectById<StructureController>(event.data.targetId);
-    if (!controller || !controller.my) return true;
-    return creep.store[RESOURCE_ENERGY] === 0;
+    return !controller || !controller.my;
   },
 };
 

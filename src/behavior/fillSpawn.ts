@@ -4,6 +4,7 @@ export const fillSpawnBehavior: Behavior = {
   type: 'fill_spawn',
 
   validate(creep: Creep, event: Event): boolean {
+    if (creep.store[RESOURCE_ENERGY] === 0) return false;
     const spawn = Game.getObjectById<StructureSpawn>(event.data.targetId);
     if (!spawn) return false;
     return spawn.store[RESOURCE_ENERGY] < spawn.store.getCapacity(RESOURCE_ENERGY);

@@ -1,4 +1,4 @@
-﻿import { EventBus } from '../core/EventBus';
+﻿import { Guild } from '../core/Guild';
 
 export function energyMonitor(room: Room): void {
   // Check Spawn energy
@@ -9,7 +9,7 @@ export function energyMonitor(room: Room): void {
       const spawnBlocked = spawn.spawning && spawn.energy < 200;
       const priority = spawnBlocked ? 95 : Math.min(60 + Math.floor(deficit / 50) * 5, 90);
 
-      EventBus.publish({
+      Guild.post({
         type: 'fill_spawn',
         room: room.name,
         targetId: spawn.id,
@@ -25,7 +25,7 @@ export function energyMonitor(room: Room): void {
   const sources = room.find(FIND_SOURCES);
   for (const source of sources) {
     if (source.energy > 0) {
-      EventBus.publish({
+      Guild.post({
         type: 'harvest_energy',
         room: room.name,
         targetId: source.id,

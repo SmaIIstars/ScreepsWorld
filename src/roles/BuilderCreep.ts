@@ -3,14 +3,19 @@ import { getBehavior } from '../behavior/index';
 
 export class BuilderCreep extends BaseCreep {
   run(): void {
-    if (this.creep.memory.currentEventId) { this.executeCurrentEvent(); return; }
+    if (this.creep.memory.currentEventId) {
+      this.executeCurrentEvent();
+      if (this.creep.memory.currentEventId) return;
+    }
 
     const events = this.queryEvents();
 
-    // Has energy → build first
+    // Has energy → build first, fallback to upgrade
     if (this.hasEnergy()) {
       const evt = this.findEvent(events, ['build', 'repair']);
       if (evt) { this.assignEvent(evt); return; }
+      const upgradeEvt = this.findEvent(events, ['upgrade_controller']);
+      if (upgradeEvt) { this.assignEvent(upgradeEvt); return; }
     }
 
     // Full → fill spawn as fallback duty

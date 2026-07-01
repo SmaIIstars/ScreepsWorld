@@ -21,9 +21,7 @@ const buildBehavior: Behavior = {
 
   isComplete(creep: Creep, event: Event): boolean {
     const site = Game.getObjectById(event.data.targetId) as ConstructionSite | null;
-    if (!site) return true;
-    if (creep.store[RESOURCE_ENERGY] === 0) return true;
-    return false;
+    return !site;
   },
 };
 

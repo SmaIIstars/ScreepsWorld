@@ -1,4 +1,4 @@
-import { EventBus } from '../core/EventBus';
+import { Guild } from '../core/Guild';
 import { computeTags, computeCapacities } from '../core/tagSystem';
 import { getBehavior } from '../behavior/index';
 
@@ -37,7 +37,7 @@ export abstract class BaseCreep {
   protected queryEvents(): Event[] {
     const tags = computeTags(this.creep.body);
     const caps = computeCapacities(this.creep.body);
-    const events = EventBus.query(tags, caps, this.creep.room.name);
+    const events = Guild.query(tags, caps, this.creep.room.name);
     const prefs = ROLE_PREFS[this.creep.memory.role || ''] || [];
     events.sort((a: Event, b: Event) => {
       const ai = prefs.indexOf(a.type);
@@ -60,7 +60,7 @@ export abstract class BaseCreep {
   // ─── Claim an event ───
 
   protected assignEvent(event: Event): void {
-    const ok = EventBus.claim(event.id, this.creep.name);
+    const ok = Guild.claim(event.id, this.creep.name);
     if (ok) {
       console.log('[' + Game.time + '] ' + this.creep.name + ' claim ' + event.type + ' (p=' + event.priority + ')');
       this.creep.memory.currentEventId = event.id;
@@ -73,7 +73,7 @@ export abstract class BaseCreep {
     const id = this.creep.memory.currentEventId;
     if (!id) return;
 
-    const event = EventBus.findById(id);
+    const event = Guild.findById(id);
     console.log(
       '[' + Game.time + '] ' + this.creep.name + ' check event ' + id + ' -> ' + (event ? event.status : 'null')
     );
@@ -91,7 +91,7 @@ export abstract class BaseCreep {
     const behavior = getBehavior(event.type);
     if (!behavior || !behavior.validate(this.creep, event)) {
       console.log('[' + Game.time + '] ' + this.creep.name + ' release ' + event.type + ' (validate fail)');
-      EventBus.release(event.id, this.creep.name);
+      Guild.release(event.id, this.creep.name);
       delete this.creep.memory.currentEventId;
       return;
     }
@@ -103,7 +103,7 @@ export abstract class BaseCreep {
     console.log('[' + Game.time + '] ' + this.creep.name + ' isComplete=' + complete + ' free=' + this.creep.store.getFreeCapacity(RESOURCE_ENERGY));
     if (complete) {
       console.log('[' + Game.time + '] ' + this.creep.name + ' complete ' + event.type);
-      EventBus.complete(event.id);
+      Guild.complete(event.id);
       delete this.creep.memory.currentEventId;
     }
   }

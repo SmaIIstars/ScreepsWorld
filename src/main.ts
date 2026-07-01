@@ -1,14 +1,13 @@
 import extensionMain from './extension';
-import { loadEventBus } from './core/EventBus';
+import { loadGuild } from './core/Guild';
 import { roomMonitor } from './monitor/index';
 import { getCreepInstance, cleanupInstances } from './roles/registry';
 import { runSpawnManager } from './worker/spawnManager';
-import { checkDeadCreeps, cleanupEvents, persistEventBus } from './lifecycle/index';
+import { checkDeadCreeps, cleanupEvents, persistGuild } from './lifecycle/index';
 
 function loop(): void {
   extensionMain();
-  loadEventBus();
-
+  loadGuild();
   checkDeadCreeps();
 
   for (const roomName in Game.rooms) {
@@ -28,7 +27,7 @@ function loop(): void {
 
   cleanupInstances();
   cleanupEvents();
-  persistEventBus();
+  persistGuild();
 }
 
 loop();
