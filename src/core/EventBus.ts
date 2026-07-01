@@ -1,4 +1,4 @@
-﻿/**
+/**
  * EventBus.ts
  *
  * Global event management system. Stores events in Memory.events and
