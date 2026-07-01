@@ -4,6 +4,7 @@ import { SiteLifecycle } from './site';
 import { SpawnLifecycle } from './spawn';
 import { runWorkforceLifecycle } from './workforce';
 import { runStoreLifecycle } from './store';
+import { refreshWorld, runCollectLifecycle, getWorldCacheForRoom, ResourceSnapshot } from './world';
 
 interface RoomCache {
   sourceIds: Id<Source>[];
@@ -81,6 +82,12 @@ export function runStructureLifecycles(room: Room): void {
   if (Game.time - cache.lastScan >= STRUCTURE_INTERVAL) refreshStructures(room, cache);
   if (Game.time - cache.lastSiteScan >= SITE_INTERVAL) refreshSites(room, cache);
 
+  // ── World (neutral objects + hostiles) — every SCAN_INTERVAL ticks ──
+  const worldCache = getWorldCacheForRoom(room);
+  if (Game.time - worldCache.lastScan >= 20) {
+    refreshWorld(room, worldCache);
+  }
+
   // Sources → harvest
   for (const id of cache.sourceIds) {
     const obj = Game.getObjectById(id);
@@ -115,6 +122,17 @@ export function runStructureLifecycles(room: Room): void {
   for (const id of cache.storageIds) {
     const obj = Game.getObjectById(id);
     if (obj) runStoreLifecycle(obj);
+  }
+
+  // ── World collect targets (dropped/tombs/ruins) ──
+  for (const id in worldCache.resources) {
+    runCollectLifecycle(worldCache.resources[id], id, room);
+  }
+  for (const id in worldCache.tombs) {
+    runCollectLifecycle(worldCache.tombs[id], id, room);
+  }
+  for (const id in worldCache.ruins) {
+    runCollectLifecycle(worldCache.ruins[id], id, room);
   }
 
   // Sites → build
