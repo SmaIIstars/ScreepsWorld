@@ -5,7 +5,6 @@
     "outDir": "output",
     "rootDir": "src",
     "strict": true,
-    "typeRoots": ["./node_modules/@types"],
     "skipLibCheck": true,
     "esModuleInterop": true,
     "paths": {
@@ -16,9 +15,9 @@
   },
   "include": [
     "src/**/*",
+    "./node_modules/@types"
   ],
   "exclude": [
     "src/utils/**/*",
   ]
 }
-
