@@ -1,4 +1,4 @@
-﻿import { EventBus } from '../core/EventBus';
+import { EventBus } from '../core/EventBus';
 import { computeTags, computeCapacities } from '../core/tagSystem';
 import { getBehavior } from '../behavior/index';
 
@@ -74,8 +74,9 @@ export abstract class BaseCreep {
     if (!id) return;
 
     const event = EventBus.findById(id);
+    console.log('[' + Game.time + '] ' + this.creep.name + ' check event ' + id + ' -> ' + (event ? event.status : 'null'));
     if (!event || event.status !== 'claimed' || !event.claimerIds.includes(this.creep.name)) {
-      const reason = !event ? 'not_found' : event.status !== 'claimed' ? 'status=' + event.status : 'not_in_claimers';
+      const reason = !event ? 'not_found id=' + id : event.status !== 'claimed' ? 'status=' + event.status : 'not_in_claimers';
       console.log('[' + Game.time + '] ' + this.creep.name + ' lost event (' + reason + ')');
       delete this.creep.memory.currentEventId;
       return;

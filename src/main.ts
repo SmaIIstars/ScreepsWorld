@@ -5,42 +5,30 @@ import { getCreepInstance, cleanupInstances } from './roles/registry';
 import { runSpawnManager } from './worker/spawnManager';
 import { checkDeadCreeps, cleanupEvents, persistEventBus } from './lifecycle/index';
 
-extensionMain();
+function loop(): void {
+  extensionMain();
+  loadEventBus();
 
-export function loop(): void {
-  try {
-    loadEventBus();
-    checkDeadCreeps();
+  checkDeadCreeps();
 
-    for (const roomName in Game.rooms) {
-      try {
-        const room = Game.rooms[roomName];
-        if (room.controller?.my) {
-          roomMonitor(room);
-        }
-      } catch (e: any) {
-        console.log('[' + Game.time + '] monitor error: ' + (e.message || e));
-      }
+  for (const roomName in Game.rooms) {
+    const room = Game.rooms[roomName];
+    if (room.controller?.my) {
+      roomMonitor(room);
     }
-
-    try { runSpawnManager(); } catch (e: any) {
-      console.log('[' + Game.time + '] spawn error: ' + (e.message || e));
-    }
-
-    for (const name in Game.creeps) {
-      try {
-        const creep = Game.creeps[name];
-        if (creep.spawning) continue;
-        getCreepInstance(creep).run();
-      } catch (e: any) {
-        console.log('[' + Game.time + '] creep ' + name + ' error: ' + (e.message || e));
-      }
-    }
-
-    cleanupInstances();
-    cleanupEvents();
-    persistEventBus();
-  } catch (e: any) {
-    console.log('[' + Game.time + '] loop error: ' + (e.message || e));
   }
+
+  runSpawnManager();
+
+  for (const name in Game.creeps) {
+    const creep = Game.creeps[name];
+    if (creep.spawning) continue;
+    getCreepInstance(creep).run();
+  }
+
+  cleanupInstances();
+  cleanupEvents();
+  persistEventBus();
 }
+
+loop();
