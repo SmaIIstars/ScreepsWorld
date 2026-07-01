@@ -6,26 +6,24 @@
 
 系统只有两个原语：**事件**和**消费者**。Creep 和 Structure 统一为执行者，通过资质标签匹配来接任务。
 
-`
-Monitor ──publish──→ Event Bus ←── query/claim ── Workers
+`Monitor ──publish──→ Event Bus ←── query/claim ── Workers
                           │                   ├── Creep
                           │                   └── Structure
                      cleanup/release
                           │
-                     Lifecycle (死亡/摧毁)
-`
+                     Lifecycle (死亡/摧毁)`
 
 ### 核心模块
 
-| 模块 | 职责 |
-|---|---|
-| core/EventBus.ts | 事件生命周期管理（publish / query / claim / complete / release / expire） |
-| core/tagSystem.ts | 标签 + 能力阈值匹配（canWorkerTakeEvent / computeTags / computeCapacities） |
-| ehavior/ | 可组装的行为模块（harvestEnergy / fillSpawn / upgradeController…） |
-| worker/runtime.ts | Creep 运行时循环（查事件 → 领事件 → 执行 → 完成） |
-| monitor/ | 房间状态感知 → 发布事件 |
-| lifecycle/index.ts | 死亡检测 + 事件释放 + 持久化 |
-| strategy/index.ts | 等级对应的孵化策略配置 |
+| 模块               | 职责                                                                        |
+| ------------------ | --------------------------------------------------------------------------- |
+| core/EventBus.ts   | 事件生命周期管理（publish / query / claim / complete / release / expire）   |
+| core/tagSystem.ts  | 标签 + 能力阈值匹配（canWorkerTakeEvent / computeTags / computeCapacities） |
+| `behavior/`        | 可组装的行为模块（harvestEnergy / fillSpawn / upgradeController…）          |
+| worker/runtime.ts  | Creep 运行时循环（查事件 → 领事件 → 执行 → 完成）                           |
+| monitor/           | 房间状态感知 → 发布事件                                                     |
+| lifecycle/index.ts | 死亡检测 + 事件释放 + 持久化                                                |
+| strategy/index.ts  | 等级对应的孵化策略配置                                                      |
 
 ### 设计原则
 
@@ -39,19 +37,19 @@ Monitor ──publish──→ Event Bus ←── query/claim ── Workers
 
 ### 1. 安装依赖
 
-`ash
+`bash
 pnpm install
 `
 
 ### 2. 类型检查
 
-`ash
+`bash
 npx tsc --noEmit
 `
 
 ### 3. 构建
 
-`ash
+`bash
 pnpm run build
 `
 
@@ -59,7 +57,7 @@ pnpm run build
 
 ### 4. 发布
 
-`ash
+`bash
 pnpm run release
 `
 
@@ -67,55 +65,53 @@ pnpm run release
 
 ### 事件生命周期
 
-`
-publish → pending
+`publish → pending
             │
             ├── claim(worker) → claimed
             │                     ├── complete() → completed → 归档
             │                     ├── release()  → pending (超时/死亡)
             │                     └── expire()   → expired → 清理
             │
-            └── expire() → expired（TTL 到了没人领）
-`
+            └── expire() → expired（TTL 到了没人领）`
 
 ### 事件类型
 
-| type | requiredTags | 说明 |
-|---|---|---|
-| harvest_energy | ["harvest", "move"] | 采集能量 |
-| fill_spawn | ["transport", "move"] | 填 Spawn |
-| upgrade_controller | ["work", "move"] | 升级控制器 |
-| build | ["work", "move"] | 建造 |
-| repair | ["work", "move"] | 维修 |
-| attack | ["attack", "move"] | 攻击 |
-| defend | ["tower"] | 塔防御 |
-| spawn_req | ["spawner"] | 孵化需求 |
+| type               | requiredTags          | 说明       |
+| ------------------ | --------------------- | ---------- |
+| harvest_energy     | ["harvest", "move"]   | 采集能量   |
+| fill_spawn         | ["transport", "move"] | 填 Spawn   |
+| upgrade_controller | ["work", "move"]      | 升级控制器 |
+| build              | ["work", "move"]      | 建造       |
+| repair             | ["work", "move"]      | 维修       |
+| attack             | ["attack", "move"]    | 攻击       |
+| defend             | ["tower"]             | 塔防御     |
+| spawn_req          | ["spawner"]           | 孵化需求   |
 
 ### 标签匹配
 
 `
 事件: requiredTags = ["harvest", "move"]
-     requiredCapacities = { harvest: 5 }
+requiredCapacities = { harvest: 5 }
 
 Worker: tags = ["harvest", "move"]
-        capacities = { harvest: 6, carry: 50 }
+capacities = { harvest: 6, carry: 50 }
 
 匹配(两步):
-  1. ["harvest", "move"] ⊆ ["harvest", "move"] ✓  (标签)
-  2. harvest=6 ≥ 5 ✓                              (能力)
-  → 完美匹配
-`
+
+1. ["harvest", "move"] ⊆ ["harvest", "move"] ✓ (标签)
+2. harvest=6 ≥ 5 ✓ (能力)
+   → 完美匹配
+   `
 
 ## 源代码结构
 
-`
-src/
+`src/
 ├── main.ts                   ← 游戏主循环
 ├── core/
 │   ├── Event.ts              ← 事件类型常量
 │   ├── EventBus.ts           ← 事件总线
 │   └── tagSystem.ts          ← 标签/能力系统
-├── behavior/                 ← 可组装的行为
+|`behavior/`| 可组装的行为模块（harvestEnergy / fillSpawn / upgradeController…） |
 ├── worker/
 │   └── runtime.ts            ← Creep 运行时
 ├── monitor/                  ← 房间状态感知
@@ -124,21 +120,20 @@ src/
 ├── strategy/
 │   └── index.ts              ← 策略配置
 ├── extension/                ← Screeps 原型扩展
-└── types/                    ← 类型声明
-`
+└── types/                    ← 类型声明`
 
 ## 新增行为
 
-在 src/behavior/ 下创建新文件，实现 Behavior 接口：
+| `behavior/` | 可组装的行为模块（harvestEnergy / fillSpawn / upgradeController…） |
 
-`	ypescript
+`typescript
 import { registerBehavior, Behavior } from './index';
 
 const myBehavior: Behavior = {
-  type: 'my_event_type',
-  validate(event) { /* 事件是否有效 */ },
-  execute(creep, event) { /* 每 tick 执行 */ },
-  isComplete(creep, event) { /* 是否完成 */ },
+type: 'my*event_type',
+validate(event) { /* 事件是否有效 _/ },
+execute(creep, event) { /_ 每 tick 执行 _/ },
+isComplete(creep, event) { /_ 是否完成 \_/ },
 };
 
 registerBehavior(myBehavior);
@@ -151,4 +146,3 @@ registerBehavior(myBehavior);
 - TypeScript
 - [Vite](https://vitejs.dev/)（构建）
 - [@types/screeps](https://github.com/screepers/typed-screeps)（类型）
-

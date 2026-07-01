@@ -33,6 +33,7 @@ declare global {
   const FIND_DROPPED_RESOURCES: 106;
   const FIND_STRUCTURES: 107;
   const FIND_MY_STRUCTURES: 108;
+  const FIND_MY_SPAWNS: 108;
   const FIND_HOSTILE_STRUCTURES: 109;
   const FIND_FLAGS: 110;
   const FIND_CONSTRUCTION_SITES: 111;
@@ -88,6 +89,19 @@ declare global {
   const STRUCTURE_PORTAL: 'portal';
   const STRUCTURE_POWER_BANK: 'powerBank';
 
+  // Memory interfaces
+  interface CreepMemory {
+    role?: string;
+    task?: string;
+    targetId?: string;
+    targetRoomName?: string;
+    targetSourceId?: string;
+    currentTask?: string;
+    currentEventId?: string;
+    cacheTargetStoreId?: string;
+    [key: string]: any;
+  }
+
   // Types
   type BodyPartConstant = MOVE | WORK | CARRY | ATTACK | RANGED_ATTACK | HEAL | CLAIM | TOUGH | 'tough';
 
@@ -119,7 +133,7 @@ declare global {
     name: string;
     body: BodyPartDefinition[];
     store: { energy: number; getFreeCapacity(resource?: string): number; [key: string]: any };
-    memory: any;
+    memory: CreepMemory;
     room: Room;
     spawning: boolean;
     pos: RoomPosition;
@@ -152,8 +166,8 @@ declare global {
     terminal?: StructureTerminal;
     energyAvailable: number;
     energyCapacityAvailable: number;
-    memory: any;
-    find<T>(type: number, opts?: any): T[];
+    memory: CreepMemory;
+    find<T = any>(type: number, opts?: any): T[];
     lookAt(x: number, y: number): LookAtResult[];
     lookForAt(type: string, x: number, y: number): any[];
     lookAtArea(top: number, left: number, bottom: number, right: number, asArray?: boolean): any;
@@ -339,7 +353,7 @@ declare global {
     secondaryColor: number;
     pos: RoomPosition;
     room: Room | undefined;
-    memory: any;
+    memory: CreepMemory;
     setPosition(pos: RoomPosition): void;
     setColor(color: number, secondaryColor?: number): void;
     remove(): void;
@@ -426,3 +440,5 @@ declare global {
 }
 
 export {};
+
+
