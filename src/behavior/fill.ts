@@ -20,7 +20,7 @@ export const fillBehavior: Behavior = {
 
     const result = creep.transfer(target, RESOURCE_ENERGY);
     if (result === ERR_NOT_IN_RANGE) {
-      creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
+      creep.moveTo(target, { reusePath: 30, visualizePathStyle: { stroke: '#ffffff' } });
     }
   },
 

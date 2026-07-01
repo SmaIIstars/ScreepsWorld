@@ -15,7 +15,7 @@ const buildBehavior: Behavior = {
     const site = Game.getObjectById(event.data.targetId) as ConstructionSite | null;
     if (!site) return;
     if (creep.build(site) === ERR_NOT_IN_RANGE) {
-      creep.moveTo(site);
+      creep.moveTo(site, { reusePath: 20 });
     }
   },
 

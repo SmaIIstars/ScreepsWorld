@@ -18,7 +18,7 @@ export const harvestBehavior: Behavior = {
 
     const result = creep.harvest(source);
     if (result === ERR_NOT_IN_RANGE) {
-      creep.moveTo(source, { visualizePathStyle: { stroke: '#ffaa00' } });
+      creep.moveTo(source, { reusePath: 100, visualizePathStyle: { stroke: '#ffaa00' } });
     }
   },
 

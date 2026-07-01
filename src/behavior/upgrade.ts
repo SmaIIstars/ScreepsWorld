@@ -18,7 +18,7 @@ export const upgradeBehavior: Behavior = {
 
     const result = creep.upgradeController(controller);
     if (result === ERR_NOT_IN_RANGE) {
-      creep.moveTo(controller, { visualizePathStyle: { stroke: '#00ff00' } });
+      creep.moveTo(controller, { reusePath: 50, visualizePathStyle: { stroke: '#00ff00' } });
     }
   },
 
