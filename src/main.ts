@@ -1,8 +1,8 @@
 import extensionMain from './extension';
 import { loadGuild } from './core/Guild';
-import { roomMonitor } from './monitor/index';
+import { runStructureLifecycles } from './structures/index';
 import { getCreepInstance, cleanupInstances } from './creeps/index';
-import { runSpawnManager } from './worker/spawnManager';
+
 import { checkDeadCreeps, cleanupEvents, persistGuild } from './lifecycle/index';
 
 function loop(): void {
@@ -13,11 +13,10 @@ function loop(): void {
   for (const roomName in Game.rooms) {
     const room = Game.rooms[roomName];
     if (room.controller?.my) {
-      roomMonitor(room);
+      runStructureLifecycles(room);
     }
   }
 
-  runSpawnManager();
 
   for (const name in Game.creeps) {
     const creep = Game.creeps[name];
