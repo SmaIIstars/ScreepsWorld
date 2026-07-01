@@ -11,7 +11,7 @@
     status: EventStatus;
     claimerId: string | null;
     claimedAt: number | null;
-  completedAt: number | null;
+    completedAt: number | null;
     minWorkers: number;
     maxWorkers: number;
     currentWorkers: number;
@@ -24,5 +24,3 @@
 }
 
 export {};
-
-
