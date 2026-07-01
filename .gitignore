@@ -1,4 +1,4 @@
-output/
+﻿output/
 main.js
 
 
@@ -28,3 +28,5 @@ temp
 docs
 .superpowers
 .codegraph
+
+releases/
