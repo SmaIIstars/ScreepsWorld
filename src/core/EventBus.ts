@@ -71,7 +71,19 @@ export const EventBus = {
       }
 
       // Claimed but still has capacity -> still valid
-      if (existing.status === 'claimed' && existing.currentWorkers < existing.maxWorkers) {
+      if (existing.status === 'claimed') {
+        if (existing.currentWorkers < existing.maxWorkers) return existing;
+      // Completed event for same target -> reset to pending
+      if (existing.status === 'completed') {
+        existing.priority = Math.max(existing.priority, eventData.priority ?? 50);
+        existing.status = 'pending';
+        existing.currentWorkers = 0;
+        existing.claimerId = null;
+        existing.claimedAt = null;
+        existing.claimerIds = [];
+        existing.completedAt = null;
+        existing.createdAt = Game.time;
+        if (eventData.data) Object.assign(existing.data, eventData.data);
         return existing;
       }
     }
@@ -160,7 +172,7 @@ export const EventBus = {
     if (event.currentWorkers >= event.maxWorkers) return false;
 
     event.currentWorkers++;
-    event.claimerIds.push(workerId);
+    if (!event.claimerIds.includes(workerId)) event.claimerIds.push(workerId);
     event.claimerId = workerId;
     event.claimedAt = Game.time;
     if (event.currentWorkers >= event.maxWorkers) {
