@@ -2,6 +2,7 @@ import { harvestBehavior } from './harvest';
 import { fillBehavior } from './fill';
 import { upgradeBehavior } from './upgrade';
 import buildBehavior from './build';
+import { collectBehavior } from './collect';
 
 export interface Behavior {
   type: string;
@@ -25,3 +26,4 @@ registerBehavior(harvestBehavior);
 registerBehavior(fillBehavior);
 registerBehavior(upgradeBehavior);
 registerBehavior(buildBehavior);
+registerBehavior(collectBehavior);
