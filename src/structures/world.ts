@@ -8,7 +8,7 @@ import { buildDedupKey } from '../core/Event';
 export interface ResourceSnapshot {
   type: ResourceConstant;
   amount: number;
-  ticksToDecay: number;
+  decayPerTick: number; // Math.ceil(amount/1000) for drops, 0 for tombs/ruins (no decay)
   pos: { x: number; y: number; roomName: string };
   seenAt: number;
 }
@@ -39,20 +39,20 @@ function getWorldCache(room: Room): WorldCache {
 }
 
 export function refreshWorld(room: Room, cache: WorldCache): void {
-  // Dropped resources
+  // Dropped resources — decay = ceil(amount / 1000) per tick
   const nextResources: Record<string, ResourceSnapshot> = {};
   for (const r of room.find(FIND_DROPPED_RESOURCES)) {
     nextResources[r.id] = {
       type: r.resourceType,
       amount: r.amount,
-      ticksToDecay: (r as any).ticksToDecay ?? 1500,
+      decayPerTick: Math.ceil(r.amount / 1000),
       pos: { x: r.pos.x, y: r.pos.y, roomName: r.pos.roomName },
       seenAt: Game.time,
     };
   }
   cache.resources = nextResources;
 
-  // Tombstones
+  // Tombstones — linear decay
   const nextTombs: Record<string, ResourceSnapshot> = {};
   for (const t of room.find(FIND_TOMBSTONES)) {
     const store = t.store as Store<ResourceConstant, false>;
@@ -61,7 +61,7 @@ export function refreshWorld(room: Room, cache: WorldCache): void {
       nextTombs[t.id] = {
         type: RESOURCE_ENERGY,
         amount,
-        ticksToDecay: t.ticksToDecay ?? 1500,
+        decayPerTick: 0, // resources don't decay inside tombstone
         pos: { x: t.pos.x, y: t.pos.y, roomName: t.pos.roomName },
         seenAt: Game.time,
       };
@@ -69,7 +69,7 @@ export function refreshWorld(room: Room, cache: WorldCache): void {
   }
   cache.tombs = nextTombs;
 
-  // Ruins
+  // Ruins — linear decay
   const nextRuins: Record<string, ResourceSnapshot> = {};
   for (const r of room.find(FIND_RUINS)) {
     const store = r.store as Store<ResourceConstant, false>;
@@ -78,7 +78,7 @@ export function refreshWorld(room: Room, cache: WorldCache): void {
       nextRuins[r.id] = {
         type: RESOURCE_ENERGY,
         amount,
-        ticksToDecay: r.ticksToDecay ?? 1500,
+        decayPerTick: 0, // resources don't decay inside ruin
         pos: { x: r.pos.x, y: r.pos.y, roomName: r.pos.roomName },
         seenAt: Game.time,
       };
@@ -99,10 +99,8 @@ export function runCollectLifecycle(snap: ResourceSnapshot, id: string, room: Ro
   const target = Game.getObjectById(id as Id<any>);
   if (!target) return; // Gone — next scan removes from cache
 
-  // Estimate remaining
-  const ticksSince = Game.time - snap.seenAt;
-  const decayRate = snap.amount / snap.ticksToDecay;
-  const remaining = snap.amount - ticksSince * decayRate;
+  // Estimate remaining (universal linear formula)
+  const remaining = snap.amount - (Game.time - snap.seenAt) * snap.decayPerTick;
 
   if (remaining < MIN_AMOUNT) {
     Guild.cancel(dedupKey);
