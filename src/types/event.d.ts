@@ -1,4 +1,4 @@
-﻿declare global {
+declare global {
   type EventStatus = 'pending' | 'claimed' | 'completed' | 'expired';
 
   interface Event {
@@ -19,8 +19,7 @@
     data: Record<string, any>;
     allowFallback: boolean;
     createdAt: number;
-    ttl: number;
-    dedupKey: string;
+      dedupKey: string;
   }
 }
 

@@ -1,4 +1,4 @@
-import { EventBus } from '../core/EventBus';
+﻿import { EventBus } from '../core/EventBus';
 
 export function energyMonitor(room: Room): void {
   // Check Spawn energy
@@ -16,7 +16,6 @@ export function energyMonitor(room: Room): void {
         requiredTags: ['transport', 'move'],
         requiredCapacities: { carry: 50 },
         priority,
-        ttl: 10,
         data: { targetId: spawn.id },
       });
     }
@@ -33,11 +32,10 @@ export function energyMonitor(room: Room): void {
         requiredTags: ['harvest', 'move'],
         requiredCapacities: { harvest: 1 },
         priority: 80,
-        ttl: 10,
         maxWorkers: 3,
         data: { targetId: source.id },
       });
     }
   }
 }
-
+

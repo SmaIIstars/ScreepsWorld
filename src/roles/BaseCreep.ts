@@ -96,8 +96,12 @@ export abstract class BaseCreep {
       return;
     }
 
+    var freeCap = this.creep.store.getFreeCapacity(RESOURCE_ENERGY);
+    console.log('[' + Game.time + '] ' + this.creep.name + ' execute ' + event.type + ' free=' + freeCap + ' energy=' + this.creep.store[RESOURCE_ENERGY]);
     behavior.execute(this.creep, event);
-    if (behavior.isComplete(this.creep, event)) {
+    var complete = behavior.isComplete(this.creep, event);
+    console.log('[' + Game.time + '] ' + this.creep.name + ' isComplete=' + complete + ' free=' + this.creep.store.getFreeCapacity(RESOURCE_ENERGY));
+    if (complete) {
       console.log('[' + Game.time + '] ' + this.creep.name + ' complete ' + event.type);
       EventBus.complete(event.id);
       delete this.creep.memory.currentEventId;

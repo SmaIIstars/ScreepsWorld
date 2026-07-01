@@ -1,4 +1,4 @@
-﻿import { harvestEnergyBehavior } from './harvestEnergy';
+import { harvestEnergyBehavior } from './harvestEnergy';
 import { fillSpawnBehavior } from './fillSpawn';
 import { upgradeControllerBehavior } from './upgradeController';
 

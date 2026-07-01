@@ -39,13 +39,12 @@ export function workforceMonitor(room: Room): void {
       targetId: role.type, // role name as targetId for dedup
       requiredTags: ['spawner'],
       priority: shortage * 20 + 50,
-      ttl: 50,
       data: {
         role: role.type,
         body: role.body,
         tags: role.tags,
         minCapacities: role.minCapacities,
-        count: shortage,
+        count: role.target,
       },
     });
   }

@@ -23,7 +23,6 @@ export interface EventPublishData {
   maxWorkers?: number;
   data?: Record<string, any>;
   allowFallback?: boolean;
-  ttl?: number;
 }
 // ---------------------------------------------------------------------------
 // EventBus
@@ -53,37 +52,20 @@ export const EventBus: EventBusType = {
     // --- Check for existing event with same dedupKey ---
     const existing = this._dedupIndex[dedupKey];
     if (existing) {
-      if (existing.status === 'pending') {
-        existing.priority = Math.max(existing.priority, eventData.priority ?? 50);
-        existing.ttl = eventData.ttl ?? 10;
-        if (eventData.requiredTags?.length) {
-          existing.requiredTags = eventData.requiredTags;
-        }
-        if (eventData.requiredCapacities) {
-          existing.requiredCapacities = eventData.requiredCapacities;
-        }
-        if (eventData.minWorkers !== undefined) {
-          existing.minWorkers = Math.max(existing.minWorkers, eventData.minWorkers);
-        }
-        if (eventData.maxWorkers !== undefined) {
-          existing.maxWorkers = Math.max(existing.maxWorkers, eventData.maxWorkers);
-        }
-        if (eventData.data) {
-          Object.assign(existing.data, eventData.data);
-        }
-        existing.createdAt = Game.time;
-        return existing;
-      }
       if (existing.status === 'expired') {
         delete this._dedupIndex[existing.dedupKey];
-      }
-      // Claimed but still has capacity -> still valid
-      if (existing.status === 'claimed') {
-        if (existing.currentWorkers < existing.maxWorkers) return existing;
+      } else {
+        // Reuse existing event - merge priority and refresh timestamp
+        existing.priority = Math.max(existing.priority, eventData.priority ?? 50);
+        existing.createdAt = Game.time;
+        if (eventData.requiredTags?.length) existing.requiredTags = eventData.requiredTags;
+        if (eventData.requiredCapacities) existing.requiredCapacities = eventData.requiredCapacities;
+        if (eventData.data) Object.assign(existing.data, eventData.data);
+        return existing;
       }
     }
-    // --- Create new event ---
-    const id = generateEventId(type, room, targetId);
+
+const id = generateEventId(type, room, targetId);
     const event: Event = {
       id,
       type,
@@ -101,7 +83,6 @@ export const EventBus: EventBusType = {
       data: eventData.data ?? {},
       allowFallback: eventData.allowFallback ?? false,
       createdAt: Game.time,
-      ttl: 99999,
       dedupKey,
     } as unknown as Event;
     // Store
