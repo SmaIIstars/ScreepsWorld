@@ -4,8 +4,8 @@ import { getBehavior } from '../behavior/index';
 
 const ROLE_PREFS: Record<string, string[]> = {
   harvester: ['harvest_energy', 'fill_spawn', 'upgrade_controller'],
-  upgrader:  ['upgrade_controller', 'fill_spawn', 'harvest_energy'],
-  builder:   ['build', 'fill_spawn', 'harvest_energy', 'upgrade_controller'],
+  upgrader: ['upgrade_controller', 'fill_spawn', 'harvest_energy'],
+  builder: ['build', 'fill_spawn', 'harvest_energy', 'upgrade_controller'],
 };
 
 export abstract class BaseCreep {
@@ -21,15 +21,15 @@ export abstract class BaseCreep {
   // ─── Utilities ───
 
   protected hasEnergy(): boolean {
-    return (this.creep.store as any)[RESOURCE_ENERGY] > 0;
+    return this.creep.store[RESOURCE_ENERGY] > 0;
   }
 
   protected isFull(): boolean {
-    return (this.creep.store as any).getFreeCapacity(RESOURCE_ENERGY) === 0;
+    return this.creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0;
   }
 
   protected isEmpty(): boolean {
-    return (this.creep.store as any)[RESOURCE_ENERGY] === 0;
+    return this.creep.store[RESOURCE_ENERGY] === 0;
   }
 
   // ─── Query events sorted by role preference ───
@@ -51,7 +51,7 @@ export abstract class BaseCreep {
 
   protected findEvent(events: Event[], types: string[]): Event | undefined {
     for (const t of types) {
-      const found = events.find(e => e.type === t);
+      const found = events.find((e) => e.type === t);
       if (found) return found;
     }
     return undefined;
@@ -74,9 +74,15 @@ export abstract class BaseCreep {
     if (!id) return;
 
     const event = EventBus.findById(id);
-    console.log('[' + Game.time + '] ' + this.creep.name + ' check event ' + id + ' -> ' + (event ? event.status : 'null'));
+    console.log(
+      '[' + Game.time + '] ' + this.creep.name + ' check event ' + id + ' -> ' + (event ? event.status : 'null')
+    );
     if (!event || event.status !== 'claimed' || !event.claimerIds.includes(this.creep.name)) {
-      const reason = !event ? 'not_found id=' + id : event.status !== 'claimed' ? 'status=' + event.status : 'not_in_claimers';
+      const reason = !event
+        ? 'not_found id=' + id
+        : event.status !== 'claimed'
+          ? 'status=' + event.status
+          : 'not_in_claimers';
       console.log('[' + Game.time + '] ' + this.creep.name + ' lost event (' + reason + ')');
       delete this.creep.memory.currentEventId;
       return;

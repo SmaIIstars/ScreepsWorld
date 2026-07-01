@@ -1,4 +1,4 @@
-/**
+﻿/**
  * EventBus.ts
  *
  * Global event management system. Stores events in Memory.events and
@@ -146,15 +146,13 @@ export const EventBus: EventBusType = {
     const event = this.findById(eventId);
     if (!event) return false;
     if (event.status !== 'pending' && event.status !== 'claimed') return false;
-    }
+
     if (event.currentWorkers >= event.maxWorkers) return false;
     event.currentWorkers++;
     if (!event.claimerIds.includes(workerId)) event.claimerIds.push(workerId);
     event.claimerId = workerId;
     event.claimedAt = Game.time;
-    if (event.currentWorkers >= event.maxWorkers) {
-      event.status = 'claimed';
-    }
+    event.status = 'claimed';
     return true;
   },
   /**
@@ -185,7 +183,8 @@ export const EventBus: EventBusType = {
     } else {
       event.claimerId = event.claimerIds[0];
       event.claimedAt = Game.time;
-    }  },
+    }
+  },
   /**
    * Force-expire an event.
    */
