@@ -207,6 +207,11 @@ export const Guild: GuildType = {
     for (const dedupKey in rm) {
       const event = rm[dedupKey];
 
+      // Target no longer exists → drop the event
+      if (event.data?.targetId && !Game.getObjectById(event.data.targetId as Id<any>)) {
+        delete rm[dedupKey];
+        continue;
+      }
       if (event.status === 'expired') {
         delete rm[dedupKey];
         continue;
