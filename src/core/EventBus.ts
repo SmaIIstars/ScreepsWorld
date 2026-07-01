@@ -201,13 +201,7 @@ export const EventBus: EventBusType = {
     const events = this._events[roomName];
     if (!events) return;
     const alive: Event[] = [];
-    
-    // Fix stale currentWorkers: if claimerIds is empty/undefined, reset
-    if (!event.claimerIds) event.claimerIds = [];
-    if (event.currentWorkers > event.claimerIds.length) {
-      event.currentWorkers = event.claimerIds.length;
-    }
-for (const event of events) {
+    for (const event of events) {
       if (event.status === 'expired') {
         event.status = 'expired';
         delete this._dedupIndex[event.dedupKey];
