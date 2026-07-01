@@ -82,13 +82,13 @@ export abstract class BaseCreep {
     console.log(
       '[' + Game.time + '] ' + this.creep.name + ' check event ' + id + ' -> ' + (event ? event.status : 'null')
     );
-    if (!event || !event.claimerIds.includes(this.creep.name)) {
+    if (!event || event.status === 'completed' || event.status === 'expired' || !event.claimerIds.includes(this.creep.name)) {
       const reason = !event
-        ? 'not_found id=' + id
-        : event.status !== 'claimed'
+        ? 'not_found'
+        : event.status === 'completed' || event.status === 'expired'
           ? 'status=' + event.status
           : 'not_in_claimers';
-      console.log('[' + Game.time + '] ' + this.creep.name + ' lost event (' + reason + ')');
+      console.log('[' + Game.time + '] ' + this.creep.name + ' lost event ' + id + ' (' + reason + ')');
       delete this.creep.memory.currentEventId;
       return;
     }
