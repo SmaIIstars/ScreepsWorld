@@ -2,11 +2,16 @@
 import { loadEventBus } from './core/EventBus';
 import { roomMonitor } from './monitor/index';
 import { runCreep } from './worker/runtime';
+import { runSpawnManager } from './worker/spawnManager';
 import { checkDeadCreeps, cleanupEvents, persistEventBus } from './lifecycle/index';
 
 extensionMain();
 
 export function loop(): void {
+  if (Game.time % 10 === 0) {
+    console.log(Game.time);
+  }
+
   loadEventBus();
 
   // Phase 1: Lifecycle
@@ -31,3 +36,6 @@ export function loop(): void {
   cleanupEvents();
   persistEventBus();
 }
+
+module.exports = { loop };
+

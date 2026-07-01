@@ -11,21 +11,9 @@
  *   3. If idle, query for matching events and claim one (find-work phase)
  */
 
-declare global {
-  interface Memory {
-    workers: Record<string, WorkerMeta>;
-  }
-
-  interface CreepMemory {
-    currentEventId?: string;
-  }
-}
-
 import { EventBus } from '../core/EventBus';
 import { computeTags, computeCapacities } from '../core/tagSystem';
 import { getBehavior } from '../behavior/index';
-
-const RESOURCE_ENERGY = 'energy' as const;
 
 /**
  * Run one tick of the runtime loop for a single creep.
@@ -48,7 +36,7 @@ export function runCreep(creep: Creep): void {
       currentEventId: null,
       rolePref: creep.memory.role || '',
       createdAt: Game.time,
-      spawnBody: creep.body.map(part => ({ type: part.type, hits: part.hits })),
+      spawnBody: creep.body.map((part) => ({ type: part.type, hits: part.hits })),
     };
   }
   // ---------------------------------------------------------------------------
@@ -91,5 +79,3 @@ export function runCreep(creep: Creep): void {
     }
   }
 }
-
-

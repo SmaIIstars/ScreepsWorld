@@ -8,12 +8,6 @@
  * loadEventBus() / saveEventBus() are called from main.ts for tick boundaries.
  */
 
-declare global {
-  interface Memory {
-    events: Record<string, Event[]>;
-  }
-}
-
 import { buildDedupKey, generateEventId } from './Event';
 import { canWorkerTakeEvent } from './tagSystem';
 
@@ -118,11 +112,7 @@ export const EventBus = {
   /**
    * Query available events in a room that a worker can take.
    */
-  query(
-    workerTags: string[],
-    capacities: Record<string, number>,
-    roomName: string,
-  ): Event[] {
+  query(workerTags: string[], capacities: Record<string, number>, roomName: string): Event[] {
     const events = this._events[roomName];
     if (!events) return [];
 
@@ -303,5 +293,3 @@ export function loadEventBus(): void {
 export function saveEventBus(): void {
   Memory.events = EventBus._events;
 }
-
-
