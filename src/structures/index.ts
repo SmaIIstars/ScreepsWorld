@@ -21,7 +21,9 @@ const SITE_INTERVAL = 5;    // construction sites
 function getCache(room: Room): RoomCache {
   if (!Memory.rooms) Memory.rooms = {};
   const cached = Memory.rooms[room.name] as RoomCache | undefined;
-  if (cached && cached.sourceIds) return cached;
+  if (cached && cached.sourceIds && cached.energyIds) return cached;
+
+  // No cache or schema mismatch — full scan now
   const fresh: RoomCache = {
     sourceIds: [],
     spawnIds: [],
@@ -32,6 +34,8 @@ function getCache(room: Room): RoomCache {
     lastSiteScan: 0,
   };
   Memory.rooms[room.name] = fresh as any;
+  refreshStatic(room, fresh);
+  refreshSites(room, fresh);
   return fresh;
 }
 

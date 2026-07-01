@@ -13,7 +13,7 @@ declare global {
 
   interface Memory {
     // note: creep runtime data stored in Memory.creeps
-    events: Record<string, Event[]>;
+    events: Record<string, Record<string, Event>>;
     rooms: Record<string, any>;
     [key: string]: any;
   }
