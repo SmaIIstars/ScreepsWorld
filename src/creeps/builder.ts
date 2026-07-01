@@ -17,18 +17,18 @@ export class BuilderCreep extends BaseCreep {
     if (this.hasEnergy()) {
       const evt = this.findEvent(events, ['build', 'repair']);
       if (evt) { this.assignEvent(evt); return; }
-      const upgradeEvt = this.findEvent(events, ['upgrade_controller']);
+      const upgradeEvt = this.findEvent(events, ['upgrade']);
       if (upgradeEvt) { this.assignEvent(upgradeEvt); return; }
     }
 
     // Full → fill spawn as fallback duty
     if (this.isFull()) {
-      const evt = this.findEvent(events, ['fill_spawn']);
+      const evt = this.findEvent(events, ['fill']);
       if (evt) { this.assignEvent(evt); return; }
     }
 
     // Empty → harvest
-    const evt = this.findEvent(events, ['harvest_energy']);
+    const evt = this.findEvent(events, ['harvest']);
     if (evt) { this.assignEvent(evt); return; }
 
     // Fallback

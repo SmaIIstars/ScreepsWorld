@@ -16,8 +16,8 @@ export function getCreepInstance(creep: Creep): BaseCreep {
       default:          instances[name] = new HarvesterCreep(creep); break;
     }
   } else {
-    // Update Creep reference for the new tick (Screeps recreates Game.creeps objects each tick)
-    (instances[name] as any).creep = creep;
+    // Refresh Creep reference for the new tick (Screeps recreates Game.creeps each tick)
+    instances[name].refreshCreep(creep);
   }
   return instances[name];
 }

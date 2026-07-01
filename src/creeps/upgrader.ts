@@ -15,7 +15,7 @@ export class UpgraderCreep extends BaseCreep {
 
     // Has energy → upgrade first, fallback to build
     if (this.hasEnergy()) {
-      const evt = this.findEvent(events, ['upgrade_controller']);
+      const evt = this.findEvent(events, ['upgrade']);
       if (evt) { this.assignEvent(evt); return; }
       const buildEvt = this.findEvent(events, ['build', 'repair']);
       if (buildEvt) { this.assignEvent(buildEvt); return; }
@@ -23,12 +23,12 @@ export class UpgraderCreep extends BaseCreep {
 
     // Full but no upgrade needed → fill spawn
     if (this.isFull()) {
-      const evt = this.findEvent(events, ['fill_spawn']);
+      const evt = this.findEvent(events, ['fill']);
       if (evt) { this.assignEvent(evt); return; }
     }
 
     // Empty → harvest
-    const evt = this.findEvent(events, ['harvest_energy']);
+    const evt = this.findEvent(events, ['harvest']);
     if (evt) { this.assignEvent(evt); return; }
 
     // Fallback

@@ -5,7 +5,7 @@ export class SourceLifecycle extends BaseStructure<Source> {
   runLifecycle(): void {
     if (this.obj.energy > 0) {
       this.post({
-        type: 'harvest_energy',
+        type: 'harvest',
         room: this.room.name,
         targetId: this.obj.id,
         requiredTags: ['harvest', 'move'],
@@ -15,7 +15,7 @@ export class SourceLifecycle extends BaseStructure<Source> {
         data: { targetId: this.obj.id },
       });
     } else {
-      this.cancel('harvest_energy');
+      this.cancel('harvest');
     }
   }
 }

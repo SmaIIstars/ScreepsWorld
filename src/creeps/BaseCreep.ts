@@ -3,15 +3,20 @@ import { computeTags, computeCapacities } from '../core/tagSystem';
 import { getBehavior } from '../behavior/index';
 
 const ROLE_PREFS: Record<string, string[]> = {
-  harvester: ['harvest_energy', 'fill_spawn', 'upgrade_controller'],
-  upgrader: ['upgrade_controller', 'fill_spawn', 'harvest_energy'],
-  builder: ['build', 'fill_spawn', 'harvest_energy', 'upgrade_controller'],
+  harvester: ['harvest', 'fill', 'upgrade'],
+  upgrader: ['upgrade', 'fill', 'harvest'],
+  builder: ['build', 'fill', 'harvest', 'upgrade'],
 };
 
 export abstract class BaseCreep {
   protected creep: Creep;
 
   constructor(creep: Creep) {
+    this.creep = creep;
+  }
+
+  /** Refresh the Creep reference for the new tick (Screeps recreates Game.creeps each tick). */
+  refreshCreep(creep: Creep): void {
     this.creep = creep;
   }
 

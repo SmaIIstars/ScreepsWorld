@@ -1,28 +1,11 @@
 // src/structures/spawn.ts
+// Handles creep spawning only. Energy demand is handled by energy.ts.
+
 import { BaseStructure } from './BaseStructure';
 import { Guild } from '../core/Guild';
 
 export class SpawnLifecycle extends BaseStructure<StructureSpawn> {
   runLifecycle(): void {
-    // ── Energy demand ──
-    if (this.obj.store[RESOURCE_ENERGY] < this.obj.store.getCapacity(RESOURCE_ENERGY)) {
-      const deficit = this.obj.store.getCapacity(RESOURCE_ENERGY) - this.obj.store[RESOURCE_ENERGY];
-      const spawnBlocked = this.obj.spawning && this.obj.store[RESOURCE_ENERGY] < 200;
-      const priority = spawnBlocked ? 95 : Math.min(60 + Math.floor(deficit / 50) * 5, 90);
-      this.post({
-        type: 'fill_spawn',
-        room: this.room.name,
-        targetId: this.obj.id,
-        requiredTags: ['transport', 'move'],
-        requiredCapacities: { carry: 50 },
-        priority,
-        data: { targetId: this.obj.id },
-      });
-    } else {
-      this.cancel('fill_spawn');
-    }
-
-    // ── Spawning ──
     if (this.obj.spawning) return; // Busy
 
     const spawnReqs = Guild.getPendingByType(this.room.name, 'spawn_req');

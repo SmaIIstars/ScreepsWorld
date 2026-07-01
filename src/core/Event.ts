@@ -1,8 +1,7 @@
 ﻿export const EVENT_TYPES = {
-  HARVEST_ENERGY: 'harvest_energy',
-  TRANSPORT_ENERGY: 'transport_energy',
-  FILL_SPAWN: 'fill_spawn',
-  UPGRADE_CONTROLLER: 'upgrade_controller',
+  HARVEST: 'harvest',
+  FILL: 'fill',
+  UPGRADE: 'upgrade',
   BUILD: 'build',
   REPAIR: 'repair',
   SPAWN_REQ: 'spawn_req',

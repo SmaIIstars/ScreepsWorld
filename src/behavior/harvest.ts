@@ -1,7 +1,7 @@
 import { type Behavior } from './index';
 
-export const harvestEnergyBehavior: Behavior = {
-  type: 'harvest_energy',
+export const harvestBehavior: Behavior = {
+  type: 'harvest',
 
   validate(creep: Creep, event: Event): boolean {
     if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) return false;
@@ -28,4 +28,3 @@ export const harvestEnergyBehavior: Behavior = {
     return creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0;
   },
 };
-

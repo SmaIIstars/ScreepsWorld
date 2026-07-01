@@ -1,7 +1,7 @@
 import { type Behavior } from './index';
 
-export const upgradeControllerBehavior: Behavior = {
-  type: 'upgrade_controller',
+export const upgradeBehavior: Behavior = {
+  type: 'upgrade',
 
   validate(creep: Creep, event: Event): boolean {
     if (creep.store[RESOURCE_ENERGY] === 0) return false;
@@ -27,4 +27,3 @@ export const upgradeControllerBehavior: Behavior = {
     return !controller || !controller.my;
   },
 };
-

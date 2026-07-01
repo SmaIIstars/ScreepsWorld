@@ -15,12 +15,12 @@ export class HarvesterCreep extends BaseCreep {
 
     // Full → transport
     if (this.isFull()) {
-      const evt = this.findEvent(events, ['fill_spawn', 'transport_energy']);
+      const evt = this.findEvent(events, ['fill', 'transport_energy']);
       if (evt) { this.assignEvent(evt); return; }
     }
 
     // Not full → harvest
-    const evt = this.findEvent(events, ['harvest_energy']);
+    const evt = this.findEvent(events, ['harvest']);
     if (evt) { this.assignEvent(evt); return; }
 
     // Fallback
