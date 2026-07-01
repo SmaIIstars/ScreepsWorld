@@ -3,9 +3,9 @@ import { computeTags, computeCapacities } from '../core/tagSystem';
 import { getBehavior } from '../behavior/index';
 
 const ROLE_PREFS: Record<string, string[]> = {
-  harvester: ['harvest', 'fill', 'upgrade'],
-  upgrader: ['upgrade', 'fill', 'harvest'],
-  builder: ['build', 'fill', 'harvest', 'upgrade'],
+  harvester: ['collect', 'harvest', 'fill', 'upgrade'],
+  builder:   ['build', 'collect', 'fill', 'harvest', 'upgrade'],
+  upgrader:  ['upgrade', 'collect', 'fill', 'harvest'],
 };
 
 export abstract class BaseCreep {
@@ -95,8 +95,15 @@ export abstract class BaseCreep {
 
     const behavior = getBehavior(event.type);
     if (!behavior || !behavior.validate(this.creep, event)) {
-      console.log('[' + Game.time + '] ' + this.creep.name + ' release ' + event.type + ' (validate fail)');
-      Guild.release(event.id, this.creep.name);
+      // Target gone → complete the event, not release
+      const targetGone = event.data?.targetId && !Game.getObjectById(event.data.targetId as Id<any>);
+      if (targetGone) {
+        console.log('[' + Game.time + '] ' + this.creep.name + ' complete ' + event.type + ' (target gone)');
+        Guild.complete(event.id);
+      } else {
+        console.log('[' + Game.time + '] ' + this.creep.name + ' release ' + event.type + ' (validate fail)');
+        Guild.release(event.id, this.creep.name);
+      }
       delete this.creep.memory.currentEventId;
       return;
     }
