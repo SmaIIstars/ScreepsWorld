@@ -1,7 +1,7 @@
 import extensionMain from './extension';
 import { loadGuild } from './core/Guild';
 import { roomMonitor } from './monitor/index';
-import { getCreepInstance, cleanupInstances } from './roles/registry';
+import { getCreepInstance, cleanupInstances } from './creeps/index';
 import { runSpawnManager } from './worker/spawnManager';
 import { checkDeadCreeps, cleanupEvents, persistGuild } from './lifecycle/index';
 

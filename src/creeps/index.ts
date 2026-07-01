@@ -1,7 +1,7 @@
 import { BaseCreep } from './BaseCreep';
-import { HarvesterCreep } from './HarvesterCreep';
-import { UpgraderCreep } from './UpgraderCreep';
-import { BuilderCreep } from './BuilderCreep';
+import { HarvesterCreep } from './harvester';
+import { UpgraderCreep } from './upgrader';
+import { BuilderCreep } from './builder';
 
 const instances: Record<string, BaseCreep> = {};
 
