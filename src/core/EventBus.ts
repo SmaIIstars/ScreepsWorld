@@ -7,14 +7,11 @@
  *
  * loadEventBus() / saveEventBus() are called from main.ts for tick boundaries.
  */
-
 import { buildDedupKey, generateEventId } from './Event';
 import { canWorkerTakeEvent } from './tagSystem';
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
 export interface EventPublishData {
   type: string;
   room: string;
@@ -28,24 +25,19 @@ export interface EventPublishData {
   allowFallback?: boolean;
   ttl?: number;
 }
-
 // ---------------------------------------------------------------------------
 // EventBus
 // ---------------------------------------------------------------------------
-
 export const EventBus = {
   _events: {} as Record<string, Event[]>,
   _dedupIndex: {} as Record<string, Event>,
-
   /**
    * Publish a new event or merge with an existing pending event.
    */
   publish(eventData: EventPublishData): Event {
     const { type, room, targetId } = eventData;
     const dedupKey = buildDedupKey(type, room, targetId);
-
     // --- Check for existing event with same dedupKey ---
-
     const existing = this._dedupIndex[dedupKey];
     if (existing) {
       if (existing.status === 'pending') {
@@ -72,16 +64,12 @@ export const EventBus = {
       if (existing.status === 'expired') {
         delete this._dedupIndex[existing.dedupKey];
       }
-
       // Claimed but still has capacity -> still valid
       if (existing.status === 'claimed') {
         if (existing.currentWorkers < existing.maxWorkers) return existing;
       }
-
     }
-
     // --- Create new event ---
-
     const id = generateEventId(type, room, targetId);
     const event: Event = {
       id,
@@ -103,39 +91,30 @@ export const EventBus = {
       ttl: 99999,
       dedupKey,
     } as unknown as Event;
-
     // Store
     if (!this._events[room]) {
       this._events[room] = [];
     }
     this._events[room].push(event);
     this._dedupIndex[dedupKey] = event;
-
     return event;
   },
-
   /**
    * Query available events in a room that a worker can take.
    */
   query(workerTags: string[], capacities: Record<string, number>, roomName: string): Event[] {
     const events = this._events[roomName];
     if (!events) return [];
-
     const worker = { tags: workerTags, capacities };
-
     const scored: { event: Event; perfectMatch: boolean }[] = [];
-
     for (const event of events) {
       if (event.status !== 'pending') continue;
       if (event.currentWorkers >= event.maxWorkers) continue;
-      if (Game.time - event.createdAt >= event.ttl) continue;
-
       const result = canWorkerTakeEvent(worker, event);
       if (result.match) {
         scored.push({ event, perfectMatch: result.perfectMatch });
       }
     }
-
     scored.sort((a, b) => {
       if (a.perfectMatch !== b.perfectMatch) {
         return a.perfectMatch ? -1 : 1;
@@ -145,24 +124,17 @@ export const EventBus = {
       }
       return a.event.createdAt - b.event.createdAt;
     });
-
     return scored.map((s) => s.event);
   },
-
   /**
    * Claim an event for a worker.
    */
   claim(eventId: string, workerId: string): boolean {
     const event = this.findById(eventId);
     if (!event) return false;
-
     if (event.status !== 'pending' && event.status !== 'claimed') return false;
-    if (Game.time - event.createdAt >= event.ttl) {
-      event.status = 'expired';
-      return false;
     }
     if (event.currentWorkers >= event.maxWorkers) return false;
-
     event.currentWorkers++;
     if (!event.claimerIds.includes(workerId)) event.claimerIds.push(workerId);
     event.claimerId = workerId;
@@ -170,10 +142,8 @@ export const EventBus = {
     if (event.currentWorkers >= event.maxWorkers) {
       event.status = 'claimed';
     }
-
     return true;
   },
-
   /**
    * Mark an event as completed.
    */
@@ -183,7 +153,6 @@ export const EventBus = {
     event.status = 'completed';
     event.completedAt = Game.time;
   },
-
   /**
    * Release an event back to pending state.
    */
@@ -204,7 +173,6 @@ export const EventBus = {
       event.claimerId = event.claimerIds[0];
       event.claimedAt = Game.time;
     }  },
-
   /**
    * Force-expire an event.
    */
@@ -214,28 +182,23 @@ export const EventBus = {
     event.status = 'expired';
     delete this._dedupIndex[event.dedupKey];
   },
-
   /**
    * Clean up stale events for a room (called at end of each tick).
    */
   cleanup(roomName: string): void {
     const events = this._events[roomName];
     if (!events) return;
-
     const alive: Event[] = [];
-
     for (const event of events) {
-      if (event.status === 'expired' || Game.time - event.createdAt >= event.ttl) {
+      if (event.status === 'expired') {
         event.status = 'expired';
         delete this._dedupIndex[event.dedupKey];
         continue;
       }
-
       if (event.status === 'completed' && event.completedAt && Game.time - event.completedAt > 3) {
         delete this._dedupIndex[event.dedupKey];
         continue;
       }
-
       if (event.status === 'claimed' && event.claimerId) {
         if (!Game.creeps[event.claimerId]) {
           event.currentWorkers = Math.max(0, event.currentWorkers - 1);
@@ -249,17 +212,14 @@ export const EventBus = {
           }
         }
       }
-
       alive.push(event);
     }
-
     if (alive.length > 0) {
       this._events[roomName] = alive;
     } else {
       delete this._events[roomName];
     }
   },
-
   /**
    * Find an event by its unique ID.
    */
@@ -272,11 +232,9 @@ export const EventBus = {
     return undefined;
   },
 };
-
 // ---------------------------------------------------------------------------
 // Persistence
 // ---------------------------------------------------------------------------
-
 /**
  * Restore EventBus state from Memory.events.
  */
@@ -287,9 +245,7 @@ export function loadEventBus(): void {
     EventBus._dedupIndex = {};
     return;
   }
-
   EventBus._events = stored;
-
   const idx: Record<string, Event> = {};
   for (const roomEvents of Object.values(stored)) {
     for (const event of roomEvents) {
@@ -298,12 +254,9 @@ export function loadEventBus(): void {
   }
   EventBus._dedupIndex = idx;
 }
-
 /**
  * Persist EventBus state to Memory.events.
  */
 export function saveEventBus(): void {
   Memory.events = EventBus._events;
 }
-
-
