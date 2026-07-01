@@ -106,7 +106,7 @@ export const Guild: GuildType = {
     const worker = { tags: workerTags, capacities };
     const scored: { event: Event; perfectMatch: boolean }[] = [];
     for (const event of events) {
-      if (event.status !== 'pending') continue;
+      if (event.status !== 'pending' && event.status !== 'claimed') continue;
       if (event.currentWorkers >= event.maxWorkers) continue;
       const result = canWorkerTakeEvent(worker, event);
       if (result.match) {

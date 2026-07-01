@@ -9,6 +9,9 @@ export class BuilderCreep extends BaseCreep {
     }
 
     const events = this.queryEvents();
+    if (events.length === 0) {
+      console.log('[' + Game.time + '] ' + this.creep.name + ' NO EVENTS available (hasEnergy=' + this.hasEnergy() + ' isFull=' + this.isFull() + ')');
+    }
 
     // Has energy → build first, fallback to upgrade
     if (this.hasEnergy()) {

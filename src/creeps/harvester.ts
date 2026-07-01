@@ -9,6 +9,9 @@ export class HarvesterCreep extends BaseCreep {
     }
 
     const events = this.queryEvents();
+    if (events.length === 0) {
+      console.log('[' + Game.time + '] ' + this.creep.name + ' NO EVENTS available (hasEnergy=' + this.hasEnergy() + ' isFull=' + this.isFull() + ')');
+    }
 
     // Full → transport
     if (this.isFull()) {
