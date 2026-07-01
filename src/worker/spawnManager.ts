@@ -6,16 +6,16 @@ import { EventBus } from '../core/EventBus';
 export function runSpawnManager(): void {
   for (const roomName in Game.rooms) {
     const room = Game.rooms[roomName];
-    const spawns = room.find(FIND_MY_STRUCTURES).filter(
-      (s): s is StructureSpawn => s.structureType === STRUCTURE_SPAWN
-    );
+    const spawns = room
+      .find(FIND_MY_STRUCTURES)
+      .filter((s): s is StructureSpawn => s.structureType === STRUCTURE_SPAWN);
     if (spawns.length === 0) continue;
 
     // Find spawn_req events for this room
     const roomEvents = EventBus._events[roomName];
     if (!roomEvents) continue;
 
-    const spawnReqs = roomEvents.filter(e => e.type === 'spawn_req' && e.status === 'pending');
+    const spawnReqs = roomEvents.filter((e) => e.type === 'spawn_req' && e.status === 'pending');
     if (spawnReqs.length === 0) continue;
 
     // Sort by priority desc
@@ -26,10 +26,11 @@ export function runSpawnManager(): void {
       if (!body || !role) continue;
 
       // Count how many of this role are already being spawned or exist
-      const existing = Object.values(Game.creeps).filter((c: Creep) => {
-        const mem = Memory.creeps[c.name];
-        return mem?.role === role;
-      }).length + spawns.filter(s => s.spawning?.name?.includes(role)).length;
+      const existing =
+        Object.values(Game.creeps).filter((c: Creep) => {
+          const mem = Memory.creeps[c.name];
+          return mem?.role === role;
+        }).length + spawns.filter((s) => s.spawning?.name?.includes(role)).length;
 
       if (existing >= count) {
         EventBus.complete(req.id);
@@ -37,17 +38,14 @@ export function runSpawnManager(): void {
       }
 
       // Find an available spawn
-      const availableSpawn = spawns.find(s => !s.spawning);
+      const availableSpawn = spawns.find((s) => !s.spawning);
       if (!availableSpawn) break; // No spawns available
 
       // Generate unique name
-      const creepName = ${role}__;
+      const creepName = role + '_' + Game.time + '_' + Math.floor(Math.random() * 1000);
 
       const result = availableSpawn.spawnCreep(body, creepName, {
-        memory: {
-          role,
-          currentEventId: null,
-        },
+        memory: { role },
       });
 
       if (result === OK) {
@@ -60,4 +58,3 @@ export function runSpawnManager(): void {
     }
   }
 }
-

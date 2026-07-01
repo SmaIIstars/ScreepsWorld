@@ -89,13 +89,14 @@ export const EventBus = {
       status: 'pending',
       claimerId: null,
       claimedAt: null,
+      claimerIds: [],
       minWorkers: eventData.minWorkers ?? 1,
       maxWorkers: eventData.maxWorkers ?? 1,
       currentWorkers: 0,
       data: eventData.data ?? {},
       allowFallback: eventData.allowFallback ?? false,
       createdAt: Game.time,
-      ttl: eventData.ttl ?? 10,
+      ttl: 99999,
       dedupKey,
     } as unknown as Event;
 
@@ -159,6 +160,7 @@ export const EventBus = {
     if (event.currentWorkers >= event.maxWorkers) return false;
 
     event.currentWorkers++;
+    event.claimerIds.push(workerId);
     event.claimerId = workerId;
     event.claimedAt = Game.time;
     if (event.currentWorkers >= event.maxWorkers) {
@@ -181,17 +183,23 @@ export const EventBus = {
   /**
    * Release an event back to pending state.
    */
-  release(eventId: string): void {
+  release(eventId: string, workerId?: string): void {
     const event = this.findById(eventId);
     if (!event) return;
-
-    event.status = 'pending';
-    event.currentWorkers = Math.max(0, event.currentWorkers - 1);
+    if (workerId) {
+      event.claimerIds = event.claimerIds.filter((id: string) => id !== workerId);
+    } else {
+      event.claimerIds.pop();
+    }
+    event.currentWorkers = event.claimerIds.length;
     if (event.currentWorkers === 0) {
+      event.status = 'pending';
       event.claimerId = null;
       event.claimedAt = null;
-    }
-  },
+    } else {
+      event.claimerId = event.claimerIds[0];
+      event.claimedAt = Game.time;
+    }  },
 
   /**
    * Force-expire an event.
@@ -293,3 +301,5 @@ export function loadEventBus(): void {
 export function saveEventBus(): void {
   Memory.events = EventBus._events;
 }
+
+

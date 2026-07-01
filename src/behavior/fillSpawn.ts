@@ -1,12 +1,12 @@
-﻿import { type Behavior } from './index';
+import { type Behavior } from './index';
 
 export const fillSpawnBehavior: Behavior = {
   type: 'fill_spawn',
 
-  validate(event: Event): boolean {
+  validate(creep: Creep, event: Event): boolean {
     const spawn = Game.getObjectById<StructureSpawn>(event.data.targetId);
     if (!spawn) return false;
-    return spawn.energy < spawn.energyCapacity;
+    return spawn.store[RESOURCE_ENERGY] < spawn.store.getCapacity(RESOURCE_ENERGY);
   },
 
   execute(creep: Creep, event: Event): void {

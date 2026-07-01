@@ -1,23 +1,17 @@
-﻿import extensionMain from './extension';
+import extensionMain from './extension';
 import { loadEventBus } from './core/EventBus';
 import { roomMonitor } from './monitor/index';
-import { runCreep } from './worker/runtime';
+import { getCreepInstance, cleanupInstances } from './roles/registry';
 import { runSpawnManager } from './worker/spawnManager';
 import { checkDeadCreeps, cleanupEvents, persistEventBus } from './lifecycle/index';
 
 extensionMain();
 
 export function loop(): void {
-  if (Game.time % 10 === 0) {
-    console.log(Game.time);
-  }
-
   loadEventBus();
 
-  // Phase 1: Lifecycle
   checkDeadCreeps();
 
-  // Phase 2: Monitor
   for (const roomName in Game.rooms) {
     const room = Game.rooms[roomName];
     if (room.controller?.my) {
@@ -25,17 +19,15 @@ export function loop(): void {
     }
   }
 
-  // Phase 3: Creep Runtime
+  runSpawnManager();
+
   for (const name in Game.creeps) {
     const creep = Game.creeps[name];
     if (creep.spawning) continue;
-    runCreep(creep);
+    getCreepInstance(creep).run();
   }
 
-  // Phase 4: Cleanup & Persist
+  cleanupInstances();
   cleanupEvents();
   persistEventBus();
 }
-
-module.exports = { loop };
-

@@ -1,4 +1,4 @@
-﻿import { EventBus } from '../core/EventBus';
+import { EventBus } from '../core/EventBus';
 
 export function upgradeMonitor(room: Room): void {
   if (!room.controller || !room.controller.my) return;
@@ -15,8 +15,9 @@ export function upgradeMonitor(room: Room): void {
     requiredTags: ['work', 'move'],
     requiredCapacities: { work: 1 },
     priority,
-    ttl: 5,
+    ttl: 10,
     maxWorkers,
     data: { targetId: room.controller.id },
   });
 }
+

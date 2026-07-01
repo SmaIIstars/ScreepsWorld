@@ -154,17 +154,6 @@ export function canWorkerTakeEvent(
 // createWorkerMetaFromCreep
 // ---------------------------------------------------------------------------
 
-export function createWorkerMetaFromCreep(creep: Creep, rolePref: string): WorkerMeta {
-  return {
-    id: creep.name,
-    type: 'creep',
-    room: creep.room?.name ?? '',
-    tags: computeTags(creep.body),
-    capacities: computeCapacities(creep.body),
-    currentEventId: null,
-    rolePref,
-    createdAt: Game.time,
-    spawnBody: creep.body.map(part => ({ type: part.type, hits: part.hits })) as BodyPartDefinition[],
-  };
-}
+
+
 

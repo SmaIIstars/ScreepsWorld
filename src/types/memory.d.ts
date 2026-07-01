@@ -12,7 +12,7 @@ declare global {
   }
 
   interface Memory {
-    workers: Record<string, WorkerMeta>;
+    // note: creep runtime data stored in Memory.creeps
     events: Record<string, Event[]>;
     rooms: Record<string, any>;
     [key: string]: any;
@@ -20,3 +20,5 @@ declare global {
 }
 
 export {};
+
+

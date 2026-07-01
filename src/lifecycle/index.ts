@@ -1,4 +1,4 @@
-﻿/**
+/**
  * lifecycle/index.ts
  *
  * Lifecycle management module.
@@ -16,25 +16,22 @@ import { EventBus, saveEventBus } from '../core/EventBus';
  * For each dead creep:
  *   - Release any event it had claimed via EventBus.release()
  *   - Delete its creep memory entry
- *   - Delete its runtime worker metadata from Memory.workers
+ *   - Also releases any claimed events
  */
 export function checkDeadCreeps(): void {
   if (!Memory.creeps) return;
 
   for (const name in Memory.creeps) {
     if (!Game.creeps[name]) {
-      const worker = Memory.workers?.[name];
+      const creepData = Memory.creeps[name];
 
       // Release any claimed event back to pending
-      if (worker?.currentEventId) {
-        EventBus.release(worker.currentEventId);
+      if (creepData?.currentEventId) {
+        EventBus.release(creepData.currentEventId, name);
       }
 
       // Clean up Memory
       delete Memory.creeps[name];
-      if (Memory.workers) {
-        delete Memory.workers[name];
-      }
     }
   }
 }

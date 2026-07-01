@@ -10,6 +10,7 @@
     priority: number;
     status: EventStatus;
     claimerId: string | null;
+  claimerIds: string[];
     claimedAt: number | null;
     completedAt: number | null;
     minWorkers: number;

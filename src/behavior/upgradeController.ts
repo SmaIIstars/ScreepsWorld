@@ -1,9 +1,9 @@
-﻿import { type Behavior } from './index';
+import { type Behavior } from './index';
 
 export const upgradeControllerBehavior: Behavior = {
   type: 'upgrade_controller',
 
-  validate(event: Event): boolean {
+  validate(creep: Creep, event: Event): boolean {
     const controller = Game.getObjectById<StructureController>(event.data.targetId);
     if (!controller) return false;
     return controller.my;
@@ -27,3 +27,4 @@ export const upgradeControllerBehavior: Behavior = {
     return creep.store[RESOURCE_ENERGY] === 0;
   },
 };
+
