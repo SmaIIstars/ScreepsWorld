@@ -1,4 +1,4 @@
-﻿/**
+/**
  * EventBus.ts
  *
  * Global event management system. Stores events in Memory.events and
@@ -69,10 +69,15 @@ export const EventBus = {
         existing.createdAt = Game.time;
         return existing;
       }
+      if (existing.status === 'expired') {
+        delete this._dedupIndex[existing.dedupKey];
+      }
 
       // Claimed but still has capacity -> still valid
       if (existing.status === 'claimed') {
         if (existing.currentWorkers < existing.maxWorkers) return existing;
+      }
+
       // Completed event for same target -> reset to pending
       if (existing.status === 'completed') {
         existing.priority = Math.max(existing.priority, eventData.priority ?? 50);

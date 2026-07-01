@@ -1,9 +1,11 @@
-﻿// spawnManager.ts
+// spawnManager.ts
 // Consumes spawn_req events and spawns creeps at available spawns
 
 import { EventBus } from '../core/EventBus';
 
 export function runSpawnManager(): void {
+  console.log('[' + Game.time + '] spawnManager start, rooms=' + Object.keys(Game.rooms).length);
+
   for (const roomName in Game.rooms) {
     const room = Game.rooms[roomName];
     const spawns = room
@@ -13,7 +15,7 @@ export function runSpawnManager(): void {
 
     // Find spawn_req events for this room
     const roomEvents = EventBus._events[roomName];
-    if (!roomEvents) continue;
+    if (!roomEvents) { console.log('[' + Game.time + '] spawnManager: no events for ' + roomName); continue; }
 
     const spawnReqs = roomEvents.filter((e) => e.type === 'spawn_req' && e.status === 'pending');
     if (spawnReqs.length === 0) continue;

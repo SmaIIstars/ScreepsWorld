@@ -1,4 +1,4 @@
-﻿import { BaseCreep } from './BaseCreep';
+import { BaseCreep } from './BaseCreep';
 import { HarvesterCreep } from './HarvesterCreep';
 import { UpgraderCreep } from './UpgraderCreep';
 import { BuilderCreep } from './BuilderCreep';
@@ -15,6 +15,9 @@ export function getCreepInstance(creep: Creep): BaseCreep {
       case 'builder':   instances[name] = new BuilderCreep(creep); break;
       default:          instances[name] = new HarvesterCreep(creep); break;
     }
+  } else {
+    // Update Creep reference for the new tick (Screeps recreates Game.creeps objects each tick)
+    (instances[name] as any).creep = creep;
   }
   return instances[name];
 }
