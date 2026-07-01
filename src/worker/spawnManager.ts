@@ -11,6 +11,7 @@ export function runSpawnManager(): void {
     const spawns = room
       .find(FIND_MY_STRUCTURES)
       .filter((s): s is StructureSpawn => s.structureType === STRUCTURE_SPAWN);
+    console.log('[' + Game.time + '] spawnManager: found ' + spawns.length + ' spawns in ' + roomName);
     if (spawns.length === 0) continue;
 
     // Find spawn_req events for this room
