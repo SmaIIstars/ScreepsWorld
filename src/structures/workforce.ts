@@ -10,7 +10,8 @@ export function runWorkforceLifecycle(room: Room): void {
   const roleCounts: Record<string, number> = {};
   for (const name in Game.creeps) {
     const role = Memory.creeps[name]?.role;
-    if (role) roleCounts[role] = (roleCounts[role] || 0) + 1;
+    const live = (Game.creeps[name]?.ticksToLive ?? 0) >= 100;
+    if (role && live) roleCounts[role] = (roleCounts[role] || 0) + 1;
   }
 
   for (const role of config.roles) {

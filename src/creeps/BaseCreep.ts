@@ -67,7 +67,6 @@ export abstract class BaseCreep {
   protected assignEvent(event: Event): void {
     const ok = Guild.claim(event.id, this.creep.name);
     if (ok) {
-      console.log('[' + Game.time + '] ' + this.creep.name + ' claim ' + event.type + ' (p=' + event.priority + ')');
       this.creep.memory.currentEventId = event.id;
     }
   }
@@ -79,9 +78,6 @@ export abstract class BaseCreep {
     if (!id) return;
 
     const event = Guild.findById(id);
-    console.log(
-      '[' + Game.time + '] ' + this.creep.name + ' check event ' + id + ' -> ' + (event ? event.status : 'null')
-    );
     if (!event || event.status === 'completed' || event.status === 'expired' || !event.claimerIds.includes(this.creep.name)) {
       const reason = !event
         ? 'not_found'
@@ -101,18 +97,14 @@ export abstract class BaseCreep {
         console.log('[' + Game.time + '] ' + this.creep.name + ' complete ' + event.type + ' (target gone)');
         Guild.complete(event.id);
       } else {
-        console.log('[' + Game.time + '] ' + this.creep.name + ' release ' + event.type + ' (validate fail)');
         Guild.release(event.id, this.creep.name);
       }
       delete this.creep.memory.currentEventId;
       return;
     }
 
-    var freeCap = this.creep.store.getFreeCapacity(RESOURCE_ENERGY);
-    console.log('[' + Game.time + '] ' + this.creep.name + ' execute ' + event.type + ' free=' + freeCap + ' energy=' + this.creep.store[RESOURCE_ENERGY]);
     behavior.execute(this.creep, event);
     var complete = behavior.isComplete(this.creep, event);
-    console.log('[' + Game.time + '] ' + this.creep.name + ' isComplete=' + complete + ' free=' + this.creep.store.getFreeCapacity(RESOURCE_ENERGY));
     if (complete) {
       console.log('[' + Game.time + '] ' + this.creep.name + ' complete ' + event.type);
       Guild.complete(event.id);
