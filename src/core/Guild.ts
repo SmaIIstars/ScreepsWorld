@@ -62,6 +62,8 @@ export const Guild: GuildType = {
         existing.createdAt = Game.time;
         if (eventData.requiredTags?.length) existing.requiredTags = eventData.requiredTags;
         if (eventData.requiredCapacities) existing.requiredCapacities = eventData.requiredCapacities;
+        if (eventData.maxWorkers !== undefined) existing.maxWorkers = eventData.maxWorkers;
+        if (eventData.minWorkers !== undefined) existing.minWorkers = eventData.minWorkers;
         if (eventData.data) Object.assign(existing.data, eventData.data);
         return existing;
       }
