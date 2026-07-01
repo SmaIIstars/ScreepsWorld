@@ -8,48 +8,64 @@ import { runEnergyLifecycle } from './energy';
 interface RoomCache {
   sourceIds: Id<Source>[];
   spawnIds: Id<StructureSpawn>[];
-  energyIds: Id<AnyStoreStructure>[];
+  fillTargetIds: Id<AnyStoreStructure>[];
   controllerId: Id<StructureController> | null;
   siteIds: Id<ConstructionSite>[];
   lastScan: number;
   lastSiteScan: number;
 }
 
-const STATIC_INTERVAL = 20; // sources, controller, spawns, energy
-const SITE_INTERVAL = 5;    // construction sites
+const STRUCTURE_INTERVAL = 20; // owned structures + sources + controller
+const SITE_INTERVAL = 5;       // construction sites
 
 function getCache(room: Room): RoomCache {
   if (!Memory.rooms) Memory.rooms = {};
   const cached = Memory.rooms[room.name] as RoomCache | undefined;
-  if (cached && cached.sourceIds && cached.energyIds) return cached;
+  if (cached && cached.sourceIds && cached.fillTargetIds) return cached;
 
-  // No cache or schema mismatch — full scan now
   const fresh: RoomCache = {
     sourceIds: [],
     spawnIds: [],
-    energyIds: [],
+    fillTargetIds: [],
     controllerId: null,
     siteIds: [],
     lastScan: 0,
     lastSiteScan: 0,
   };
   Memory.rooms[room.name] = fresh as any;
-  refreshStatic(room, fresh);
+  refreshStructures(room, fresh);
   refreshSites(room, fresh);
   return fresh;
 }
 
-function refreshStatic(room: Room, cache: RoomCache): void {
-  cache.sourceIds = room.find(FIND_SOURCES).map((s) => s.id);
-  cache.spawnIds = room.find(FIND_MY_SPAWNS).map((s) => s.id);
-  cache.energyIds = room
-    .find(FIND_MY_STRUCTURES)
-    .filter((s) =>
-      s.structureType === STRUCTURE_SPAWN ||
-      s.structureType === STRUCTURE_EXTENSION ||
-      s.structureType === STRUCTURE_TOWER
-    )
-    .map((s) => s.id as Id<AnyStoreStructure>);
+function refreshStructures(room: Room, cache: RoomCache): void {
+  const sources: Id<Source>[] = [];
+  const spawns: Id<StructureSpawn>[] = [];
+  const fills: Id<AnyStoreStructure>[] = [];
+
+  // Sources (not owned structures, separate API)
+  for (const s of room.find(FIND_SOURCES)) sources.push(s.id);
+
+  // One pass over all owned structures — dispatch by type
+  for (const s of room.find(FIND_MY_STRUCTURES)) {
+    switch (s.structureType) {
+      case STRUCTURE_SPAWN: {
+        const sp = s as StructureSpawn;
+        spawns.push(sp.id);
+        fills.push(sp.id as Id<AnyStoreStructure>);
+        break;
+      }
+      case STRUCTURE_EXTENSION:
+      case STRUCTURE_TOWER:
+        fills.push(s.id as Id<AnyStoreStructure>);
+        break;
+      // future: STRUCTURE_STORAGE, STRUCTURE_TERMINAL, etc.
+    }
+  }
+
+  cache.sourceIds = sources;
+  cache.spawnIds = spawns;
+  cache.fillTargetIds = fills;
   cache.controllerId = room.controller?.id ?? null;
   cache.lastScan = Game.time;
 }
@@ -62,45 +78,44 @@ function refreshSites(room: Room, cache: RoomCache): void {
 export function runStructureLifecycles(room: Room): void {
   const cache = getCache(room);
 
-  // ── Static (sources, controller, spawns, energy) — every STATIC_INTERVAL ticks ──
-  if (Game.time - cache.lastScan >= STATIC_INTERVAL) {
-    refreshStatic(room, cache);
+  // ── Refresh ──
+  if (Game.time - cache.lastScan >= STRUCTURE_INTERVAL) {
+    refreshStructures(room, cache);
+  }
+  if (Game.time - cache.lastSiteScan >= SITE_INTERVAL) {
+    refreshSites(room, cache);
   }
 
-  // Sources
+  // ── Sources → harvest ──
   for (const id of cache.sourceIds) {
     const obj = Game.getObjectById(id);
     if (obj) new SourceLifecycle(obj).runLifecycle();
   }
 
-  // Controller
+  // ── Controller → upgrade ──
   if (cache.controllerId) {
     const ctrl = Game.getObjectById(cache.controllerId);
     if (ctrl) new ControllerLifecycle(ctrl).runLifecycle();
   }
 
-  // Energy structures (fill demands)
-  for (const id of cache.energyIds) {
+  // ── Fill targets (spawn/extension/tower) → fill ──
+  for (const id of cache.fillTargetIds) {
     const obj = Game.getObjectById(id);
     if (obj) runEnergyLifecycle(obj);
   }
 
-  // Spawns (creep production only)
+  // ── Spawns → creep production ──
   for (const id of cache.spawnIds) {
     const obj = Game.getObjectById(id);
     if (obj) new SpawnLifecycle(obj).runLifecycle();
   }
 
-  // ── Sites — every SITE_INTERVAL ticks ──
-  if (Game.time - cache.lastSiteScan >= SITE_INTERVAL) {
-    refreshSites(room, cache);
-  }
-
+  // ── Construction sites → build ──
   for (const id of cache.siteIds) {
     const obj = Game.getObjectById(id);
     if (obj) new SiteLifecycle(obj).runLifecycle();
   }
 
-  // ── Workforce — every tick (needs live creep count) ──
+  // ── Workforce → spawn_req ──
   runWorkforceLifecycle(room);
 }
