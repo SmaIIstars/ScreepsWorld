@@ -37,7 +37,7 @@ function getCache(room: Room): RoomCache {
     lastScan: 0,
     lastSiteScan: 0,
   };
-  Memory.rooms[room.name] = fresh as any;
+  Memory.rooms[room.name] = fresh;
   refreshStructures(room, fresh);
   refreshSites(room, fresh);
   return fresh;
@@ -54,11 +54,20 @@ function refreshStructures(room: Room, cache: RoomCache): void {
 
   for (const s of room.find(FIND_MY_STRUCTURES)) {
     switch (s.structureType) {
-      case STRUCTURE_SPAWN:     spawns.push(s.id); break;
-      case STRUCTURE_EXTENSION: extensions.push(s.id); break;
-      case STRUCTURE_TOWER:     towers.push(s.id); break;
-      case STRUCTURE_STORAGE:   storages.push(s.id); break;
-      default: break; // container, link, terminal, etc. — skip for now
+      case STRUCTURE_SPAWN:
+        spawns.push(s.id);
+        break;
+      case STRUCTURE_EXTENSION:
+        extensions.push(s.id);
+        break;
+      case STRUCTURE_TOWER:
+        towers.push(s.id);
+        break;
+      case STRUCTURE_STORAGE:
+        storages.push(s.id);
+        break;
+      default:
+        break; // container, link, terminal, etc. — skip for now
     }
   }
 

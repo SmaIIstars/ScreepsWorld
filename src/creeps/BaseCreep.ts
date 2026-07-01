@@ -4,8 +4,8 @@ import { getBehavior } from '../behavior/index';
 
 const ROLE_PREFS: Record<string, string[]> = {
   harvester: ['collect', 'harvest', 'fill', 'upgrade'],
-  builder:   ['build', 'collect', 'fill', 'harvest', 'upgrade'],
-  upgrader:  ['upgrade', 'collect', 'fill', 'harvest'],
+  builder: ['build', 'collect', 'fill', 'harvest', 'upgrade'],
+  upgrader: ['upgrade', 'collect', 'fill', 'harvest'],
 };
 
 export abstract class BaseCreep {
@@ -78,7 +78,12 @@ export abstract class BaseCreep {
     if (!id) return;
 
     const event = Guild.findById(id);
-    if (!event || event.status === 'completed' || event.status === 'expired' || !event.claimerIds.includes(this.creep.name)) {
+    if (
+      !event ||
+      event.status === 'completed' ||
+      event.status === 'expired' ||
+      !event.claimerIds.includes(this.creep.name)
+    ) {
       const reason = !event
         ? 'not_found'
         : event.status === 'completed' || event.status === 'expired'
@@ -92,7 +97,7 @@ export abstract class BaseCreep {
     const behavior = getBehavior(event.type);
     if (!behavior || !behavior.validate(this.creep, event)) {
       // Target gone → complete the event, not release
-      const targetGone = event.data?.targetId && !Game.getObjectById(event.data.targetId as Id<any>);
+      const targetGone = event.data?.targetId && !Game.getObjectById(event.data.targetId);
       if (targetGone) {
         console.log('[' + Game.time + '] ' + this.creep.name + ' complete ' + event.type + ' (target gone)');
         Guild.complete(event.id);

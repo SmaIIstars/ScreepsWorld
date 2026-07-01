@@ -25,7 +25,7 @@ const SCAN_INTERVAL = 20;
 const MIN_AMOUNT = 50;
 
 function getWorldCache(room: Room): WorldCache {
-  const roomMem = Memory.rooms[room.name] as any;
+  const roomMem = Memory.rooms[room.name];
   if (roomMem?._world) return roomMem._world;
   const fresh: WorldCache = {
     resources: {},
