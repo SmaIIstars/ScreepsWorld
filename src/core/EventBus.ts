@@ -28,7 +28,20 @@ export interface EventPublishData {
 // ---------------------------------------------------------------------------
 // EventBus
 // ---------------------------------------------------------------------------
-export const EventBus = {
+export interface EventBusType {
+  _events: Record<string, Event[]>;
+  _dedupIndex: Record<string, Event>;
+  publish(eventData: EventPublishData): Event;
+  query(workerTags: string[], capacities: Record<string, number>, roomName: string): Event[];
+  claim(eventId: string, workerId: string): boolean;
+  complete(eventId: string): void;
+  release(eventId: string, workerId?: string): void;
+  expire(eventId: string): void;
+  cleanup(roomName: string): void;
+  findById(eventId: string): Event | undefined;
+}
+
+export const EventBus: EventBusType = {
   _events: {} as Record<string, Event[]>,
   _dedupIndex: {} as Record<string, Event>,
   /**
