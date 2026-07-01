@@ -5,6 +5,7 @@
     "outDir": "output",
     "rootDir": "src",
     "strict": true,
+    "typeRoots": ["./node_modules/@types"],
     "skipLibCheck": true,
     "esModuleInterop": true,
     "paths": {
@@ -20,3 +21,4 @@
     "src/utils/**/*",
   ]
 }
+
