@@ -2,6 +2,7 @@ import { BaseCreep } from './BaseCreep';
 import { HarvesterCreep } from './harvester';
 import { UpgraderCreep } from './upgrader';
 import { BuilderCreep } from './builder';
+import { MinerCreep } from './miner';
 
 const instances: Record<string, BaseCreep> = {};
 
@@ -13,6 +14,7 @@ export function getCreepInstance(creep: Creep): BaseCreep {
       case 'harvester': instances[name] = new HarvesterCreep(creep); break;
       case 'upgrader':  instances[name] = new UpgraderCreep(creep); break;
       case 'builder':   instances[name] = new BuilderCreep(creep); break;
+      case 'miner':     instances[name] = new MinerCreep(creep); break;
       default:          instances[name] = new HarvesterCreep(creep); break;
     }
   } else {

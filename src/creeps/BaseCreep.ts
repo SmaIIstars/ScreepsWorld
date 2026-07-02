@@ -3,9 +3,10 @@ import { computeTags, computeCapacities } from '../core/tagSystem';
 import { getBehavior } from '../behavior/index';
 
 const ROLE_PREFS: Record<string, string[]> = {
+  miner:     ['harvest'],
   harvester: ['collect', 'harvest', 'fill', 'upgrade'],
-  builder: ['build', 'collect', 'fill', 'harvest', 'upgrade'],
-  upgrader: ['upgrade', 'collect', 'fill', 'harvest'],
+  builder:   ['build', 'collect', 'fill', 'harvest', 'upgrade'],
+  upgrader:  ['upgrade', 'collect', 'fill', 'harvest'],
 };
 
 export abstract class BaseCreep {
