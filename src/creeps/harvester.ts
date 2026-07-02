@@ -19,8 +19,8 @@ export class HarvesterCreep extends BaseCreep {
       if (evt) { this.assignEvent(evt); return; }
     }
 
-    // Not full → harvest
-    const evt = this.findEvent(events, ['harvest']);
+    // Not full → collect first (decays), then harvest
+    const evt = this.findEvent(events, ['collect', 'harvest']);
     if (evt) { this.assignEvent(evt); return; }
 
     // Fallback

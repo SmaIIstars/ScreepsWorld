@@ -27,8 +27,8 @@ export class UpgraderCreep extends BaseCreep {
       if (evt) { this.assignEvent(evt); return; }
     }
 
-    // Empty → harvest
-    const evt = this.findEvent(events, ['harvest']);
+    // Empty → collect first (decays), then harvest
+    const evt = this.findEvent(events, ['collect', 'harvest']);
     if (evt) { this.assignEvent(evt); return; }
 
     // Fallback
