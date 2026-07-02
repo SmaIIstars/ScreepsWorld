@@ -24,7 +24,6 @@ export const harvestBehavior: Behavior = {
 
   isComplete(creep: Creep, event: Event): boolean {
     const source = Game.getObjectById<Source>(event.data.targetId);
-    if (!source || source.energy === 0) return true;
-    return creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0;
+    return !source || source.energy === 0;
   },
 };

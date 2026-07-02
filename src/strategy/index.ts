@@ -52,7 +52,7 @@
         body: [WORK, WORK, WORK, WORK, CARRY, MOVE],
         tags: ['harvest', 'move'],
         minCapacities: { harvest: 1 },
-        target: 1,
+        target: 2,
       },
       {
         type: 'harvester',
