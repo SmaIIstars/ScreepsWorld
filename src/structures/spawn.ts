@@ -57,7 +57,13 @@ export class SpawnLifecycle extends BaseStructure<StructureSpawn> {
       }
 
       const creepName = role + '_' + Game.time + '_' + Math.floor(Math.random() * 1000);
-      const result = this.obj.spawnCreep(body, creepName, { memory: { role } });
+      const result = this.obj.spawnCreep(body, creepName, {
+        memory: {
+          role,
+          homeRoom: req.data.homeRoom,
+          targetRoom: req.data.targetRoom,
+        },
+      });
 
       if (result === OK) {
         const stillNeeded = count - existing - 1;
