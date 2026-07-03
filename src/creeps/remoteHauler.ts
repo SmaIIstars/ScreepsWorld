@@ -79,19 +79,29 @@ export class RemoteHaulerCreep extends BaseCreep {
   }
 
   private depositAtHome(homeRoom: string): void {
-    const storage = this.creep.room.find(FIND_MY_STRUCTURES, {
-      filter: s => s.structureType === STRUCTURE_STORAGE,
-    })[0] as StructureStorage | undefined;
-
+    const storage = this.creep.room.storage;
     const target = storage || this.creep.room.find(FIND_MY_SPAWNS)[0];
-    if (!target) return;
+    if (!target) {
+      // No storage or spawn — dump energy and go back
+      if (this.hasEnergy()) this.creep.drop(RESOURCE_ENERGY);
+      this.creep.memory.returning = false;
+      return;
+    }
 
-    if (this.creep.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+    const result = this.creep.transfer(target, RESOURCE_ENERGY);
+    if (result === ERR_NOT_IN_RANGE) {
       this.creep.moveTo(target, { reusePath: 30, visualizePathStyle: { stroke: '#ffffff' } });
       return;
     }
 
-    // Empty -> go back to collecting
+    // Target full — dump energy so we don't get stuck
+    if (result === ERR_FULL) {
+      this.creep.drop(RESOURCE_ENERGY);
+      this.creep.memory.returning = false;
+      return;
+    }
+
+    // Empty → go back to collecting
     if (this.isEmpty()) {
       this.creep.memory.returning = false;
     }
