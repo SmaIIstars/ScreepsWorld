@@ -28,20 +28,20 @@ export function runContainerLifecycle(target: StructureContainer): void {
   }
 
   // ── Fill: if container has free capacity, let creep deposit ──
-  const fillKey = buildDedupKey('fill', target.room.name, target.id);
-  if (freeCap > 0) {
-    Guild.post({
-      type: 'fill',
-      room: target.room.name,
-      targetId: target.id,
-      requiredTags: ['transport', 'move'],
-      requiredCapacities: { carry: 50 },
-      priority: 55,
-      maxWorkers: 1,
-      quota: { resourceType: RESOURCE_ENERGY, amount: freeCap },
-      data: { targetId: target.id },
-    });
-  } else {
-    Guild.cancel(fillKey);
-  }
+  // const fillKey = buildDedupKey('fill', target.room.name, target.id);
+  // if (freeCap > 0) {
+  //   Guild.post({
+  //     type: 'fill',
+  //     room: target.room.name,
+  //     targetId: target.id,
+  //     requiredTags: ['transport', 'move'],
+  //     requiredCapacities: { carry: 50 },
+  //     priority: 55,
+  //     maxWorkers: 1,
+  //     quota: { resourceType: RESOURCE_ENERGY, amount: freeCap },
+  //     data: { targetId: target.id },
+  //   });
+  // } else {
+  //   Guild.cancel(fillKey);
+  // }
 }

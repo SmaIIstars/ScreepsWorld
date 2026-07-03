@@ -12,12 +12,11 @@ const REMOTE_HAULER_BODY: BodyPartConstant[] = [];
 for (let i = 0; i < 16; i++) REMOTE_HAULER_BODY.push(CARRY);
 for (let i = 0; i < 8; i++) REMOTE_HAULER_BODY.push(MOVE);
 
-function countLiving(role: string, homeRoom: string): number {
+function countLiving(role: string, homeRoom: string, targetRoom: string): number {
   let count = 0;
   for (const name in Game.creeps) {
     const mem = Memory.creeps[name];
-    const live = (Game.creeps[name]?.ticksToLive ?? 0) >= 100;
-    if (mem?.role === role && mem?.homeRoom === homeRoom && live) count++;
+    if (mem?.role === role && mem?.homeRoom === homeRoom && mem?.targetRoom === targetRoom && (Game.creeps[name]?.ticksToLive ?? 0) >= 100) count++;
   }
   return count;
 }
@@ -25,6 +24,7 @@ function countLiving(role: string, homeRoom: string): number {
 export function runRemoteLifecycle(): void {
   for (const flagName in Game.flags) {
     const flag = Game.flags[flagName];
+    if (!flag) continue;
     const mem = flag.memory;
 
     // Validate flag config
@@ -48,7 +48,7 @@ export function runRemoteLifecycle(): void {
 
     // remoteMiner
     const minerKey = buildDedupKey('spawn_req', homeRoom, 'remoteMiner_' + flagName);
-    const livingMiners = countLiving('remoteMiner', homeRoom);
+    const livingMiners = countLiving('remoteMiner', homeRoom, flag.pos.roomName);
     if (livingMiners < desiredMiners) {
       Guild.post({
         type: 'spawn_req',
@@ -72,7 +72,7 @@ export function runRemoteLifecycle(): void {
 
     // remoteHauler
     const haulerKey = buildDedupKey('spawn_req', homeRoom, 'remoteHauler_' + flagName);
-    const livingHaulers = countLiving('remoteHauler', homeRoom);
+    const livingHaulers = countLiving('remoteHauler', homeRoom, flag.pos.roomName);
     if (livingHaulers < desiredHaulers) {
       Guild.post({
         type: 'spawn_req',

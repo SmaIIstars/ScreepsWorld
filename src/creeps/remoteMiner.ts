@@ -53,6 +53,7 @@ export class RemoteMinerCreep extends BaseCreep {
       const source = Game.getObjectById(this.creep.memory.sourceId as Id<Source>);
       if (!source || source.energy === 0) {
         delete this.creep.memory.sourceId;
+        return;
       } else {
         const result = this.creep.harvest(source);
         if (result === ERR_NOT_IN_RANGE) {
@@ -74,28 +75,5 @@ export class RemoteMinerCreep extends BaseCreep {
 
     // Nothing to do — repair/build nearby if we have energy
     this.repairOrBuildNearby();
-  }
-
-  private repairOrBuildNearby(): void {
-    if (!this.hasEnergy()) return;
-
-    // First: repair damaged structures
-    const damaged = this.creep.pos.findClosestByRange(FIND_STRUCTURES, {
-      filter: s => s.hits < s.hitsMax && (s.structureType === STRUCTURE_ROAD || s.structureType === STRUCTURE_CONTAINER),
-    });
-    if (damaged) {
-      if (this.creep.repair(damaged) === ERR_NOT_IN_RANGE) {
-        this.creep.moveTo(damaged, { reusePath: 30 });
-      }
-      return;
-    }
-
-    // Second: build construction sites
-    const site = this.creep.pos.findClosestByRange(FIND_CONSTRUCTION_SITES);
-    if (site) {
-      if (this.creep.build(site) === ERR_NOT_IN_RANGE) {
-        this.creep.moveTo(site, { reusePath: 30 });
-      }
-    }
   }
 }

@@ -46,10 +46,16 @@ export class SpawnLifecycle extends BaseStructure<StructureSpawn> {
       const existing =
         Object.values(Game.creeps).filter((c: Creep) => {
           const mem = Memory.creeps[c.name];
-          return mem?.role === role;
+          if (mem?.role !== role) return false;
+          const reqHome = req.data.homeRoom;
+          if (reqHome && mem.homeRoom !== reqHome) return false;
+          return (c.ticksToLive ?? 0) >= 100;
         }).length +
         // Count spawning creeps in this room
-        this.room.find(FIND_MY_SPAWNS).filter((s) => s.spawning?.name?.includes(role)).length;
+        this.room.find(FIND_MY_SPAWNS).filter((s) => {
+          const name = s.spawning?.name;
+          return name && name.startsWith(role + '_');
+        }).length;
 
       if (existing >= count) {
         Guild.complete(req.id);

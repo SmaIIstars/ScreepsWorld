@@ -96,27 +96,4 @@ export class RemoteHaulerCreep extends BaseCreep {
       this.creep.memory.returning = false;
     }
   }
-
-  private repairOrBuildNearby(): void {
-    if (!this.hasEnergy()) return;
-
-    // Repair damaged structures (road, container)
-    const damaged = this.creep.pos.findClosestByRange(FIND_STRUCTURES, {
-      filter: s => s.hits < s.hitsMax && (s.structureType === STRUCTURE_ROAD || s.structureType === STRUCTURE_CONTAINER),
-    });
-    if (damaged) {
-      if (this.creep.repair(damaged) === ERR_NOT_IN_RANGE) {
-        this.creep.moveTo(damaged, { reusePath: 30 });
-      }
-      return;
-    }
-
-    // Build construction sites
-    const site = this.creep.pos.findClosestByRange(FIND_CONSTRUCTION_SITES);
-    if (site) {
-      if (this.creep.build(site) === ERR_NOT_IN_RANGE) {
-        this.creep.moveTo(site, { reusePath: 30 });
-      }
-    }
-  }
 }
