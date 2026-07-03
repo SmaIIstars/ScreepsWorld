@@ -19,6 +19,7 @@ export class SpawnLifecycle extends BaseStructure<StructureSpawn> {
         requiredTags: ['transport', 'move'],
         requiredCapacities: { carry: 50 },
         priority,
+        quota: { resourceType: RESOURCE_ENERGY, amount: deficit },
         data: { targetId: this.obj.id },
       });
     } else {

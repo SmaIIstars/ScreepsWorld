@@ -12,6 +12,7 @@ declare global {
   }
 
   interface RoomMemory {
+    minerAssignments?: Record<string, string>; // sourceId → minerName
     _world?: {
       resources: Record<string, import('../structures/world').ResourceSnapshot>;
       tombs: Record<string, import('../structures/world').ResourceSnapshot>;

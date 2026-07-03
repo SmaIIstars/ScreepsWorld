@@ -3,6 +3,7 @@ import { fillBehavior } from './fill';
 import { upgradeBehavior } from './upgrade';
 import buildBehavior from './build';
 import { collectBehavior } from './collect';
+import repairBehavior from './repair';
 
 export interface Behavior {
   type: string;
@@ -27,3 +28,4 @@ registerBehavior(fillBehavior);
 registerBehavior(upgradeBehavior);
 registerBehavior(buildBehavior);
 registerBehavior(collectBehavior);
+registerBehavior(repairBehavior);

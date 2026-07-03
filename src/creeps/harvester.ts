@@ -1,32 +1,35 @@
-﻿import { BaseCreep } from './BaseCreep';
-import { getBehavior } from '../behavior/index';
+import { BaseCreep } from './BaseCreep';
 
 export class HarvesterCreep extends BaseCreep {
   run(): void {
-    if (this.creep.memory.currentEventId) {
-      this.executeCurrentEvent();
-      if (this.creep.memory.currentEventId) return;
+    // Handle current event
+    const event = this.getCurrentEvent();
+    if (event) {
+      if (this.isEventGone(event)) {
+        this.dropEvent();
+      } else if (!this.validateBehavior(event)) {
+        this.resolveInvalidEvent(event);
+      } else {
+        this.executeBehavior(event);
+        if (this.isBehaviorComplete(event)) {
+          this.completeEvent(event);
+        } else {
+          return; // continue next tick
+        }
+      }
     }
 
-    const events = this.queryEvents();
-    if (events.length === 0) {
-      console.log('[' + Game.time + '] ' + this.creep.name + ' NO EVENTS available (hasEnergy=' + this.hasEnergy() + ' isFull=' + this.isFull() + ')');
+    // Has energy → fill first, otherwise upgrade
+    if (this.hasEnergy()) {
+      if (this.claimEvent(['fill'])) return;
+      if (this.claimEvent(['upgrade'])) return;
+      return; // energy-carrying but nothing to do — wait, don't collect
     }
 
-    // Full → transport
-    if (this.isFull()) {
-      const evt = this.findEvent(events, ['fill', 'transport_energy']);
-      if (evt) { this.assignEvent(evt); return; }
-    }
-
-    // Not full → collect first (decays), then harvest
-    const evt = this.findEvent(events, ['collect', 'harvest']);
-    if (evt) { this.assignEvent(evt); return; }
+    // Empty → collect first (decays), then harvest
+    if (this.claimEvent(['collect', 'harvest'])) return;
 
     // Fallback
-    for (const e of events) {
-      const b = getBehavior(e.type);
-      if (b && b.validate(this.creep, e)) { this.assignEvent(e); return; }
-    }
+    this.claimFallback();
   }
 }

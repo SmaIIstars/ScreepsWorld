@@ -1,19 +1,47 @@
-// src/structures/source.ts
 import { BaseStructure } from './BaseStructure';
+import { Guild } from '../core/Guild';
 
 export class SourceLifecycle extends BaseStructure<Source> {
   runLifecycle(): void {
     if (this.obj.energy > 0) {
-      this.post({
-        type: 'harvest',
-        room: this.room.name,
-        targetId: this.obj.id,
-        requiredTags: ['harvest', 'move'],
-        requiredCapacities: { harvest: 1 },
-        priority: 80,
-        maxWorkers: 3,
-        data: { targetId: this.obj.id },
-      });
+      const assignments = Memory.rooms[this.room.name]?.minerAssignments;
+      const minerName = assignments?.[this.obj.id as unknown as string];
+
+      if (minerName && Game.creeps[minerName]) {
+        // Source has a bound miner → auto-assign harvest directly
+        const miner = Game.creeps[minerName];
+        const event = Guild.post({
+          type: 'harvest',
+          room: this.room.name,
+          targetId: this.obj.id,
+          requiredTags: ['harvest', 'move'],
+          requiredCapacities: { harvest: 1 },
+          priority: 80,
+          maxWorkers: 1,
+          quota: { resourceType: RESOURCE_ENERGY, amount: this.obj.energy },
+          data: { targetId: this.obj.id },
+        });
+        Guild.claim(event.id, minerName, miner.store.getFreeCapacity(RESOURCE_ENERGY));
+        miner.memory.currentEventId = event.id;
+      } else {
+        // Clean up dead miner assignment
+        if (minerName && assignments) {
+          delete assignments[this.obj.id as unknown as string];
+        }
+
+        // Open harvest for any harvester
+        this.post({
+          type: 'harvest',
+          room: this.room.name,
+          targetId: this.obj.id,
+          requiredTags: ['harvest', 'move'],
+          requiredCapacities: { harvest: 1 },
+          priority: 80,
+          maxWorkers: 3,
+          quota: { resourceType: RESOURCE_ENERGY, amount: this.obj.energy },
+          data: { targetId: this.obj.id },
+        });
+      }
     } else {
       this.cancel('harvest');
     }

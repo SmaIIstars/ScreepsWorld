@@ -4,6 +4,7 @@ import { SiteLifecycle } from './site';
 import { SpawnLifecycle } from './spawn';
 import { runWorkforceLifecycle } from './workforce';
 import { runStoreLifecycle } from './store';
+import { TowerLifecycle } from './tower';
 import { refreshWorld, runCollectLifecycle, getWorldCacheForRoom, ResourceSnapshot } from './world';
 
 interface RoomCache {
@@ -121,10 +122,10 @@ export function runStructureLifecycles(room: Room): void {
     if (obj) runStoreLifecycle(obj);
   }
 
-  // Towers → fill
+  // Towers → fill + attack/heal/defend + repair events
   for (const id of cache.towerIds) {
     const obj = Game.getObjectById(id);
-    if (obj) runStoreLifecycle(obj);
+    if (obj) new TowerLifecycle(obj).runLifecycle();
   }
 
   // Storage → fill (future: resource balancing)

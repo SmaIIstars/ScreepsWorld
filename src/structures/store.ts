@@ -19,6 +19,7 @@ export function runStoreLifecycle(target: AnyStoreStructure): void {
       requiredCapacities: { carry: 50 },
       priority: 60,
       maxWorkers: 1,
+      quota: { resourceType: RESOURCE_ENERGY, amount: store.getFreeCapacity(RESOURCE_ENERGY) },
       data: { targetId: target.id },
     });
   } else {

@@ -20,7 +20,7 @@ export class ControllerLifecycle extends BaseStructure<StructureController> {
       requiredTags: ['work', 'move'],
       requiredCapacities: { work: 1 },
       priority,
-      maxWorkers: 5,
+      maxWorkers: 99,
       data: { targetId: this.obj.id },
     });
   }

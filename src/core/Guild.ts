@@ -24,6 +24,7 @@ export interface DemandData {
   maxWorkers?: number;
   data?: Record<string, any>;
   allowFallback?: boolean;
+  quota?: EventQuota;
 }
 // ---------------------------------------------------------------------------
 // Guild
@@ -32,11 +33,12 @@ export interface GuildType {
   _events: Record<string, Record<string, Event>>; // room → dedupKey → event
   post(eventData: DemandData): Event;
   query(workerTags: string[], capacities: Record<string, number>, roomName: string): Event[];
-  claim(eventId: string, workerId: string): boolean;
+  claim(eventId: string, workerId: string, reserveAmount?: number): boolean;
   complete(eventId: string): void;
   release(eventId: string, workerId?: string): void;
   expire(eventId: string): void;
   cancel(dedupKey: string): void;
+  completeByDedupKey(dedupKey: string): void;
   cleanup(roomName: string): void;
   findById(eventId: string): Event | undefined;
   getPendingByType(roomName: string, type: string): Event[];
@@ -52,12 +54,21 @@ export const Guild: GuildType = {
     const { type, room, targetId } = eventData;
     const dedupKey = buildDedupKey(type, room, targetId);
 
+    // Auto-inject pos from target (unless caller already provided it)
+    if (targetId && !eventData.data?.pos) {
+      const target = Game.getObjectById(targetId as Id<any>);
+      if (target && 'pos' in target) {
+        if (!eventData.data) eventData.data = {};
+        eventData.data = { ...eventData.data, ...target.pos };
+      }
+    }
+
     if (!this._events[room]) this._events[room] = {};
     const roomEvents = this._events[room];
     const existing = roomEvents[dedupKey];
 
     if (existing) {
-      if (existing.status === 'expired') {
+      if (existing.status === 'expired' || existing.status === 'completed') {
         delete roomEvents[dedupKey];
       } else {
         existing.priority = Math.max(existing.priority, eventData.priority ?? 50);
@@ -67,8 +78,23 @@ export const Guild: GuildType = {
         if (eventData.maxWorkers !== undefined) existing.maxWorkers = eventData.maxWorkers;
         if (eventData.minWorkers !== undefined) existing.minWorkers = eventData.minWorkers;
         if (eventData.data) Object.assign(existing.data, eventData.data);
+        if (eventData.quota) {
+          existing.data.quota = eventData.quota;
+          const reserved = existing.data.reservations
+            ? (Object.values(existing.data.reservations) as number[]).reduce((s: number, v: number) => s + v, 0)
+            : 0;
+          existing.data.remainingQuota = Math.max(0, eventData.quota.amount - reserved);
+        }
         return existing;
       }
+    }
+
+    // Merge quota into data
+    const eventData_data = { ...(eventData.data ?? {}) };
+    if (eventData.quota) {
+      eventData_data.quota = eventData.quota;
+      eventData_data.remainingQuota = eventData.quota.amount;
+      eventData_data.reservations = {};
     }
 
     const id = generateEventId(type, room, targetId);
@@ -86,7 +112,7 @@ export const Guild: GuildType = {
       minWorkers: eventData.minWorkers ?? 1,
       maxWorkers: eventData.maxWorkers ?? 1,
       currentWorkers: 0,
-      data: eventData.data ?? {},
+      data: eventData_data,
       allowFallback: eventData.allowFallback ?? false,
       createdAt: Game.time,
       dedupKey,
@@ -109,6 +135,8 @@ export const Guild: GuildType = {
     for (const event of Object.values(rm)) {
       if (event.status !== 'pending' && event.status !== 'claimed') continue;
       if (event.currentWorkers >= event.maxWorkers) continue;
+      // Quota exhausted — no more workers needed
+      if (event.data.remainingQuota !== undefined && event.data.remainingQuota <= 0) continue;
       const result = canWorkerTakeEvent(worker, event);
       if (result.match) {
         scored.push({ event, perfectMatch: result.perfectMatch });
@@ -125,12 +153,25 @@ export const Guild: GuildType = {
   /**
    * Claim an event for a worker.
    */
-  claim(eventId: string, workerId: string): boolean {
+  claim(eventId: string, workerId: string, reserveAmount?: number): boolean {
     const event = this.findById(eventId);
     if (!event) return false;
     if (event.status !== 'pending' && event.status !== 'claimed') return false;
 
     if (event.currentWorkers >= event.maxWorkers) return false;
+
+    // Quota check: if remainingQuota is set and <= 0, no more claims
+    if (event.data.remainingQuota !== undefined && event.data.remainingQuota <= 0) return false;
+
+    // Reserve quota
+    const amount = reserveAmount ?? 0;
+    if (event.data.quota && amount > 0) {
+      const toReserve = Math.min(amount, event.data.remainingQuota);
+      if (!event.data.reservations) event.data.reservations = {};
+      event.data.reservations[workerId] = toReserve;
+      event.data.remainingQuota -= toReserve;
+    }
+
     event.currentWorkers++;
     if (!event.claimerIds.includes(workerId)) event.claimerIds.push(workerId);
     event.claimerId = workerId;
@@ -145,6 +186,23 @@ export const Guild: GuildType = {
   complete(eventId: string): void {
     const event = this.findById(eventId);
     if (!event) return;
+    // Clear all reservations (quota consumed, not returned)
+    if (event.data.reservations && event.data.quota) {
+      const reserved = (Object.values(event.data.reservations) as number[]).reduce((s, v) => s + v, 0);
+      event.data.remainingQuota = Math.max(0, event.data.quota.amount - reserved);
+    }
+    event.data.reservations = {};
+    event.status = 'completed';
+    event.completedAt = Game.time;
+  },
+
+  /** Complete an event by dedupKey — used by lifecycle scans to force-complete when target state changed. */
+  completeByDedupKey(dedupKey: string): void {
+    const room = dedupKey.split(':')[1];
+    const rm = this._events[room];
+    if (!rm) return;
+    const event = rm[dedupKey];
+    if (!event) return;
     event.status = 'completed';
     event.completedAt = Game.time;
   },
@@ -155,6 +213,13 @@ export const Guild: GuildType = {
   release(eventId: string, workerId?: string): void {
     const event = this.findById(eventId);
     if (!event) return;
+
+    // Return reservation to remainingQuota
+    if (workerId && event.data.reservations?.[workerId] !== undefined) {
+      event.data.remainingQuota = (event.data.remainingQuota ?? 0) + event.data.reservations[workerId];
+      delete event.data.reservations[workerId];
+    }
+
     if (workerId) {
       event.claimerIds = event.claimerIds.filter((id: string) => id !== workerId);
     } else {
@@ -192,7 +257,7 @@ export const Guild: GuildType = {
     if (!rm) return;
     const event = rm[dedupKey];
     if (!event) return;
-    if (event.status === 'claimed') return;
+    if (event.status === 'claimed') return; // someone is already working on it
     delete rm[dedupKey];
     if (Object.keys(rm).length === 0) delete this._events[room];
   },
@@ -217,6 +282,17 @@ export const Guild: GuildType = {
       }
       if (event.status === 'claimed' && event.claimerIds.length > 0) {
         const alive = event.claimerIds.filter((id: string) => Game.creeps[id]);
+
+        // Return dead workers' reservations
+        if (event.data.reservations) {
+          for (const id of event.claimerIds) {
+            if (!alive.includes(id) && event.data.reservations[id] !== undefined) {
+              event.data.remainingQuota = (event.data.remainingQuota ?? 0) + event.data.reservations[id];
+              delete event.data.reservations[id];
+            }
+          }
+        }
+
         if (alive.length < event.claimerIds.length) {
           event.claimerIds = alive;
           event.currentWorkers = alive.length;

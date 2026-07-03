@@ -1,40 +1,35 @@
-﻿import { BaseCreep } from './BaseCreep';
-import { getBehavior } from '../behavior/index';
+import { BaseCreep } from './BaseCreep';
 
 export class UpgraderCreep extends BaseCreep {
   run(): void {
-    if (this.creep.memory.currentEventId) {
-      this.executeCurrentEvent();
-      if (this.creep.memory.currentEventId) return;
-    }
-
-    const events = this.queryEvents();
-    if (events.length === 0) {
-      console.log('[' + Game.time + '] ' + this.creep.name + ' NO EVENTS available (hasEnergy=' + this.hasEnergy() + ' isFull=' + this.isFull() + ')');
+    // Handle current event
+    const event = this.getCurrentEvent();
+    if (event) {
+      if (this.isEventGone(event)) {
+        this.dropEvent();
+      } else if (!this.validateBehavior(event)) {
+        this.resolveInvalidEvent(event);
+      } else {
+        this.executeBehavior(event);
+        if (this.isBehaviorComplete(event)) {
+          this.completeEvent(event);
+        } else {
+          return; // continue next tick
+        }
+      }
     }
 
     // Has energy → upgrade first, fallback to build
     if (this.hasEnergy()) {
-      const evt = this.findEvent(events, ['upgrade']);
-      if (evt) { this.assignEvent(evt); return; }
-      const buildEvt = this.findEvent(events, ['build', 'repair']);
-      if (buildEvt) { this.assignEvent(buildEvt); return; }
-    }
-
-    // Full but no upgrade needed → fill spawn
-    if (this.isFull()) {
-      const evt = this.findEvent(events, ['fill']);
-      if (evt) { this.assignEvent(evt); return; }
+      if (this.claimEvent(['upgrade'])) return;
+      if (this.claimEvent(['build', 'repair'])) return;
+      return; // nowhere to spend energy → wait, don't collect
     }
 
     // Empty → collect first (decays), then harvest
-    const evt = this.findEvent(events, ['collect', 'harvest']);
-    if (evt) { this.assignEvent(evt); return; }
+    if (this.claimEvent(['collect', 'harvest'])) return;
 
     // Fallback
-    for (const e of events) {
-      const b = getBehavior(e.type);
-      if (b && b.validate(this.creep, e)) { this.assignEvent(e); return; }
-    }
+    this.claimFallback();
   }
 }

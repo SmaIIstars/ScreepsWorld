@@ -95,11 +95,25 @@ export function refreshWorld(room: Room, cache: WorldCache): void {
 export function runCollectLifecycle(snap: ResourceSnapshot, id: string, room: Room): void {
   const dedupKey = buildDedupKey('collect', room.name, id);
 
-  // Verify target still exists
+  // Verify target still exists and actually has resources
   const target = Game.getObjectById(id as Id<any>);
   if (!target) return; // Gone — next scan removes from cache
 
-  // Estimate remaining (universal linear formula)
+  // Check actual amount (not just estimate — another creep may have emptied it)
+  let actualAmount = 0;
+  if (target instanceof Resource) {
+    actualAmount = target.amount;
+  } else if ('store' in target) {
+    actualAmount = (target.store as Store<ResourceConstant, false>).getUsedCapacity(RESOURCE_ENERGY);
+  }
+
+  if (actualAmount < MIN_AMOUNT) {
+    // Resource is actually gone → force-complete even if claimed
+    Guild.completeByDedupKey(dedupKey);
+    return;
+  }
+
+  // Estimate remaining from snapshot (for priority calculation)
   const remaining = snap.amount - (Game.time - snap.seenAt) * snap.decayPerTick;
 
   if (remaining < MIN_AMOUNT) {
@@ -115,7 +129,8 @@ export function runCollectLifecycle(snap: ResourceSnapshot, id: string, room: Ro
     requiredTags: ['transport', 'move'],
     requiredCapacities: { carry: 50 },
     priority,
-    maxWorkers: 2,
+    maxWorkers: 1,
+    quota: { resourceType: snap.type, amount: actualAmount },
     data: { targetId: id },
   });
 }

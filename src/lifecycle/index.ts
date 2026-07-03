@@ -30,6 +30,17 @@ export function checkDeadCreeps(): void {
         Guild.release(creepData.currentEventId, name);
       }
 
+      // Clean up miner assignment if this creep was bound to a source
+      if (creepData?.sourceId) {
+        for (const roomName in Memory.rooms) {
+          const assignments = Memory.rooms[roomName]?.minerAssignments;
+          if (assignments?.[creepData.sourceId] === name) {
+            delete assignments[creepData.sourceId];
+            break;
+          }
+        }
+      }
+
       // Clean up Memory
       delete Memory.creeps[name];
     }

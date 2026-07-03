@@ -10,6 +10,7 @@ export class SiteLifecycle extends BaseStructure<ConstructionSite> {
     const basePrio = priorityByType[this.obj.structureType] || 50;
     const progressRatio = this.obj.progress / this.obj.progressTotal;
     const priority = basePrio + Math.floor(progressRatio * 20);
+    const remaining = this.obj.progressTotal - this.obj.progress;
     this.post({
       type: 'build',
       room: this.room.name,
@@ -18,6 +19,7 @@ export class SiteLifecycle extends BaseStructure<ConstructionSite> {
       requiredCapacities: { work: 1 },
       priority,
       maxWorkers: 3,
+      quota: { resourceType: RESOURCE_ENERGY, amount: remaining },
       data: { targetId: this.obj.id, structureType: this.obj.structureType },
     });
   }
