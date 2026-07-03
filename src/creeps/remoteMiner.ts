@@ -37,9 +37,11 @@ export class RemoteMinerCreep extends BaseCreep {
       }
     }
 
-    // Not in target room → move there
+    // Not in target room → move there (use flag for cross-room visibility)
     if (this.creep.room.name !== targetRoom) {
-      this.creep.moveTo(new RoomPosition(25, 25, targetRoom), {
+      const flag = Game.flags[targetRoom];
+      const target = flag || new RoomPosition(25, 25, targetRoom);
+      this.creep.moveTo(target, {
         reusePath: 50,
         visualizePathStyle: { stroke: '#ffaa00' },
       });
