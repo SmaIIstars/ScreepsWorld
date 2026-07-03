@@ -4,6 +4,7 @@ import { UpgraderCreep } from './upgrader';
 import { BuilderCreep } from './builder';
 import { MinerCreep } from './miner';
 import { RemoteMinerCreep } from './remoteMiner';
+import { RemoteHaulerCreep } from './remoteHauler';
 
 const instances: Record<string, BaseCreep> = {};
 
@@ -17,6 +18,7 @@ export function getCreepInstance(creep: Creep): BaseCreep {
       case 'builder':   instances[name] = new BuilderCreep(creep); break;
       case 'miner':       instances[name] = new MinerCreep(creep); break;
       case 'remoteMiner': instances[name] = new RemoteMinerCreep(creep); break;
+      case 'remoteHauler': instances[name] = new RemoteHaulerCreep(creep); break;
       default:          instances[name] = new HarvesterCreep(creep); break;
     }
   } else {
