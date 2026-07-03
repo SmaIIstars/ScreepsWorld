@@ -4,6 +4,7 @@ import { SiteLifecycle } from './site';
 import { SpawnLifecycle } from './spawn';
 import { runWorkforceLifecycle } from './workforce';
 import { runStoreLifecycle } from './store';
+import { runContainerLifecycle } from './container';
 import { TowerLifecycle } from './tower';
 import { refreshWorld, runCollectLifecycle, getWorldCacheForRoom, ResourceSnapshot } from './world';
 
@@ -12,6 +13,7 @@ interface RoomCache {
   spawnIds: Id<StructureSpawn>[];
   extensionIds: Id<StructureExtension>[];
   towerIds: Id<StructureTower>[];
+  containerIds: Id<StructureContainer>[];
   storageIds: Id<StructureStorage>[];
   controllerId: Id<StructureController> | null;
   siteIds: Id<ConstructionSite>[];
@@ -25,13 +27,17 @@ const SITE_INTERVAL = 5;
 function getCache(room: Room): RoomCache {
   if (!Memory.rooms) Memory.rooms = {};
   const cached = Memory.rooms[room.name] as RoomCache | undefined;
-  if (cached && cached.spawnIds && cached.sourceIds) return cached;
+  if (cached && cached.spawnIds && cached.sourceIds) {
+    if (!cached.containerIds) cached.containerIds = [];
+    return cached;
+  }
 
   const fresh: RoomCache = {
     sourceIds: [],
     spawnIds: [],
     extensionIds: [],
     towerIds: [],
+    containerIds: [],
     storageIds: [],
     controllerId: null,
     siteIds: [],
@@ -49,6 +55,7 @@ function refreshStructures(room: Room, cache: RoomCache): void {
   const spawns: Id<StructureSpawn>[] = [];
   const extensions: Id<StructureExtension>[] = [];
   const towers: Id<StructureTower>[] = [];
+  const containers: Id<StructureContainer>[] = [];
   const storages: Id<StructureStorage>[] = [];
 
   for (const s of room.find(FIND_SOURCES)) sources.push(s.id);
@@ -68,14 +75,22 @@ function refreshStructures(room: Room, cache: RoomCache): void {
         storages.push(s.id);
         break;
       default:
-        break; // container, link, terminal, etc. — skip for now
+        break;
     }
+  }
+
+  // Containers are neutral — need FIND_STRUCTURES
+  for (const s of room.find(FIND_STRUCTURES, {
+    filter: (s) => s.structureType === STRUCTURE_CONTAINER,
+  })) {
+    containers.push(s.id);
   }
 
   cache.sourceIds = sources;
   cache.spawnIds = spawns;
   cache.extensionIds = extensions;
   cache.towerIds = towers;
+  cache.containerIds = containers;
   cache.storageIds = storages;
   cache.controllerId = room.controller?.id ?? null;
   cache.lastScan = Game.time;
@@ -132,6 +147,12 @@ export function runStructureLifecycles(room: Room): void {
   for (const id of cache.storageIds) {
     const obj = Game.getObjectById(id);
     if (obj) runStoreLifecycle(obj);
+  }
+
+  // Containers → harvest (has energy) + fill (has space)
+  for (const id of cache.containerIds) {
+    const obj = Game.getObjectById(id);
+    if (obj) runContainerLifecycle(obj);
   }
 
   // ── World collect targets (dropped/tombs/ruins) ──

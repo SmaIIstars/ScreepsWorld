@@ -4,9 +4,9 @@ import { getBehavior } from '../behavior/index';
 
 const ROLE_PREFS: Record<string, string[]> = {
   miner: ['harvest'],
-  harvester: ['collect', 'harvest', 'fill', 'upgrade'],
-  builder: ['build', 'collect', 'fill', 'harvest', 'upgrade'],
-  upgrader: ['upgrade', 'collect', 'fill', 'harvest'],
+  harvester: ['collect', 'harvest', 'withdraw', 'fill', 'upgrade'],
+  builder: ['build', 'collect', 'withdraw', 'fill', 'harvest', 'upgrade'],
+  upgrader: ['upgrade', 'collect', 'withdraw', 'fill', 'harvest'],
 };
 
 // ─── Event sorting ───
@@ -82,6 +82,15 @@ export abstract class BaseCreep {
 
   protected isEmpty(): boolean {
     return this.creep.store[RESOURCE_ENERGY] === 0;
+  }
+
+  /** Count living creeps of a given role. */
+  protected countRole(role: string): number {
+    let count = 0;
+    for (const name in Game.creeps) {
+      if (Memory.creeps[name]?.role === role) count++;
+    }
+    return count;
   }
 
   // ─── Query events sorted by role preference + distance ───

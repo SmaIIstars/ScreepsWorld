@@ -32,7 +32,12 @@ export class SpawnLifecycle extends BaseStructure<StructureSpawn> {
     const spawnReqs = Guild.getPendingByType(this.room.name, 'spawn_req');
     if (spawnReqs.length === 0) return;
 
-    spawnReqs.sort((a, b) => b.priority - a.priority);
+    const roleOrder: Record<string, number> = { harvester: 0, miner: 1 };
+    spawnReqs.sort((a, b) => {
+      const p = b.priority - a.priority;
+      if (p !== 0) return p;
+      return (roleOrder[a.data.role] ?? 99) - (roleOrder[b.data.role] ?? 99);
+    });
 
     for (const req of spawnReqs) {
       const { role, body, count } = req.data;

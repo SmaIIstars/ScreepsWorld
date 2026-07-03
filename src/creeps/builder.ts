@@ -21,10 +21,11 @@ export class BuilderCreep extends BaseCreep {
 
     // Has energy → build first, fallback to upgrade
     if (this.hasEnergy()) {
+      // 兜底: 没有 harvester 时优先 fill，保证能源基础设施能恢复
+      if (this.countRole('harvester') === 0 && this.claimEvent(['fill'])) return;
       if (this.claimEvent(['build', 'repair'])) return;
-      if (this.claimEvent(['upgrade'])) return;
-      // Still has energy but no build/upgrade → try fill if full
       if (this.isFull() && this.claimEvent(['fill'])) return;
+      if (this.claimEvent(['upgrade'])) return;
       return; // nowhere to spend energy → wait
     }
 

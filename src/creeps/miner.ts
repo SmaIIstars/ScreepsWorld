@@ -2,6 +2,16 @@ import { BaseCreep } from './BaseCreep';
 import { Guild } from '../core/Guild';
 
 export class MinerCreep extends BaseCreep {
+  /** Only accept harvest events from real Sources — ignore containers, ruins, etc. */
+  protected queryEvents(): Event[] {
+    const events = super.queryEvents();
+    return events.filter((e) => {
+      if (e.type !== 'harvest') return true;
+      const target = Game.getObjectById(e.data.targetId as Id<any>);
+      return target instanceof Source;
+    });
+  }
+
   run(): void {
     // Drop energy if full — keep harvesting, let it fall to ground/container
     if (this.isFull()) {

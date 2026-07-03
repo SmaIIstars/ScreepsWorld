@@ -4,6 +4,7 @@ import { upgradeBehavior } from './upgrade';
 import buildBehavior from './build';
 import { collectBehavior } from './collect';
 import repairBehavior from './repair';
+import { withdrawBehavior } from './withdraw';
 
 export interface Behavior {
   type: string;
@@ -29,3 +30,4 @@ registerBehavior(upgradeBehavior);
 registerBehavior(buildBehavior);
 registerBehavior(collectBehavior);
 registerBehavior(repairBehavior);
+registerBehavior(withdrawBehavior);

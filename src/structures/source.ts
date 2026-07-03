@@ -17,7 +17,6 @@ export class SourceLifecycle extends BaseStructure<Source> {
           requiredTags: ['harvest', 'move'],
           requiredCapacities: { harvest: 1 },
           priority: 80,
-          maxWorkers: 1,
           quota: { resourceType: RESOURCE_ENERGY, amount: this.obj.energy },
           data: { targetId: this.obj.id },
         });
@@ -37,7 +36,6 @@ export class SourceLifecycle extends BaseStructure<Source> {
           requiredTags: ['harvest', 'move'],
           requiredCapacities: { harvest: 1 },
           priority: 80,
-          maxWorkers: 3,
           quota: { resourceType: RESOURCE_ENERGY, amount: this.obj.energy },
           data: { targetId: this.obj.id },
         });
