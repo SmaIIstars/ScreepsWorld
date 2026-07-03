@@ -13,6 +13,7 @@ export class RemoteMinerCreep extends BaseCreep {
 
   run(): void {
     const targetRoom = this.creep.memory.targetRoom as string;
+    if (!targetRoom) { this.creep.say('no target'); return; }
 
     // Drop energy if full — let it fall to ground for hauler
     if (this.isFull()) {
@@ -54,8 +55,10 @@ export class RemoteMinerCreep extends BaseCreep {
         const result = this.creep.harvest(source);
         if (result === ERR_NOT_IN_RANGE) {
           this.creep.moveTo(source, { reusePath: 100, visualizePathStyle: { stroke: '#ffaa00' } });
+        } else {
+          // Only repair/build when already at the source
+          this.repairOrBuildNearby();
         }
-        this.repairOrBuildNearby();
         return;
       }
     }
