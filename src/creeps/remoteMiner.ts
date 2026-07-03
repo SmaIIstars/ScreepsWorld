@@ -1,0 +1,96 @@
+import { BaseCreep } from './BaseCreep';
+
+export class RemoteMinerCreep extends BaseCreep {
+  /** Only accept harvest from real Sources. */
+  protected queryEvents(): Event[] {
+    const events = super.queryEvents();
+    return events.filter((e) => {
+      if (e.type !== 'harvest') return true;
+      const target = Game.getObjectById(e.data.targetId as Id<any>);
+      return target instanceof Source;
+    });
+  }
+
+  run(): void {
+    const targetRoom = this.creep.memory.targetRoom as string;
+
+    // Drop energy if full — let it fall to ground for hauler
+    if (this.isFull()) {
+      this.creep.drop(RESOURCE_ENERGY);
+    }
+
+    // Handle current event
+    const event = this.getCurrentEvent();
+    if (event) {
+      if (this.isEventGone(event)) {
+        this.dropEvent();
+      } else if (!this.validateBehavior(event)) {
+        this.resolveInvalidEvent(event);
+      } else {
+        this.executeBehavior(event);
+        if (this.isBehaviorComplete(event)) {
+          this.completeEvent(event);
+        } else {
+          return;
+        }
+      }
+    }
+
+    // Not in target room → move there
+    if (this.creep.room.name !== targetRoom) {
+      this.creep.moveTo(new RoomPosition(25, 25, targetRoom), {
+        reusePath: 50,
+        visualizePathStyle: { stroke: '#ffaa00' },
+      });
+      return;
+    }
+
+    // Bound to source → verify, harvest
+    if (this.creep.memory.sourceId) {
+      const source = Game.getObjectById(this.creep.memory.sourceId as Id<Source>);
+      if (!source || source.energy === 0) {
+        delete this.creep.memory.sourceId;
+      } else {
+        const result = this.creep.harvest(source);
+        if (result === ERR_NOT_IN_RANGE) {
+          this.creep.moveTo(source, { reusePath: 100, visualizePathStyle: { stroke: '#ffaa00' } });
+        }
+        this.repairOrBuildNearby();
+        return;
+      }
+    }
+
+    // Claim harvest from a free source
+    if (this.claimEvent(['harvest'])) {
+      const claimed = this.getCurrentEvent();
+      if (claimed) this.creep.memory.sourceId = claimed.data.targetId;
+      return;
+    }
+
+    // Nothing to do — repair/build nearby if we have energy
+    this.repairOrBuildNearby();
+  }
+
+  private repairOrBuildNearby(): void {
+    if (!this.hasEnergy()) return;
+
+    // First: repair damaged structures
+    const damaged = this.creep.pos.findClosestByRange(FIND_STRUCTURES, {
+      filter: s => s.hits < s.hitsMax && (s.structureType === STRUCTURE_ROAD || s.structureType === STRUCTURE_CONTAINER),
+    });
+    if (damaged) {
+      if (this.creep.repair(damaged) === ERR_NOT_IN_RANGE) {
+        this.creep.moveTo(damaged, { reusePath: 30 });
+      }
+      return;
+    }
+
+    // Second: build construction sites
+    const site = this.creep.pos.findClosestByRange(FIND_CONSTRUCTION_SITES);
+    if (site) {
+      if (this.creep.build(site) === ERR_NOT_IN_RANGE) {
+        this.creep.moveTo(site, { reusePath: 30 });
+      }
+    }
+  }
+}
