@@ -16,7 +16,8 @@ function countLiving(role: string, homeRoom: string): number {
   let count = 0;
   for (const name in Game.creeps) {
     const mem = Memory.creeps[name];
-    if (mem?.role === role && mem?.homeRoom === homeRoom) count++;
+    const live = (Game.creeps[name]?.ticksToLive ?? 0) >= 100;
+    if (mem?.role === role && mem?.homeRoom === homeRoom && live) count++;
   }
   return count;
 }
