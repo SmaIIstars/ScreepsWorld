@@ -4,6 +4,7 @@ import { runStructureLifecycles } from './structures/index';
 import { getCreepInstance, cleanupInstances } from './creeps/index';
 
 import { checkDeadCreeps, cleanupEvents, persistGuild } from './lifecycle/index';
+import { runRemoteLifecycle } from './structures/remote';
 
 function loop(): void {
   extensionMain();
@@ -25,6 +26,7 @@ function loop(): void {
   }
 
   cleanupInstances();
+  runRemoteLifecycle();
   cleanupEvents();
   persistGuild();
 }

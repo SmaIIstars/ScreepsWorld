@@ -48,7 +48,7 @@ Flag memory (system-populated):
 #### remoteMiner
 
 - **Body:** `WORK×10 + CARRY×1 + MOVE×4` (1050 energy)
-- **Per flag:** 1 per source (`miners` config)
+- **Per flag:** 1 miner per source. Player sets `miners` ≤ actual source count in the room. If `miners` > source count, extra miners are not spawned.
 - **Behavior:**
   1. Travel to flag room
   2. Bind to assigned source (1 miner per source)

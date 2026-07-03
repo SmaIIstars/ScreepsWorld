@@ -11,6 +11,17 @@ declare global {
     [key: string]: any;
   }
 
+  interface FlagMemory {
+    role?: string;
+    enabled?: boolean;
+    homeRoom?: string;
+    sourceIds?: string[];
+    lastScan?: number;
+    miners?: number;
+    haulers?: number;
+    [key: string]: any;
+  }
+
   interface RoomMemory {
     minerAssignments?: Record<string, string>; // sourceId → minerName
     _world?: {
