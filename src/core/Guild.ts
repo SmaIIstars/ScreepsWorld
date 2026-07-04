@@ -42,6 +42,7 @@ export interface GuildType {
   cleanup(roomName: string): void;
   findById(eventId: string): Event | undefined;
   getPendingByType(roomName: string, type: string): Event[];
+  getRoomEvents(roomName: string): Record<string, Event>;
 }
 
 export const Guild: GuildType = {
@@ -330,6 +331,11 @@ export const Guild: GuildType = {
     const rm = this._events[roomName];
     if (!rm) return [];
     return Object.values(rm).filter((e) => e.type === type && e.status === 'pending');
+  },
+
+  /** Get all events in a room. Public read-only accessor. */
+  getRoomEvents(roomName: string): Record<string, Event> {
+    return this._events[roomName] || {};
   },
 };
 // ---------------------------------------------------------------------------

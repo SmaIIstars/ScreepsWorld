@@ -7,7 +7,6 @@ import { runStoreLifecycle } from './store';
 import { runContainerLifecycle } from './container';
 import { TowerLifecycle } from './tower';
 import { Guild } from '../core/Guild';
-import { buildDedupKey } from '../core/Event';
 import { refreshWorld, runCollectLifecycle, getWorldCacheForRoom, ResourceSnapshot } from './world';
 
 interface RoomCache {
@@ -104,11 +103,12 @@ function refreshSites(room: Room, cache: RoomCache): void {
 }
 
 const REPAIR_SCAN_INTERVAL = 20;
-let lastRepairScan = 0;
 
 function repairStructures(room: Room): void {
-  if (Game.time - lastRepairScan < REPAIR_SCAN_INTERVAL) return;
-  lastRepairScan = Game.time;
+  if (!Memory.rooms) Memory.rooms = {};
+  const mem = Memory.rooms[room.name] as any;
+  if (Game.time - (mem._lastRepairScan || 0) < REPAIR_SCAN_INTERVAL) return;
+  mem._lastRepairScan = Game.time;
 
   const structures = room.find(FIND_STRUCTURES, {
     filter: (s) =>
@@ -150,7 +150,7 @@ function repairStructures(room: Room): void {
   }
 
   // Cancel repair events for structures no longer needing repair
-  const roomEvents = Guild._events[room.name];
+  const roomEvents = Guild.getRoomEvents(room.name);
   if (roomEvents) {
     for (const key in roomEvents) {
       const evt = roomEvents[key];
