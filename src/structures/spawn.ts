@@ -10,17 +10,15 @@ export class SpawnLifecycle extends BaseStructure<StructureSpawn> {
     const store = this.obj.store as Store<ResourceConstant, false>;
     if (store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
       const deficit = store.getCapacity(RESOURCE_ENERGY) - store[RESOURCE_ENERGY];
-      const spawnBlocked = this.obj.spawning && store[RESOURCE_ENERGY] < 200;
-      const priority = spawnBlocked ? 95 : Math.min(60 + Math.floor(deficit / 50) * 5, 90);
       this.post({
         type: 'fill',
         room: this.room.name,
         targetId: this.obj.id,
         requiredTags: ['transport', 'move'],
         requiredCapacities: { carry: 50 },
-        priority,
-        quota: { resourceType: RESOURCE_ENERGY, amount: deficit },
-        data: { targetId: this.obj.id },
+        priority: 90,
+        publisherType: 'spawn',
+        data: { targetId: this.obj.id, quota: { [RESOURCE_ENERGY]: deficit } },
       });
     } else {
       this.cancel('fill');
@@ -32,12 +30,7 @@ export class SpawnLifecycle extends BaseStructure<StructureSpawn> {
     const spawnReqs = Guild.getPendingByType(this.room.name, 'spawn_req');
     if (spawnReqs.length === 0) return;
 
-    const roleOrder: Record<string, number> = { harvester: 0, miner: 1 };
-    spawnReqs.sort((a, b) => {
-      const p = b.priority - a.priority;
-      if (p !== 0) return p;
-      return (roleOrder[a.data.role] ?? 99) - (roleOrder[b.data.role] ?? 99);
-    });
+    spawnReqs.sort((a, b) => b.priority - a.priority);
 
     for (const req of spawnReqs) {
       const { role, body, count } = req.data;

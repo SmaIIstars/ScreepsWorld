@@ -19,8 +19,8 @@ export class SiteLifecycle extends BaseStructure<ConstructionSite> {
       requiredCapacities: { work: 1 },
       priority,
       maxWorkers: 3,
-      quota: { resourceType: RESOURCE_ENERGY, amount: remaining },
-      data: { targetId: this.obj.id, structureType: this.obj.structureType },
+      publisherType: 'site',
+      data: { targetId: this.obj.id, structureType: this.obj.structureType, quota: { [RESOURCE_ENERGY]: remaining } },
     });
   }
 }

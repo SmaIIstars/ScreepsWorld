@@ -12,12 +12,8 @@ function loop(): void {
   checkDeadCreeps();
 
   for (const roomName in Game.rooms) {
-    const room = Game.rooms[roomName];
-    if (room.controller?.my) {
-      runStructureLifecycles(room);
-    }
+    runStructureLifecycles(Game.rooms[roomName]);
   }
-
 
   for (const name in Game.creeps) {
     const creep = Game.creeps[name];
@@ -32,3 +28,5 @@ function loop(): void {
 }
 
 loop();
+
+global.utils = {};

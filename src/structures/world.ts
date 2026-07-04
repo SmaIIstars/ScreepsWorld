@@ -130,8 +130,8 @@ export function runCollectLifecycle(snap: ResourceSnapshot, id: string, room: Ro
     requiredCapacities: { carry: 50 },
     priority,
     maxWorkers: 1,
-    quota: { resourceType: snap.type, amount: actualAmount },
-    data: { targetId: id },
+    publisherType: 'world',
+    data: { targetId: id, quota: { [snap.type]: actualAmount } },
   });
 }
 

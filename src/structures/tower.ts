@@ -7,6 +7,7 @@ export class TowerLifecycle extends BaseStructure<StructureTower> {
     const room = this.room;
 
     // ── 1. Energy: post fill if not full ──
+    const hostiles = room.find(FIND_HOSTILE_CREEPS);
     const freeCap = tower.store.getFreeCapacity(RESOURCE_ENERGY);
     if (freeCap > 0) {
       this.post({
@@ -15,10 +16,10 @@ export class TowerLifecycle extends BaseStructure<StructureTower> {
         targetId: tower.id,
         requiredTags: ['transport', 'move'],
         requiredCapacities: { carry: 50 },
-        priority: 70,
+        priority: hostiles.length > 0 ? 100 : 70,
         maxWorkers: 1,
-        quota: { resourceType: RESOURCE_ENERGY, amount: freeCap },
-        data: { targetId: tower.id },
+        publisherType: 'tower',
+        data: { targetId: tower.id, quota: { [RESOURCE_ENERGY]: freeCap } },
       });
     } else {
       this.cancel('fill');
@@ -34,15 +35,14 @@ export class TowerLifecycle extends BaseStructure<StructureTower> {
         requiredCapacities: { work: 1, carry: 50 },
         priority: 65,
         maxWorkers: 1,
-        quota: { resourceType: RESOURCE_ENERGY, amount: tower.hitsMax - tower.hits },
-        data: { targetId: tower.id },
+        publisherType: 'tower',
+        data: { targetId: tower.id, quota: { [RESOURCE_ENERGY]: tower.hitsMax - tower.hits } },
       });
     } else {
       this.cancel('repair');
     }
 
     // ── 3. Combat ──
-    const hostiles = room.find(FIND_HOSTILE_CREEPS);
     if (hostiles.length > 0) {
       const target = tower.pos.findClosestByRange(hostiles)!;
       tower.attack(target);
@@ -62,10 +62,18 @@ export class TowerLifecycle extends BaseStructure<StructureTower> {
 
     this.cancel('defend');
 
-    // ── 4. Heal friendly creeps ──
-    const damagedCreeps = room.find(FIND_MY_CREEPS).filter(
-      (c) => c.hits < c.hitsMax
-    );
+    // ── 4. Repair nearby damaged roads (stopgap) ──
+    const damagedRoad = tower.pos.findClosestByRange(FIND_STRUCTURES, {
+      filter: (s) =>
+        s.structureType === STRUCTURE_ROAD &&
+        s.hits < s.hitsMax * 0.5,
+    });
+    if (damagedRoad) {
+      tower.repair(damagedRoad);
+    }
+
+    // ── 5. Heal friendly creeps ──
+    const damagedCreeps = room.find(FIND_MY_CREEPS).filter((c) => c.hits < c.hitsMax);
     if (damagedCreeps.length > 0) {
       const target = damagedCreeps.sort((a, b) => a.hits - b.hits)[0];
       tower.heal(target);

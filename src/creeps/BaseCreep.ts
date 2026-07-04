@@ -4,11 +4,11 @@ import { getBehavior } from '../behavior/index';
 
 const ROLE_PREFS: Record<string, string[]> = {
   miner: ['harvest'],
-  harvester: ['collect', 'harvest', 'withdraw', 'fill', 'upgrade'],
+  harvester: ['collect', 'withdraw', 'harvest', 'fill', 'upgrade'],
   builder: ['build', 'repair', 'collect', 'withdraw', 'fill', 'harvest', 'upgrade'],
   upgrader: ['upgrade', 'collect', 'withdraw', 'fill', 'harvest'],
   remoteMiner: ['harvest'],
-  remoteHauler: ['collect', 'fill'],
+  remoteHauler: ['collect', 'withdraw', 'fill'],
 };
 
 // ─── Event sorting ───
@@ -38,8 +38,8 @@ export function byType(prefs: string[]): EventComparator {
 /** Sort by Manhattan distance from creep (nearest first). Uses data.pos. */
 export function byDistance(): EventComparator {
   return (a, b, creep) => {
-    const pa = a.data?.pos as { x: number; y: number; roomName: string } | undefined;
-    const pb = b.data?.pos as { x: number; y: number; roomName: string } | undefined;
+    const pa = a.pos;
+    const pb = b.pos;
     if (!pa && !pb) return 0;
     if (!pa) return 1;
     if (!pb) return -1;
@@ -176,7 +176,7 @@ export abstract class BaseCreep {
   /** Compute how much quota this creep can reserve for the event. */
   private computeReserve(event: Event): number {
     if (!event.data?.quota) return 0;
-    const rtype = (event.data.quota as EventQuota).resourceType;
+    const rtype = event.data.resourceType as ResourceConstant;
     switch (event.type) {
       case 'fill':
       case 'build':

@@ -1,7 +1,7 @@
 import { type Behavior } from './index';
 
 function getResType(event: Event): ResourceConstant {
-  return (event.data?.quota as EventQuota)?.resourceType ?? RESOURCE_ENERGY;
+  return event.data?.resourceType ?? RESOURCE_ENERGY;
 }
 
 export const withdrawBehavior: Behavior = {

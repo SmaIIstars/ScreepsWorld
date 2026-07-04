@@ -17,8 +17,8 @@ export class SourceLifecycle extends BaseStructure<Source> {
           requiredTags: ['harvest', 'move'],
           requiredCapacities: { harvest: 1 },
           priority: 80,
-          quota: { resourceType: RESOURCE_ENERGY, amount: this.obj.energy },
-          data: { targetId: this.obj.id },
+          publisherType: 'source',
+          data: { targetId: this.obj.id, quota: { [RESOURCE_ENERGY]: this.obj.energy } },
         });
         Guild.claim(event.id, minerName, miner.store.getFreeCapacity(RESOURCE_ENERGY));
         miner.memory.currentEventId = event.id;
@@ -36,8 +36,8 @@ export class SourceLifecycle extends BaseStructure<Source> {
           requiredTags: ['harvest', 'move'],
           requiredCapacities: { harvest: 1 },
           priority: 80,
-          quota: { resourceType: RESOURCE_ENERGY, amount: this.obj.energy },
-          data: { targetId: this.obj.id },
+          publisherType: 'source',
+          data: { targetId: this.obj.id, quota: { [RESOURCE_ENERGY]: this.obj.energy } },
         });
       }
     } else {

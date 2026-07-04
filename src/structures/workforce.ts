@@ -3,7 +3,14 @@ import { Guild } from '../core/Guild';
 import { buildDedupKey } from '../core/Event';
 import { getStrategyConfig } from '../strategy/index';
 
+const ROLE_SPAWN_PRIORITY: Record<string, number> = {
+  harvester: 90,
+  miner: 80,
+  upgrader: 70,
+};
+
 export function runWorkforceLifecycle(room: Room): void {
+  if (!room.controller?.my) return; // only spawn in owned rooms
   const level = room.controller?.level || 1;
   const config = getStrategyConfig(level);
 
@@ -24,7 +31,7 @@ export function runWorkforceLifecycle(room: Room): void {
         room: room.name,
         targetId: role.type,
         requiredTags: ['spawner'],
-        priority: shortage * 20 + 50,
+        priority: ROLE_SPAWN_PRIORITY[role.type] ?? 60,
         data: {
           role: role.type,
           body: role.body,

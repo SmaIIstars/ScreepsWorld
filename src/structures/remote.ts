@@ -8,15 +8,21 @@ for (let i = 0; i < 10; i++) REMOTE_MINER_BODY.push(WORK);
 REMOTE_MINER_BODY.push(CARRY);
 for (let i = 0; i < 4; i++) REMOTE_MINER_BODY.push(MOVE);
 
-const REMOTE_HAULER_BODY: BodyPartConstant[] = [];
-for (let i = 0; i < 16; i++) REMOTE_HAULER_BODY.push(CARRY);
-for (let i = 0; i < 8; i++) REMOTE_HAULER_BODY.push(MOVE);
+const REMOTE_HAULER_BODY: BodyPartConstant[] = [WORK];
+for (let i = 0; i < 13; i++) REMOTE_HAULER_BODY.push(CARRY);
+for (let i = 0; i < 7; i++) REMOTE_HAULER_BODY.push(MOVE);
 
 function countLiving(role: string, homeRoom: string, targetRoom: string): number {
   let count = 0;
   for (const name in Game.creeps) {
     const mem = Memory.creeps[name];
-    if (mem?.role === role && mem?.homeRoom === homeRoom && mem?.targetRoom === targetRoom && (Game.creeps[name]?.ticksToLive ?? 0) >= 100) count++;
+    if (
+      mem?.role === role &&
+      mem?.homeRoom === homeRoom &&
+      mem?.targetRoom === targetRoom &&
+      (Game.creeps[name]?.ticksToLive ?? 0) >= 100
+    )
+      count++;
   }
   return count;
 }
@@ -27,19 +33,16 @@ export function runRemoteLifecycle(): void {
     if (!flag) continue;
     const mem = flag.memory;
 
-    // Validate flag config
     if (mem.role !== 'remote_mine') continue;
     if (!mem.enabled) continue;
     const homeRoom = mem.homeRoom as string;
     if (!homeRoom || !Game.rooms[homeRoom]?.controller?.my) continue;
 
-    // Source discovery (cached, interval)
-    if (!mem.sourceIds || (Game.time - (mem.lastScan || 0)) > REMOTE_SCAN_INTERVAL) {
-      const targetRoom = Game.rooms[flag.pos.roomName];
-      if (targetRoom) {
-        mem.sourceIds = targetRoom.find(FIND_SOURCES).map(s => s.id);
-        mem.lastScan = Game.time;
-      }
+    // Source discovery (cached) — events handled by runStructureLifecycles
+    const targetRoom = Game.rooms[flag.pos.roomName];
+    if (targetRoom && (!mem.sourceIds || Game.time - (mem.lastScan || 0) > REMOTE_SCAN_INTERVAL)) {
+      mem.sourceIds = targetRoom.find(FIND_SOURCES).map((s) => s.id);
+      mem.lastScan = Game.time;
     }
 
     const sourceIds = (mem.sourceIds as string[]) || [];
@@ -55,7 +58,7 @@ export function runRemoteLifecycle(): void {
         room: homeRoom,
         targetId: 'remoteMiner_' + flagName,
         requiredTags: ['spawner'],
-        priority: 45,
+        priority: 50,
         data: {
           role: 'remoteMiner',
           body: REMOTE_MINER_BODY,
@@ -79,12 +82,12 @@ export function runRemoteLifecycle(): void {
         room: homeRoom,
         targetId: 'remoteHauler_' + flagName,
         requiredTags: ['spawner'],
-        priority: 45,
+        priority: 50,
         data: {
           role: 'remoteHauler',
           body: REMOTE_HAULER_BODY,
-          tags: ['transport', 'move'],
-          minCapacities: { carry: 50 },
+          tags: ['harvest', 'work', 'transport', 'move'],
+          minCapacities: { harvest: 1, carry: 50 },
           count: desiredHaulers,
           homeRoom: homeRoom,
           targetRoom: flag.pos.roomName,

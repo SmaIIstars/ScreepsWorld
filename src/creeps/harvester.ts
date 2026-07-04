@@ -27,7 +27,7 @@ export class HarvesterCreep extends BaseCreep {
     }
 
     // Empty → collect first (decays), then harvest
-    if (this.claimEvent(['collect', 'harvest', 'withdraw'])) return;
+    if (this.claimEvent(['collect', 'withdraw', 'harvest'])) return;
 
     // Fallback
     this.claimFallback();

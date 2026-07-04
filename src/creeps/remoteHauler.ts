@@ -71,8 +71,8 @@ export class RemoteHaulerCreep extends BaseCreep {
       return;
     }
 
-    // Also check tombstones and ruins
-    if (this.claimEvent(['collect'])) return;
+    // Also check tombstones, ruins, containers
+    if (this.claimEvent(['collect', 'withdraw'])) return;
 
     // Nothing to collect -> repair/build if we have energy
     this.repairOrBuildNearby();
