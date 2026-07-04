@@ -20,11 +20,29 @@ export function runContainerLifecycle(target: StructureContainer): void {
       requiredCapacities: { carry: 50 },
       priority: 70,
       maxWorkers: 3,
-      quota: { resourceType: RESOURCE_ENERGY, amount: energy },
-      data: { targetId: target.id },
+      publisherType: 'container',
+      data: { targetId: target.id, quota: { [RESOURCE_ENERGY]: energy } },
     });
   } else {
     Guild.cancel(withdrawKey);
+  }
+
+  // ── Repair: if damaged, request repair ──
+  const repairKey = buildDedupKey('repair', target.room.name, target.id);
+  if (target.hits < target.hitsMax * 0.5) {
+    Guild.post({
+      type: 'repair',
+      room: target.room.name,
+      targetId: target.id,
+      requiredTags: ['work', 'move'],
+      requiredCapacities: { work: 1, carry: 50 },
+      priority: 45,
+      maxWorkers: 1,
+      publisherType: 'container',
+      data: { targetId: target.id },
+    });
+  } else {
+    Guild.cancel(repairKey);
   }
 
   // ── Fill: if container has free capacity, let creep deposit ──
