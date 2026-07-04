@@ -5,7 +5,7 @@ import { getBehavior } from '../behavior/index';
 const ROLE_PREFS: Record<string, string[]> = {
   miner: ['harvest'],
   harvester: ['collect', 'harvest', 'withdraw', 'fill', 'upgrade'],
-  builder: ['build', 'collect', 'withdraw', 'fill', 'harvest', 'upgrade'],
+  builder: ['build', 'repair', 'collect', 'withdraw', 'fill', 'harvest', 'upgrade'],
   upgrader: ['upgrade', 'collect', 'withdraw', 'fill', 'harvest'],
   remoteMiner: ['harvest'],
   remoteHauler: ['collect', 'fill'],
@@ -102,7 +102,7 @@ export abstract class BaseCreep {
     const caps = computeCapacities(this.creep.body);
     const events = Guild.query(tags, caps, this.creep.room.name);
     const prefs = ROLE_PREFS[this.creep.memory.role || ''] || [];
-    return sortEvents(events, this.creep, [byType(prefs), byDistance()]);
+    return sortEvents(events, this.creep, [byType(prefs), byPriority(), byDistance()]);
   }
 
   // ─── Atomic: current event ───
