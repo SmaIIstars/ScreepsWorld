@@ -226,24 +226,21 @@ export abstract class BaseCreep {
     return false;
   }
 
+  /** Opportunistic repair/build — only what's within range, no movement. */
   protected repairOrBuildNearby(): void {
     if (!this.hasEnergy()) return;
 
-    const damaged = this.creep.pos.findClosestByRange(FIND_STRUCTURES, {
+    const damaged = this.creep.pos.findInRange(FIND_STRUCTURES, 1, {
       filter: s => s.hits < s.hitsMax && (s.structureType === STRUCTURE_ROAD || s.structureType === STRUCTURE_CONTAINER),
     });
-    if (damaged) {
-      if (this.creep.repair(damaged) === ERR_NOT_IN_RANGE) {
-        this.creep.moveTo(damaged, { reusePath: 30 });
-      }
+    if (damaged.length > 0) {
+      this.creep.repair(damaged[0]);
       return;
     }
 
-    const site = this.creep.pos.findClosestByRange(FIND_CONSTRUCTION_SITES);
-    if (site) {
-      if (this.creep.build(site) === ERR_NOT_IN_RANGE) {
-        this.creep.moveTo(site, { reusePath: 30 });
-      }
+    const sites = this.creep.pos.findInRange(FIND_CONSTRUCTION_SITES, 1);
+    if (sites.length > 0) {
+      this.creep.build(sites[0]);
     }
   }
 }
