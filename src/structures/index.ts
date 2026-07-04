@@ -6,6 +6,8 @@ import { runWorkforceLifecycle } from './workforce';
 import { runStoreLifecycle } from './store';
 import { runContainerLifecycle } from './container';
 import { TowerLifecycle } from './tower';
+import { Guild } from '../core/Guild';
+import { buildDedupKey } from '../core/Event';
 import { refreshWorld, runCollectLifecycle, getWorldCacheForRoom, ResourceSnapshot } from './world';
 
 interface RoomCache {
@@ -101,6 +103,66 @@ function refreshSites(room: Room, cache: RoomCache): void {
   cache.lastSiteScan = Game.time;
 }
 
+const REPAIR_SCAN_INTERVAL = 20;
+let lastRepairScan = 0;
+
+function repairStructures(room: Room): void {
+  if (Game.time - lastRepairScan < REPAIR_SCAN_INTERVAL) return;
+  lastRepairScan = Game.time;
+
+  const structures = room.find(FIND_STRUCTURES, {
+    filter: (s) =>
+      s.structureType === STRUCTURE_ROAD ||
+      s.structureType === STRUCTURE_RAMPART ||
+      s.structureType === STRUCTURE_WALL,
+  });
+
+  const seenIds = new Set<string>();
+
+  for (const s of structures) {
+    const id = s.id as string;
+    seenIds.add(id);
+
+    const ratio = s.hits / s.hitsMax;
+
+    // Wall and Rampart: cap at 100k hits
+    if (s.structureType === STRUCTURE_WALL || s.structureType === STRUCTURE_RAMPART) {
+      if (s.hits >= 100000) continue;
+    }
+
+    if (ratio >= 0.5) continue;
+
+    const priority =
+      s.structureType === STRUCTURE_ROAD ? 50 :
+      s.structureType === STRUCTURE_RAMPART ? 30 : 25;
+
+    Guild.post({
+      type: 'repair',
+      room: room.name,
+      targetId: s.id,
+      requiredTags: ['work', 'move'],
+      requiredCapacities: { work: 1, carry: 50 },
+      priority,
+      maxWorkers: 1,
+      publisherType: s.structureType as string,
+      data: { targetId: s.id },
+    });
+  }
+
+  // Cancel repair events for structures no longer needing repair
+  const roomEvents = Guild._events[room.name];
+  if (roomEvents) {
+    for (const key in roomEvents) {
+      const evt = roomEvents[key];
+      if (evt.type !== 'repair') continue;
+      if (evt.publisherType === 'tower' || evt.publisherType === 'container') continue;
+      if (!seenIds.has(evt.targetId)) {
+        Guild.cancel(evt.dedupKey);
+      }
+    }
+  }
+}
+
 export function runStructureLifecycles(room: Room): void {
   const cache = getCache(room);
 
@@ -112,6 +174,9 @@ export function runStructureLifecycles(room: Room): void {
   if (Game.time - worldCache.lastScan >= 20) {
     refreshWorld(room, worldCache);
   }
+
+  // ── Road / Rampart / Wall repair scan ──
+  repairStructures(room);
 
   // Sources → harvest
   for (const id of cache.sourceIds) {
