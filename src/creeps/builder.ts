@@ -29,8 +29,8 @@ export class BuilderCreep extends BaseCreep {
       return; // nowhere to spend energy → wait
     }
 
-    // Empty → collect first (decays), then harvest
-    if (this.claimEvent(['collect', 'harvest'])) return;
+    // Empty → withdraw first (container/storage), then collect (drops), then harvest
+    if (this.claimEvent(['withdraw', 'collect', 'harvest'])) return;
 
     // Fallback
     this.claimFallback();
