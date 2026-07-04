@@ -25,7 +25,6 @@ export interface DemandData {
   maxWorkers?: number;
   data?: Record<string, any>;
   allowFallback?: boolean;
-  quota?: EventQuota;
 }
 // ---------------------------------------------------------------------------
 // Guild
@@ -80,23 +79,8 @@ export const Guild: GuildType = {
         if (eventData.maxWorkers !== undefined) existing.maxWorkers = eventData.maxWorkers;
         if (eventData.minWorkers !== undefined) existing.minWorkers = eventData.minWorkers;
         if (eventData.data) Object.assign(existing.data, eventData.data);
-        if (eventData.quota) {
-          existing.data.quota = eventData.quota;
-          const reserved = existing.data.reservations
-            ? (Object.values(existing.data.reservations) as number[]).reduce((s: number, v: number) => s + v, 0)
-            : 0;
-          existing.data.remainingQuota = Math.max(0, eventData.quota.amount - reserved);
-        }
         return existing;
       }
-    }
-
-    // Merge quota into data
-    const eventData_data = { ...(eventData.data ?? {}) };
-    if (eventData.quota) {
-      eventData_data.quota = eventData.quota;
-      eventData_data.remainingQuota = eventData.quota.amount;
-      eventData_data.reservations = {};
     }
 
     const id = generateEventId(type, room, targetId);
@@ -110,13 +94,12 @@ export const Guild: GuildType = {
       requiredCapacities: eventData.requiredCapacities ?? {},
       priority: eventData.priority ?? 50,
       status: 'pending',
-      claimerId: null,
       claimedAt: null,
       claimerIds: [],
       minWorkers: eventData.minWorkers ?? 1,
       maxWorkers: eventData.maxWorkers ?? 1,
       currentWorkers: 0,
-      data: eventData_data,
+      data: eventData.data ?? {},
       allowFallback: eventData.allowFallback ?? false,
       createdAt: Game.time,
       dedupKey,
@@ -178,7 +161,6 @@ export const Guild: GuildType = {
 
     event.currentWorkers++;
     if (!event.claimerIds.includes(workerId)) event.claimerIds.push(workerId);
-    event.claimerId = workerId;
     event.claimedAt = Game.time;
     event.status = 'claimed';
     return true;
@@ -232,10 +214,8 @@ export const Guild: GuildType = {
     event.currentWorkers = event.claimerIds.length;
     if (event.currentWorkers === 0) {
       event.status = 'pending';
-      event.claimerId = null;
       event.claimedAt = null;
     } else {
-      event.claimerId = event.claimerIds[0];
       event.claimedAt = Game.time;
     }
   },
@@ -302,10 +282,8 @@ export const Guild: GuildType = {
           event.currentWorkers = alive.length;
           if (event.currentWorkers === 0) {
             event.status = 'pending';
-            event.claimerId = null;
             event.claimedAt = null;
           } else {
-            event.claimerId = alive[alive.length - 1];
             event.claimedAt = null;
           }
         }
