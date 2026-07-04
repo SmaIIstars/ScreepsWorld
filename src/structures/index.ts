@@ -151,14 +151,12 @@ function repairStructures(room: Room): void {
 
   // Cancel repair events for structures no longer needing repair
   const roomEvents = Guild.getRoomEvents(room.name);
-  if (roomEvents) {
-    for (const key in roomEvents) {
-      const evt = roomEvents[key];
-      if (evt.type !== 'repair') continue;
-      if (evt.publisherType === 'tower' || evt.publisherType === 'container') continue;
-      if (!seenIds.has(evt.targetId)) {
-        Guild.cancel(evt.dedupKey);
-      }
+  for (const key in roomEvents) {
+    const evt = roomEvents[key];
+    if (evt.type !== 'repair') continue;
+    if (evt.publisherType === 'tower' || evt.publisherType === 'container') continue;
+    if (!seenIds.has(evt.targetId)) {
+      Guild.cancel(evt.dedupKey);
     }
   }
 }

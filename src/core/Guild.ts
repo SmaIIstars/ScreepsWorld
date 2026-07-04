@@ -17,6 +17,7 @@ export interface DemandData {
   type: string;
   room: string;
   targetId: string;
+  publisherType?: string;
   requiredTags: string[];
   requiredCapacities?: Record<string, number>;
   priority?: number;
@@ -103,6 +104,8 @@ export const Guild: GuildType = {
       id,
       type,
       room,
+      targetId: targetId,
+      publisherType: eventData.publisherType ?? type,
       requiredTags: eventData.requiredTags,
       requiredCapacities: eventData.requiredCapacities ?? {},
       priority: eventData.priority ?? 50,
